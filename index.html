@@ -1510,6 +1510,7 @@
     }
 
     let connectLoopTimer = null, pendingConn = null, pendingAt = 0;
+    let kickedFromRoom = false;
     function teardownPeer() {
       clearInterval(connectLoopTimer); pendingConn = null; pendingAt = 0;
       const p = peer;
@@ -1520,6 +1521,25 @@
         try { c.close(); } catch (e) {}
       });
       try { p && p.destroy(); } catch (e) {}
+    }
+
+    function kickPeer(targetId) {
+      if (!canManageRoom() || !targetId || targetId === peer?.id) return;
+      const targetName = (members[targetId] && members[targetId].name) || 'Pengguna';
+      connections.forEach(c => {
+        if (c.peer === targetId) {
+          c._kicked = true;
+          try { if (c.open) c.send({ type: 'KICK', text: 'Kamu dikeluarkan dari room oleh admin.' }); } catch (e) {}
+          try { c.close(); } catch (e) {}
+        }
+      });
+      connections = connections.filter(c => c.peer !== targetId);
+      delete members[targetId];
+      delete profiles[targetId];
+      dropVoice(targetId);
+      broadcastMembers();
+      appendSystemChat(`${targetName} dikeluarkan dari room oleh admin.`);
+      showToast(`${targetName} di-kick dari room`);
     }
 
     function setRoomPill(text, ok) {
@@ -1743,7 +1763,7 @@
       let idx = 0;
 
       const tick = () => {
-        if (peer !== p || p.destroyed || !session) return clearInterval(connectLoopTimer);
+        if (kickedFromRoom || peer !== p || p.destroyed || !session) return clearInterval(connectLoopTimer);
         if (partnerOnline()) return;
         if (p.disconnected) { try { p.reconnect(); } catch (e) {} return; }
         if (pendingConn && !pendingConn.open && Date.now() - pendingAt < 6000) return;
@@ -1778,7 +1798,7 @@
       });
       conn.on('data', (data) => handleIncomingSyncData(data, conn));
       conn.on('close', () => {
-        if (conn._replaced || !conn._wasOpen) return;
+        if (conn._replaced || conn._kicked || kickedFromRoom || !conn._wasOpen) return;
         connections = connections.filter(c => c !== conn);
         const who = (members[conn.peer] && members[conn.peer].name) || partnerName();
         if (canManageRoom()) {
@@ -1793,6 +1813,29 @@
 
     function handleIncomingSyncData(data, senderConn) {
       if (!data || typeof data !== 'object') return;
+      if (data.type === 'KICK') {
+        kickedFromRoom = true;
+        clearInterval(connectLoopTimer);
+        isRoomConnected = false;
+        isHost = false;
+        stopVoice();
+        teardownPeer();
+        session = null;
+        try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+        document.getElementById('room-active-area').classList.add('hidden');
+        document.getElementById('room-setup-area').classList.remove('hidden');
+        document.getElementById('sidebar-room-dot').classList.add('hidden');
+        setRoomPill('Dikeluarkan dari room', false);
+        showToast(data.text || 'Kamu dikeluarkan dari room oleh admin');
+        return;
+      }
+      if (data.type === 'VC_STOP') {
+        forceCloseAllVcMedia();
+        appendSystemChat(`Video call dihentikan oleh ${cleanName(data.by || 'admin')}.`);
+        if (curTab === 'videocall') switchTab(vcPrev && vcPrev !== 'videocall' ? vcPrev : 'together');
+        showToast('Video call telah dihentikan');
+        return;
+      }
       const fromGuest = isHost && senderConn && !isAdminPeer(senderConn.peer);
       if (fromGuest && /^(SYNC_|STATE|HISTORY|QUEUE_SET|QUEUE_DEL)/.test(String(data.type))) return;
       if (isHost && !/^(QUEUE_|SEAT|MIC|MEMBERS|HELLO|STATE|HISTORY|PROFILE|EMOTE|NOTICE)/.test(String(data.type))) {
@@ -2544,7 +2587,32 @@
         : `<button onclick="rsQueuePlay('${esc(t.qid)}')" class="px-2 py-1 rounded-lg bg-rose-600 text-[10px] font-bold text-white">Putar</button><button onclick="queueRemove('${esc(t.qid)}')" class="px-2 py-1 rounded-lg bg-white/10 text-[10px] font-bold text-white">✕</button>`}
     </div>`;
 
+    let resolvingQueueTitles = false;
+    async function backfillRoomQueueTitles() {
+      if (resolvingQueueTitles) return;
+      const targets = roomQueue.filter(t => t.type === 'youtube' && t.id && (!t.title || GENERIC_TITLE.test(t.title)));
+      if (!targets.length) return;
+      resolvingQueueTitles = true;
+      let changed = false;
+      for (const item of targets) {
+        const updated = await resolveTrackTitle(item);
+        if (updated.title && updated.title !== item.title) {
+          item.title = updated.title;
+          item.artist = updated.artist || item.artist;
+          changed = true;
+        }
+      }
+      resolvingQueueTitles = false;
+      if (changed) {
+        queueAt = Date.now();
+        saveRoomState();
+        if (isHost) broadcastQueue();
+        renderRoomSearch();
+      }
+    }
+
     function renderRoomSearch() {
+      backfillRoomQueueTitles();
       const res = rsResults.map((t, i) => rsRow(t, i, 'res')).join('') || '';
       const q = roomQueue.map((t, i) => rsRow(t, i, 'q')).join('') || '<div class="text-[11px] text-zinc-500">Belum ada lagu di antrean. Cari lalu tekan "+ Antre".</div>';
       document.querySelectorAll('.rs-results').forEach(e => e.innerHTML = res);
@@ -2574,10 +2642,34 @@
     }
 
     function rsPlay(i) { const t = rsResults[i]; if (t) playTrack({ ...t }, false); }
-    function rsAdd(i) { const t = rsResults[i]; if (!t) return; queueAdd(t); showToast('Masuk antrean room'); }
+    async function rsAdd(i) { const t = rsResults[i]; if (!t) return; await queueAdd(t); showToast('Masuk antrean room'); }
 
-    function queueAdd(track) {
-      const item = { ...track, by: myDisplayName, qid: Date.now() + Math.random().toString(36).slice(2, 6) };
+    async function resolveTrackTitle(track) {
+      const copy = { ...track };
+      if (copy.type !== 'youtube' || !copy.id) return copy;
+      if (copy.title && !GENERIC_TITLE.test(copy.title)) return copy;
+      try {
+        const ctrl = new AbortController();
+        const tm = setTimeout(() => ctrl.abort(), 4500);
+        const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent('https://www.youtube.com/watch?v=' + copy.id)}&format=json`, { signal: ctrl.signal });
+        clearTimeout(tm);
+        if (res.ok) {
+          const meta = await res.json();
+          if (meta?.title) copy.title = meta.title;
+          if (meta?.author_name && (!copy.artist || copy.artist === 'YouTube' || copy.artist.startsWith('Dari link'))) {
+            copy.artist = meta.author_name;
+          }
+        }
+      } catch (e) {}
+      if (!copy.title || GENERIC_TITLE.test(copy.title)) {
+        copy.title = `Video #${copy.id}`;
+      }
+      return copy;
+    }
+
+    async function queueAdd(track) {
+      const resolved = await resolveTrackTitle(track);
+      const item = { ...resolved, by: myDisplayName, qid: Date.now() + Math.random().toString(36).slice(2, 6) };
       if (isHost || !partnerOnline()) { roomQueue.push(item); broadcastQueue(); }
       else connections.forEach(c => c.open && c.send({ type: 'QUEUE_ADD', item }));
     }
@@ -2813,8 +2905,57 @@
       const lbl = document.getElementById('vc-swap-label');
       if (lbl) lbl.textContent = vcSwapped ? 'Layar: Kamu' : 'Layar: Partner';
     }
-    stopVoice = function () { vcPipeStop(true); if (vcRaw) vcRaw.getTracks().forEach(t => t.stop()); vcRaw = null; document.getElementById('vc-fx')?.classList.add('hidden'); _stopVoice(); vcOn = false; vcSwapped = false; document.getElementById('vc')?.classList.remove('swapped'); document.getElementById('vc-grid').innerHTML = ''; vcLayout(); };
+    function forceCloseAllVcMedia() {
+      vcOn = false;
+      voiceOn = false;
+      voiceMuted = false;
+      vcSwapped = false;
+      try { vcPipeStop(true); } catch (e) {}
+      if (vcRaw) {
+        try { vcRaw.getTracks().forEach(t => t.stop()); } catch (e) {}
+        vcRaw = null;
+      }
+      if (localStream) {
+        try { localStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+        localStream = null;
+      }
+      Object.keys(voiceCalls).forEach(peerId => {
+        try { voiceCalls[peerId]?.close?.(); } catch (e) {}
+        dropVoice(peerId);
+      });
+      const sv = document.getElementById('vc-self');
+      if (sv) {
+        try { sv.pause(); } catch (e) {}
+        sv.srcObject = null;
+      }
+      const grid = document.getElementById('vc-grid');
+      if (grid) {
+        grid.querySelectorAll('video').forEach(vid => {
+          try { vid.pause(); } catch (e) {}
+          vid.srcObject = null;
+        });
+        grid.innerHTML = '';
+      }
+      document.getElementById('vc-fx')?.classList.add('hidden');
+      document.getElementById('vc')?.classList.remove('swapped');
+      document.getElementById('vc-nav-dot')?.classList.add('hidden');
+      const startBtn = document.getElementById('vc-start-btn');
+      if (startBtn) startBtn.textContent = 'Mulai video call';
+      const hint = document.getElementById('vc-hint');
+      if (hint) hint.textContent = 'Gabung room di tab Bareng dulu, lalu mulai video call sambil dengerin lagu.';
+      updateVoiceUI();
+      announceMic();
+      vcLayout();
+    }
+
+    stopVoice = function () {
+      forceCloseAllVcMedia();
+      _stopVoice();
+      vcLayout();
+    };
+
     function vcAttach(id, s) {
+      if (!vcOn) return;
       let v = document.getElementById('vcv-' + id);
       if (!v) { v = document.createElement('video'); v.id = 'vcv-' + id; v.autoplay = true; v.playsInline = true; document.getElementById('vc-grid').appendChild(v); }
       v.srcObject = s; v.play().catch(() => {});
@@ -2840,7 +2981,17 @@
       document.getElementById('vc-nav-dot').classList.add('hidden');
       updateVoiceUI(); announceMic(); vcLayout(); switchTab('videocall');
     }
-    function vcEnd() { stopVoice(); announceMic(); if (curTab === 'videocall') switchTab(vcPrev); }
+    function vcEnd() {
+      if (canManageRoom()) {
+        connections.forEach(c => {
+          if (c.open) {
+            try { c.send({ type: 'VC_STOP', by: myDisplayName }); } catch (e) {}
+          }
+        });
+      }
+      forceCloseAllVcMedia();
+      if (curTab === 'videocall') switchTab(vcPrev && vcPrev !== 'videocall' ? vcPrev : 'together');
+    }
     function vcMin() { switchTab(vcPrev === 'videocall' ? 'together' : vcPrev); }
     function vcMic() { if (!localStream) return; voiceMuted = !voiceMuted; localStream.getAudioTracks().forEach(t => t.enabled = !voiceMuted); vcBtn('vc-b-mic', voiceMuted, 'mic-off', 'mic'); updateVoiceUI(); announceMic(); }
     function vcCamT() { if (!localStream) return; const t = localStream.getVideoTracks()[0]; if (!t) return; const on = !t.enabled; t.enabled = on; vcRaw?.getVideoTracks().forEach(x => x.enabled = on); vcBtn('vc-b-cam', !on, 'video-off', 'video'); }
@@ -3036,13 +3187,16 @@
     const avatarGrad = n => { let h = 0; for (const c of String(n)) h = (h * 31 + c.charCodeAt(0)) % 360; return `linear-gradient(135deg,hsl(${h} 85% 62%),hsl(${(h + 55) % 360} 85% 55%))`; };
     function seatHTML(m, i, c) {
       const sz = c ? 'w-11 h-11' : 'w-16 h-16', mic = m.mic === 'on' ? '🎙️' : '🔇';
-      return `<div data-seat-id="${esc(m.id)}" onclick="openProfile('${esc(m.id)}')" class="seat flex flex-col items-center gap-1 shrink-0 cursor-pointer active:scale-95 transition">
+      const isSelf = m.id === peer?.id;
+      const canKick = !c && !isSelf && canManageRoom();
+      return `<div data-seat-id="${esc(m.id)}" onclick="openProfile('${esc(m.id)}')" class="seat relative flex flex-col items-center gap-1 shrink-0 cursor-pointer active:scale-95 transition">
+        ${canKick ? `<button type="button" onclick="event.stopPropagation(); kickPeer('${esc(m.id)}')" title="Kick ${esc(m.name)}" class="z-10 px-2 py-0.5 rounded-full bg-red-600/90 hover:bg-red-500 text-[9px] font-extrabold text-white shadow">Kick</button>` : ''}
         <div class="ring relative ${sz} rounded-full p-[3px]" style="background:${avatarGrad(m.name)}">
           <div class="w-full h-full rounded-full bg-zinc-950/40 overflow-hidden flex items-center justify-center ${c ? 'text-base' : 'text-xl'} font-extrabold text-white">${avatarInner(m.id, m.name)}</div>
           ${i === 0 ? '<span class="absolute -top-2.5 left-1/2 -translate-x-1/2 text-sm">👑</span>' : ''}
           <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-zinc-900 border border-white/20 text-[10px] flex items-center justify-center">${mic}</span>
         </div>
-        <div class="text-[11px] font-semibold text-white truncate max-w-[76px]">${esc(m.name)}${m.id === peer?.id ? ' (kamu)' : ''}</div>
+        <div class="text-[11px] font-semibold text-white truncate max-w-[76px]">${esc(m.name)}${isSelf ? ' (kamu)' : ''}</div>
         ${m.role === 'guest' ? '<div class="text-[9px] text-zinc-400 -mt-0.5">tamu</div>' : ''}
       </div>`;
     }
