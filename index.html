@@ -127,14 +127,22 @@
     @media(min-width:768px){#vc.full{left:16rem;bottom:96px}}
     @media(min-width:1024px){#vc.full{left:18rem}}
     #vc.mini{right:12px;bottom:158px;width:104px;height:148px;border-radius:20px;border:1px solid rgba(255,255,255,.25);box-shadow:0 10px 30px rgba(0,0,0,.6)}
-    #vc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(45%,1fr));height:100%}
-    #vc-grid video,#vc-self{width:100%;height:100%;object-fit:cover}
-    #vc-self{position:absolute;right:12px;top:12px;width:28%;max-width:150px;height:26%;border-radius:16px;border:2px solid rgba(255,255,255,.25);background:#18181b}
-    #vc.mini #vc-self,#vc.mini #vc-ctl,#vc.mini #vc-grid video:not(:first-child){display:none}
-    #vc-ctl{position:absolute;bottom:18px;left:0;right:0;display:flex;justify-content:center;gap:10px}
+    #vc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(45%,1fr));width:100%;height:100%;transition:all .25s ease}
+    #vc-grid video,#vc-self{width:100%;height:100%;object-fit:cover;transition:all .25s ease}
+    #vc:not(.swapped) #vc-grid{position:relative;z-index:1}
+    #vc:not(.swapped) #vc-self{position:absolute;right:12px;top:12px;width:28%;max-width:150px;height:26%;border-radius:16px;border:2px solid rgba(255,255,255,.35);background:#18181b;z-index:2;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.55)}
+    #vc.swapped #vc-self{position:relative;width:100%;height:100%;border-radius:0;border:none;z-index:1;cursor:default}
+    #vc.swapped #vc-grid{position:absolute;right:12px;top:12px;width:28%;max-width:150px;height:26%;border-radius:16px;border:2px solid rgba(255,255,255,.35);background:#18181b;z-index:2;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.55);overflow:hidden;display:flex}
+    #vc.swapped #vc-grid video:not(:first-child){display:none}
+    #vc-swap-hint{position:absolute;top:12px;left:12px;z-index:2;padding:5px 10px;border-radius:999px;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);font-size:11px;font-weight:600;color:#fff;display:flex;align-items:center;gap:5px;cursor:pointer}
+    #vc.mini #vc-swap-hint,#vc.mini #vc-ctl{display:none}
+    #vc.mini:not(.swapped) #vc-self,#vc.mini:not(.swapped) #vc-grid video:not(:first-child){display:none}
+    #vc.mini.swapped #vc-grid{display:none}
+    #vc.mini.swapped #vc-self{display:block}
+    #vc-ctl{position:absolute;bottom:18px;left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:3}
     #vc-ctl button{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.16);backdrop-filter:blur(10px);display:grid;place-items:center;color:#fff}
     #vc-ctl button.red{background:#e5484d}#vc-ctl button.off{background:#fff;color:#111}
-    #vc-fx{position:absolute;left:10px;right:10px;bottom:84px;max-height:48%;overflow-y:auto;background:rgba(15,15,20,.9);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:6px 12px 12px;z-index:3}
+    #vc-fx{position:absolute;left:10px;right:10px;bottom:84px;max-height:48%;overflow-y:auto;background:rgba(15,15,20,.9);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:6px 12px 12px;z-index:4}
     #vc.mini #vc-fx{display:none}
     .fxr b{font-size:11px;color:#a1a1aa;display:block;margin:8px 0 6px}
     .fxc{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
@@ -852,7 +860,9 @@
   </div>
 
   <div id="vc" class="hidden mini" onclick="if(curTab!=='videocall')switchTab('videocall')">
-    <div id="vc-grid"></div><video id="vc-self" autoplay playsinline muted></video>
+    <div id="vc-grid" onclick="if(curTab==='videocall'&&document.getElementById('vc').classList.contains('swapped')){event.stopPropagation();vcSwapView(false);}"></div>
+    <video id="vc-self" autoplay playsinline muted onclick="if(curTab==='videocall'&&!document.getElementById('vc').classList.contains('swapped')){event.stopPropagation();vcSwapView(true);}" title="Ketuk untuk tukar layar"></video>
+    <button id="vc-swap-hint" type="button" onclick="event.stopPropagation();vcSwapView()"><i data-lucide="arrow-left-right" class="w-3.5 h-3.5"></i> <span id="vc-swap-label">Layar: Partner</span></button>
     <div id="vc-fx" class="hidden" onclick="event.stopPropagation()">
       <div class="fxr"><b>Efek wajah</b><div class="fxc" id="fx-e"></div></div>
       <div class="fxr"><b>Latar belakang</b><div class="fxc" id="fx-b"></div><label class="fxu">Unggah wallpaper sendiri<input type="file" accept="image/*" hidden onchange="vcWall(this)"></label></div>
@@ -1647,7 +1657,11 @@
     }
 
     const partnerOnline = () => connections.some(c => c.open);
-    const partnerName = () => session === 'nuki' ? 'Nana' : 'Nuki';
+    const partnerName = () => {
+      if (!session || session === 'guest') return 'Nuki / Nana';
+      const pid = USERS[USERS[session].partner].peerId;
+      return (members[pid] && members[pid].name) || (profiles[pid] && profiles[pid].name) || (session === 'nuki' ? 'Nana' : 'Nuki');
+    };
 
     function updatePartnerStatus() {
       if (!session) return;
@@ -1839,10 +1853,19 @@
         mergeChat(data.chat);
       } else if (data.type === 'PROFILE') {
         const prof = cleanProfile(data.profile);
+        const targetId = (isHost && senderConn) ? senderConn.peer : (data.id ? String(data.id) : (senderConn ? senderConn.peer : ''));
+        if (targetId) {
+          profiles[targetId] = prof;
+          if (prof.name && members[targetId]) {
+            let newNm = prof.name;
+            if (!isAdminPeer(targetId) && /^(nuki|nana)$/i.test(newNm)) newNm += ' (tamu)';
+            members[targetId].name = newNm;
+            if (canManageRoom()) broadcastMembers();
+          }
+        }
         if (isHost && senderConn) {
-          profiles[senderConn.peer] = prof;
           connections.forEach(c => { if (c !== senderConn && c.open) c.send({ type: 'PROFILE', id: senderConn.peer, profile: prof }); });
-        } else if (data.id) { profiles[String(data.id)] = prof; }
+        }
         renderSeats();
         if (!profileEditing && !document.getElementById('profile-modal').classList.contains('hidden')) renderProfileModal();
       } else if (data.type === 'EMOTE') {
@@ -1981,13 +2004,19 @@
     function cleanProfile(p) {
       p = p || {};
       const av = typeof p.avatar === 'string' && p.avatar.length < 30000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(p.avatar) ? p.avatar : '';
-      return { bio: String(p.bio == null ? '' : p.bio).slice(0, 160), avatar: av };
+      const nm = typeof p.name === 'string' ? p.name.replace(/[\u0000-\u001f<>&"']/g, '').trim().slice(0, 20) : '';
+      return { name: nm, bio: String(p.bio == null ? '' : p.bio).slice(0, 160), avatar: av };
     }
 
-    let profiles = {}, myProfile = { bio: '', avatar: '' };
+    let profiles = {}, myProfile = { name: '', bio: '', avatar: '' };
     let profileViewId = null, profileEditing = false, editBio = '', editAvatar = '';
     const profKey = () => 'lnmusic_profile_' + (session || 'x');
-    function loadMyProfile() { try { myProfile = cleanProfile(JSON.parse(localStorage.getItem(profKey()) || '{}')); } catch (e) { myProfile = { bio: '', avatar: '' }; } }
+    function loadMyProfile() {
+      try { myProfile = cleanProfile(JSON.parse(localStorage.getItem(profKey()) || '{}')); } catch (e) { myProfile = { name: '', bio: '', avatar: '' }; }
+      if (myProfile.name && session && session !== 'guest') {
+        myDisplayName = myProfile.name;
+      }
+    }
     function saveMyProfile() { try { localStorage.setItem(profKey(), JSON.stringify(myProfile)); } catch (e) {} }
 
     function sendMyProfile() {
@@ -2057,12 +2086,9 @@
         members[peer.id].name = myDisplayName;
         if (canManageRoom()) broadcastMembers();
       }
-      myProfile = cleanProfile({ bio: editBio, avatar: editAvatar });
+      myProfile = cleanProfile({ name: myDisplayName, bio: editBio, avatar: editAvatar });
       saveMyProfile();
       sendMyProfile();
-      connections.forEach(c => {
-        if (c.open) c.send({ type: 'HELLO', name: myDisplayName, profile: myProfile });
-      });
       profileEditing = false;
       renderProfileModal();
       showToast('Profil & nama disimpan!');
@@ -2275,27 +2301,34 @@
         document.body.appendChild(layer);
       }
       const add = (el, ms) => { layer.appendChild(el); setTimeout(() => el.remove(), ms); };
+      // Glowing aura backdrop for received emotes
+      if (!mine) {
+        const glow = document.createElement('div');
+        glow.style.cssText = `position:absolute;inset:0;background:radial-gradient(circle at 50% 45%,${e.cat === 'romantis' ? 'rgba(244,63,94,.26)' : 'rgba(168,85,247,.24)'},transparent 65%);animation:emofade 2s ease-out forwards`;
+        add(glow, 2100);
+      }
       const big = document.createElement('div');
       big.textContent = e.emoji;
-      big.style.cssText = `position:absolute;left:50%;top:45%;font-size:${mine ? 64 : 110}px;line-height:1;animation:emopop 1.8s ease-out forwards`;
-      add(big, 1900);
+      big.style.cssText = `position:absolute;left:50%;top:45%;font-size:${mine ? 76 : 128}px;line-height:1;filter:drop-shadow(0 12px 28px rgba(0,0,0,.6));animation:emopop 2s cubic-bezier(.22,1,.36,1) forwards`;
+      add(big, 2100);
       const chip = document.createElement('div');
       chip.textContent = `${e.emoji} ${label}`;
-      chip.className = 'px-3 py-1.5 rounded-full bg-black/75 border border-white/15 text-xs font-semibold text-white';
-      chip.style.cssText = 'position:absolute;left:50%;top:16%;white-space:nowrap;animation:emofade 2.2s ease-out forwards';
-      add(chip, 2300);
-      const n = mine ? 8 : 16;
+      chip.className = 'px-4 py-1.5 rounded-full bg-zinc-950/85 backdrop-blur-md border border-rose-500/35 text-xs font-bold text-white shadow-xl';
+      chip.style.cssText = 'position:absolute;left:50%;top:15%;white-space:nowrap;animation:emofade 2.4s ease-out forwards';
+      add(chip, 2500);
+      const n = mine ? 12 : 24;
+      const extras = e.cat === 'romantis' ? ['💖', '✨', '💕'] : ['✨', '⭐', '💫'];
       for (let i = 0; i < n; i++) {
         const pt = document.createElement('div');
-        pt.textContent = (e.cat === 'romantis' && i % 3 === 0) ? '💖' : e.emoji;
-        const sz = 20 + Math.random() * 22;
+        pt.textContent = i % 3 === 0 ? extras[i % extras.length] : e.emoji;
+        const sz = 20 + Math.random() * 26;
         if (e.cat === 'romantis') {
-          pt.style.cssText = `position:absolute;left:${8 + Math.random() * 84}%;top:92%;font-size:${sz}px;--dx:${(Math.random() - .5) * 120}px;animation:emorise ${1.8 + Math.random() * 1.2}s ease-out ${Math.random() * .5}s forwards;opacity:0`;
+          pt.style.cssText = `position:absolute;left:${6 + Math.random() * 88}%;top:94%;font-size:${sz}px;--dx:${(Math.random() - .5) * 140}px;animation:emorise ${1.9 + Math.random() * 1.3}s ease-out ${Math.random() * .45}s forwards;opacity:0`;
         } else {
-          const ang = Math.random() * Math.PI * 2, dist = 90 + Math.random() * 170;
-          pt.style.cssText = `position:absolute;left:50%;top:45%;font-size:${sz}px;--dx:${Math.cos(ang) * dist}px;--dy:${Math.sin(ang) * dist}px;--rot:${(Math.random() - .5) * 120}deg;animation:emoburst ${1 + Math.random() * .8}s ease-out forwards`;
+          const ang = Math.random() * Math.PI * 2, dist = 100 + Math.random() * 190;
+          pt.style.cssText = `position:absolute;left:50%;top:45%;font-size:${sz}px;--dx:${Math.cos(ang) * dist}px;--dy:${Math.sin(ang) * dist}px;--rot:${(Math.random() - .5) * 180}deg;animation:emoburst ${1.1 + Math.random() * .8}s cubic-bezier(.16,1,.3,1) forwards`;
         }
-        add(pt, 3300);
+        add(pt, 3500);
       }
     }
 
@@ -2721,7 +2754,15 @@
       _attachVoice(id, s);
     };
     dropVoice = function (id) { document.getElementById('vcv-' + id)?.remove(); _dropVoice(id); };
-    stopVoice = function () { vcPipeStop(true); if (vcRaw) vcRaw.getTracks().forEach(t => t.stop()); vcRaw = null; document.getElementById('vc-fx')?.classList.add('hidden'); _stopVoice(); vcOn = false; document.getElementById('vc-grid').innerHTML = ''; vcLayout(); };
+    let vcSwapped = false;
+    function vcSwapView(force) {
+      const el = document.getElementById('vc'); if (!el) return;
+      vcSwapped = typeof force === 'boolean' ? force : !vcSwapped;
+      el.classList.toggle('swapped', vcSwapped);
+      const lbl = document.getElementById('vc-swap-label');
+      if (lbl) lbl.textContent = vcSwapped ? 'Layar: Kamu' : 'Layar: Partner';
+    }
+    stopVoice = function () { vcPipeStop(true); if (vcRaw) vcRaw.getTracks().forEach(t => t.stop()); vcRaw = null; document.getElementById('vc-fx')?.classList.add('hidden'); _stopVoice(); vcOn = false; vcSwapped = false; document.getElementById('vc')?.classList.remove('swapped'); document.getElementById('vc-grid').innerHTML = ''; vcLayout(); };
     function vcAttach(id, s) {
       let v = document.getElementById('vcv-' + id);
       if (!v) { v = document.createElement('video'); v.id = 'vcv-' + id; v.autoplay = true; v.playsInline = true; document.getElementById('vc-grid').appendChild(v); }
