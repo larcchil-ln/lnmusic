@@ -833,12 +833,8 @@
           Mendukung Spotify-style Full Player, Media Session Lock Screen, Offline MP3, dan Real-Time Watch/Listen Together.
         </div>
       </div>
-      <div>
-        <label class="block text-xs font-semibold text-zinc-300 mb-1.5">YouTube Data API v3 Key (Opsional)</label>
-        <input type="text" id="yt-api-key-input" placeholder="AIzaSy... (Kosongkan untuk pencarian otomatis gratis)" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-none" />
-      </div>
       <div class="flex justify-end gap-2 pt-2">
-        <button onclick="saveSettings()" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-semibold text-white">Simpan Pengaturan</button>
+        <button onclick="closeModals()" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-semibold text-white">Tutup</button>
       </div>
     </div>
   </div>
@@ -1075,26 +1071,18 @@
     }
 
     async function fetchSearchResults(query, mode = 'music', short = false) {
-      const customApiKey = localStorage.getItem('lnmusic_yt_apikey');
-      if (customApiKey) {
-        try {
-          const catParam = mode === 'music' ? '&videoCategoryId=10' : '';
-          const durParam = short ? '&videoDuration=short' : '';
-          const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video${catParam}&maxResults=12${durParam}&q=${encodeURIComponent(query)}&key=${customApiKey}`);
+      // 1) Server Vercel (/api/search) memakai YouTube Data API, key aman di environment variable
+      try {
+        const ctrl = new AbortController(), tm = setTimeout(() => ctrl.abort(), 6000);
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&mode=${mode}${short ? '&short=1' : ''}`, { signal: ctrl.signal });
+        clearTimeout(tm);
+        if (res.ok) {
           const data = await res.json();
-          if (data.items?.length) {
-            return data.items.map(item => ({
-              id: item.id.videoId,
-              title: item.snippet.title,
-              artist: item.snippet.channelTitle,
-              thumb: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url,
-              type: 'youtube',
-              isVideo: mode === 'video'
-            }));
-          }
-        } catch (e) {}
-      }
+          if (data.items?.length) return data.items;
+        }
+      } catch (e) {}
 
+      // 2) Cadangan: Piped lalu Invidious (jika kuota YouTube habis / server error)
       const filterParam = mode === 'music' ? 'music_songs' : 'videos';
       for (const instance of pipedInstances) {
         try {
@@ -2679,11 +2667,10 @@
     const setTopTab = k => { topTab = k; renderShelves(); };
     const playTop = i => playTrackFromList(topList(), i, true);
     async function fetchChart(region, q) {
-      const k = localStorage.getItem('lnmusic_yt_apikey');
-      if (k) { try {
-        const d = await (await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet&chart=mostPopular&videoCategoryId=10&regionCode=${region}&maxResults=50&key=${k}`)).json();
-        if (d.items?.length) return d.items.map(i => ({ id: i.id, title: i.snippet.title, artist: i.snippet.channelTitle.replace(' - Topic', ''), thumb: i.snippet.thumbnails?.high?.url || i.snippet.thumbnails?.medium?.url, type: 'youtube', isVideo: false }));
-      } catch (e) {} }
+      try {
+        const d = await (await fetch(`/api/search?chart=1&region=${region}`)).json();
+        if (d.items?.length) return d.items;
+      } catch (e) {}
       const rs = await Promise.all([q, q + ' official audio', q + ' terpopuler', q + ' viral'].map(x => fetchSearchResults(x, 'music')));
       const seen = new Set(); return rs.flat().filter(t => t && t.id && !seen.has(t.id) && seen.add(t.id)).slice(0, 50);
     }
@@ -3276,17 +3263,11 @@
     }
 
     function openSettingsModal() {
-      document.getElementById('yt-api-key-input').value = localStorage.getItem('lnmusic_yt_apikey') || '';
       document.getElementById('modal-settings').classList.remove('hidden');
     }
 
-    function saveSettings() {
-      const key = document.getElementById('yt-api-key-input').value.trim();
-      if (key) localStorage.setItem('lnmusic_yt_apikey', key);
-      else localStorage.removeItem('lnmusic_yt_apikey');
-      closeModals();
-      showToast('Pengaturan disimpan!');
-    }
+    // Key YouTube kini ada di server (Vercel). Hapus sisa key lama dari browser.
+    try { localStorage.removeItem('lnmusic_yt_apikey'); } catch (e) {}
 
     function closeModals() {
       document.getElementById('modal-create-playlist').classList.add('hidden');
