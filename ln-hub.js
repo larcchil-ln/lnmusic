@@ -114,7 +114,7 @@
       const a = JSON.parse(localStorage.getItem(KEY) || '[]');
       if (!Array.isArray(a)) return [];
       return a.filter(x => x && typeof x.url === 'string' && PLAT[x.platform] && parseLink(x.url).ok)
-        .map(x => ({ id: hashId(x.url), url: x.url, platform: x.platform, ytId: x.ytId || '', music: !!x.music, title: String(x.title || '').slice(0, 120) || PLAT[x.platform].label, known: !!x.known, artist: String(x.artist || '').slice(0, 80), fav: !!x.fav, ts: +x.ts || Date.now(), n: +x.n || 0 }));
+        .map(x => ({ id: hashId(x.url), url: x.url, platform: x.platform, ytId: x.ytId || '', music: !!x.music, title: String(x.title || '').slice(0, 120) || PLAT[x.platform].label, known: !!x.known, artist: String(x.artist || '').slice(0, 80), vid: /^\d{8,25}$/.test(x.vid || '') ? x.vid : '', fav: !!x.fav, ts: +x.ts || Date.now(), n: +x.n || 0 }));
     } catch (e) { return []; }
   }
   function saveItems() { try { localStorage.setItem(KEY, JSON.stringify(items)); } catch (e) {} }
@@ -123,7 +123,7 @@
     const id = hashId(c.url);
     let it = items.find(x => x.id === id);
     if (!it) {
-      it = { id, url: c.url, platform: c.platform, ytId: c.ytId || '', music: !!c.music, title: c.title, known: !!c.known, artist: c.artist || '', fav: false, ts: Date.now(), n: 0 };
+      it = { id, url: c.url, platform: c.platform, ytId: c.ytId || '', music: !!c.music, title: c.title, known: !!c.known, artist: c.artist || '', vid: c.vid || '', fav: false, ts: Date.now(), n: 0 };
       items.unshift(it);
     } else if (c.edited || c.known) {
       it.title = c.title; it.known = true; if (c.artist) it.artist = c.artist;
@@ -198,6 +198,85 @@
     renderList(); renderCard();
   }
 
+
+  // ---------------------------------------------------------------------------
+  // 3b. PUTAR DI DALAM APLIKASI (embed resmi tiap platform, hanya untuk konten publik)
+  // ---------------------------------------------------------------------------
+  let view = null; // { c, src, w, h }
+
+  function embedSync(c) {
+    let u; try { u = new URL(c.url); } catch (e) { return null; }
+    const segs = u.pathname.split('/').filter(Boolean);
+    if (c.platform === 'tiktok') {
+      const id = c.vid || (u.pathname.match(/\/video\/(\d{8,25})/) || [])[1] || (u.pathname.match(/\/v\/(\d{8,25})/) || [])[1];
+      return id ? { src: 'https://www.tiktok.com/embed/v2/' + id, w: 'min(100%,340px)', h: 'min(720px,78vh)' } : null;
+    }
+    if (c.platform === 'instagram') {
+      const i = segs.findIndex(s => ['reel', 'reels', 'p', 'tv'].includes(s));
+      const code = i >= 0 ? segs[i + 1] : '';
+      if (!/^[\w-]{5,20}$/.test(code || '')) return null;
+      return { src: 'https://www.instagram.com/' + (segs[i] === 'reels' ? 'reel' : segs[i]) + '/' + code + '/embed/', w: 'min(100%,400px)', h: 'min(720px,80vh)' };
+    }
+    if (c.platform === 'fbreels') {
+      return { src: 'https://www.facebook.com/plugins/video.php?show_text=false&width=360&href=' + encodeURIComponent(c.url), w: 'min(100%,360px)', h: 'min(640px,78vh)' };
+    }
+    if (c.platform === 'telegram') {
+      const ch = segs[0] || '', post = segs[1] || '';
+      if (/^[A-Za-z]\w{3,31}$/.test(ch) && /^\d{1,12}$/.test(post)) return { src: 'https://t.me/' + ch + '/' + post + '?embed=1&mode=tme', w: 'min(100%,420px)', h: '500px' };
+    }
+    return null;
+  }
+  const needsResolve = c => c.platform === 'tiktok' && !embedSync(c) && /^https:\/\/(vt|vm)\.tiktok\.com\/|^https:\/\/(www\.)?tiktok\.com\/t\//.test(c.url);
+  const canEmbed = c => c.platform !== 'youtube' && !!(embedSync(c) || needsResolve(c));
+
+  function pauseMusic() {
+    try { if (typeof isPlaying !== 'undefined' && isPlaying && typeof togglePlay === 'function') togglePlay(); } catch (e) {}
+  }
+
+  async function actEmbed(c) {
+    let e = embedSync(c);
+    if (!e && needsResolve(c)) {
+      toast('Menyiapkan video...');
+      try {
+        const r = await fetch('/api/resolve?u=' + encodeURIComponent(c.url));
+        const d = await r.json();
+        if (r.ok && /^\d{8,25}$/.test(d.id || '')) c.vid = d.id;
+      } catch (err) {}
+      e = embedSync(c);
+    }
+    if (!e) return toast('Link ini tidak bisa diputar di sini. Pakai Buka di App.');
+    pauseMusic();
+    upsert(c, { vid: c.vid || '' });
+    view = { c: { url: c.url, platform: c.platform, title: c.title }, src: e.src, w: e.w, h: e.h };
+    renderViewer(); renderList();
+    const box = $('#hub-viewer'); if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function closeViewer() { view = null; renderViewer(); }
+
+  function renderViewer() {
+    const box = $('#hub-viewer'); if (!box) return;
+    if (!view) { box.innerHTML = ''; return; }
+    const P = PLAT[view.c.platform];
+    box.innerHTML = `
+      <div class="rounded-3xl border border-white/10 bg-black/40 p-3 space-y-2.5">
+        <div class="flex items-center gap-2">
+          <span class="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${P.badge}">${esc(P.label)}</span>
+          <span class="flex-1 min-w-0 truncate text-xs font-semibold text-white">${esc(view.c.title)}</span>
+          <button data-act="vopen" class="shrink-0 px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-[11px] font-semibold text-white">Buka di App</button>
+          <button data-act="vclose" class="shrink-0 px-2.5 py-1.5 rounded-lg bg-red-500/20 text-[11px] font-semibold text-red-200">✕ Tutup</button>
+        </div>
+        <div class="grid place-items-center">
+          <iframe src="${esc(view.src)}" title="${esc(P.label)}" loading="lazy" allowfullscreen
+            allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+            referrerpolicy="strict-origin-when-cross-origin"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-presentation allow-forms"
+            style="width:${view.w};height:${view.h};border:0;border-radius:16px;background:#000"></iframe>
+        </div>
+        <p class="text-[10px] text-zinc-500 text-center">Tidak muncul? Konten mungkin privat atau dibatasi pemiliknya. Pakai Buka di App.</p>
+      </div>`;
+  }
+
   // judul YouTube lewat oEmbed resmi (opsional; jika gagal, judul bawaan tetap dipakai)
   async function fetchYtTitle(c) {
     try {
@@ -241,6 +320,8 @@
         <div id="hub-card"></div>
       </div>
 
+      <div id="hub-viewer"></div>
+
       <div class="space-y-3">
         <div class="flex items-center justify-between gap-2">
           <h4 class="text-sm font-extrabold">Koleksi &amp; Riwayat</h4>
@@ -281,6 +362,7 @@
           ${cur.ytId ? `
           <button data-act="play" class="py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white">▶ Putar di Player</button>
           <button data-act="queue" class="py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white">+ Antrean Room</button>` : ''}
+          ${canEmbed(cur) ? `<button data-act="embed" class="col-span-2 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white">▶ Putar di Sini</button>` : ''}
           <button data-act="fav" class="py-2.5 rounded-xl ${ex && ex.fav ? 'bg-amber-500/25 text-amber-200' : 'bg-white/10 text-white'} hover:bg-white/15 text-xs font-bold">${ex && ex.fav ? '⭐ Tersimpan' : '☆ Simpan Koleksi'}</button>
           <button data-act="chat" class="py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white">Kirim ke Chat</button>
         </div>
@@ -325,6 +407,7 @@
         <div class="flex flex-wrap gap-1.5">
           <button data-item="open" class="${btn} bg-rose-600/30">Buka</button>
           ${it.ytId ? `<button data-item="play" class="${btn}">▶ Putar</button><button data-item="queue" class="${btn}">+ Antre</button>` : ''}
+          ${canEmbed(it) ? `<button data-item="embed" class="${btn}">▶ Putar</button>` : ''}
           <button data-item="chat" class="${btn}">Chat</button>
           <button data-item="fav" class="${btn} ${it.fav ? 'bg-amber-500/25 text-amber-200' : ''}">${it.fav ? '⭐' : '☆'}</button>
           <button data-item="rename" class="${btn}">✎</button>
@@ -358,6 +441,7 @@
     const it = items.find(x => x.id === id); if (!it) return;
     if (act === 'open') { it.n = (it.n || 0) + 1; it.ts = Date.now(); saveItems(); openUrl(it.url); renderList(); }
     else if (act === 'play') actPlay(it);
+    else if (act === 'embed') actEmbed(it);
     else if (act === 'queue') actQueue(it);
     else if (act === 'chat') actSendChat(it);
     else if (act === 'fav') { it.fav = !it.fav; saveItems(); renderList(); renderCard(); }
@@ -389,8 +473,13 @@
       } else if (act === 'clear') {
         if (!confirm('Hapus semua riwayat? Link di Koleksi (⭐) tetap disimpan.')) return;
         items = items.filter(x => x.fav); saveItems(); renderList();
+      } else if (act === 'vclose') {
+        closeViewer();
+      } else if (act === 'vopen') {
+        if (view) openUrl(view.c.url);
       } else if (cur) {
-        if (act === 'open') actOpen(cur);
+        if (act === 'embed') actEmbed(cur);
+        else if (act === 'open') actOpen(cur);
         else if (act === 'play') actPlay(cur);
         else if (act === 'queue') actQueue(cur);
         else if (act === 'fav') actFav(cur);
@@ -472,6 +561,8 @@
   function init() {
     if (!build()) return;
     bind(); renderCard(); renderList(); hookChat();
+    // pindah ke tab lain = video di Hub dihentikan (supaya suaranya tidak tetap jalan)
+    try { new MutationObserver(() => { if (root().classList.contains('hidden') && view) closeViewer(); }).observe(root(), { attributes: true, attributeFilter: ['class'] }); } catch (e) {}
     try { window.lucide && lucide.createIcons(); } catch (e) {}
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
