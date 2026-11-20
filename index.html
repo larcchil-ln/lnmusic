@@ -1501,11 +1501,21 @@
     }
 
     let connectLoopTimer = null, pendingConn = null, pendingAt = 0;
-    function teardownPeer() {
-      clearInterval(connectLoopTimer); pendingConn = null;
-      const p = peer; peer = null; connections = [];
+        function teardownPeer() {
+      clearInterval(connectLoopTimer);
+      pendingConn = null;
+      pendingAt = 0;
+      const p = peer;
+      const oldConns = connections.slice();
+      peer = null;
+      connections = [];
+      oldConns.forEach(c => {
+        c._replaced = true;
+        try { c.close(); } catch (e) {}
+      });
       try { p && p.destroy(); } catch (e) {}
     }
+
 
     function setRoomPill(text, ok) {
       const pill = document.getElementById('room-status-pill');
@@ -1684,7 +1694,15 @@
 
       p.on('open', () => {
         if (peer !== p) return;
-        if (!isHost) guestConnectLoop(p);
+        if (isHost) {
+          if (p.id && !members[p.id]) {
+            members[p.id] = { name: myDisplayName, seat: 0, mic: 'off', role: 'admin' };
+          }
+          broadcastMembers();
+          updatePartnerStatus();
+        } else {
+          guestConnectLoop(p);
+        }
       });
       p.on('connection', (conn) => { if (peer === p) setupPeerConnection(conn); });
       p.on('error', (err) => {
@@ -1727,6 +1745,7 @@
         connections.push(conn);
         updatePartnerStatus();
         conn.send({ type: 'HELLO', name: myDisplayName, profile: myProfile });
+        if (isHost) broadcastMembers();
         if (session !== 'guest') {
           conn.send(buildState());
           if (!(isHost && !isAdminPeer(conn.peer))) sendHistory(conn);
