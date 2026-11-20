@@ -27,8 +27,6 @@
   };
 
   let state = Object.assign({}, defaultState, JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'));
-  let sleepInterval = null;
-  let sleepRemaining = 0;
   let mediaRecorder = null;
   let audioChunks = [];
   let isRecording = false;
@@ -41,6 +39,10 @@
       console.warn('Penyimpanan lokal penuh:', e);
     }
   }
+
+  const escx = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const okMedia = m => m && ((m.kind === 'image' && /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+\/=]+$/.test(m.data || '')) ||
+    (m.kind === 'audio' && /^data:audio\/[a-z0-9.+-]+(;codecs=[a-z0-9.,-]+)?;base64,[A-Za-z0-9+\/=]+$/i.test(m.data || '')));
 
   function getActiveUser() {
     if (typeof myDisplayName !== 'undefined' && myDisplayName) return myDisplayName === 'Nuki' ? 'Leo' : myDisplayName;
@@ -230,14 +232,14 @@
   function renderMediaChatsIntoContainers() {
     if (!state.cloudMediaChats.length) return;
     const me = getActiveUser();
-    const html = state.cloudMediaChats.slice(-40).map(msg => {
+    const html = state.cloudMediaChats.filter(okMedia).slice(-40).map(msg => {
       const isMe = msg.sender === me;
       const body = msg.kind === 'image'
         ? `<img src="${msg.data}" class="max-w-[180px] rounded-xl border border-white/15 mt-1 cursor-pointer" onclick="window.open(this.src)" />`
         : `<audio controls src="${msg.data}" class="h-8 max-w-[205px] mt-1"></audio>`;
       return `
         <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} mt-1.5">
-          <span class="text-[10px] text-zinc-400 mb-0.5">${msg.sender} • ${msg.time}</span>
+          <span class="text-[10px] text-zinc-400 mb-0.5">${escx(msg.sender)} • ${escx(msg.time)}</span>
           <div class="px-2.5 py-2 rounded-2xl max-w-[82%] ${isMe ? 'bg-rose-600/35 border border-rose-500/30' : 'bg-white/10 border border-white/10'}">
             ${body}
           </div>
@@ -262,7 +264,7 @@
   // 4. UI INJECTION
   function injectUI() {
     const mainContainer = document.querySelector('.max-w-5xl');
-    if (!mainContainer || document.getElementById('ln-special-hub')) return;
+    if (!mainContainer || document.getElementById('ln-lagu-kita')) return;
 
     const hub = document.createElement('div');
     hub.id = 'ln-special-hub';
@@ -272,51 +274,7 @@
         <p id="ln-auto-greeting-text" class="text-xs md:text-sm font-bold text-white"></p>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div class="lg:col-span-7 glass rounded-2xl p-4 md:p-5 border border-rose-500/20 flex flex-col justify-between gap-3">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-rose-400"><i data-lucide="calendar-heart" class="w-3.5 h-3.5 inline -mt-0.5"></i> Hari Spesial Leo &amp; Nana</span>
-            <button onclick="LNExtras.openConfigModal()" class="text-[11px] text-zinc-400 hover:text-white underline">Atur Ultah &amp; Cloud</button>
-          </div>
-          <div class="grid grid-cols-3 gap-2.5 text-center">
-            <div class="p-3 rounded-xl bg-white/[0.04] border border-white/10">
-              <div id="ln-days-together" class="text-lg md:text-2xl font-extrabold text-rose-400">4 Hari</div>
-              <div class="text-[10px] text-zinc-400 mt-0.5">Jadian (15 Nov 2026)</div>
-            </div>
-            <div class="p-3 rounded-xl bg-white/[0.04] border border-white/10">
-              <div id="ln-anniv-countdown" class="text-lg md:text-2xl font-extrabold text-white">-</div>
-              <div class="text-[10px] text-zinc-400 mt-0.5">Menuju Anniversary</div>
-            </div>
-            <div class="p-3 rounded-xl bg-white/[0.04] border border-white/10">
-              <div id="ln-bday-countdown" class="text-lg md:text-2xl font-extrabold text-violet-300">-</div>
-              <div id="ln-bday-label" class="text-[10px] text-zinc-400 mt-0.5">Ulang Tahun</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="lg:col-span-5 glass rounded-2xl p-4 md:p-5 border border-violet-500/20 flex flex-col justify-between gap-3">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-violet-300"><i data-lucide="smile" class="w-3.5 h-3.5 inline -mt-0.5"></i> Mood Hari Ini</span>
-            <span id="ln-cloud-status"></span>
-          </div>
-          <div id="ln-mood-display" class="grid grid-cols-2 gap-2 text-xs"></div>
-          <div class="flex gap-1.5 pt-1">
-            <select id="ln-mood-emoji" class="bg-zinc-950 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white">
-              <option value="🥰">🥰 Kangen</option>
-              <option value="🎧">🎧 Santai</option>
-              <option value="😴">😴 Ngantuk</option>
-              <option value="🥺">🥺 Butuh Peluk</option>
-              <option value="🔥">🔥 Semangat</option>
-              <option value="😢">😢 Sedih</option>
-            </select>
-            <input id="ln-mood-text" type="text" maxlength="40" placeholder="Update status mood..." class="flex-1 min-w-0 bg-zinc-950 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-rose-500" />
-            <button onclick="LNExtras.updateMood()" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white shrink-0">Update</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div id="ln-lagu-kita" class="glass rounded-2xl p-4 md:p-5 border border-white/10 space-y-3">
+      <div id="ln-lagu-kita" class="glass rounded-2xl p-4 md:p-5 border border-white/10 space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h4 class="text-sm font-extrabold text-white"><i data-lucide="heart" class="w-4 h-4 text-rose-400 inline -mt-0.5"></i> Lagu Kita</h4>
@@ -335,47 +293,14 @@
 
           <div id="ln-our-songs-list" class="space-y-2 max-h-96 overflow-y-auto pr-1"></div>
         </div>
-
-        <div class="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="glass rounded-2xl p-4 border border-white/10 space-y-2.5">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-extrabold text-white"><i data-lucide="moon-star" class="w-4 h-4 inline -mt-0.5"></i> Sleep Timer</span>
-              <span id="ln-sleep-badge" class="text-[11px] text-zinc-400">Nonaktif</span>
-            </div>
-            <p class="text-[11px] text-zinc-400">Volume lagu mengecil perlahan sampai berhenti saat ketiduran.</p>
-            <div class="flex flex-wrap gap-1.5">
-              <button onclick="LNExtras.startSleepTimer(15)" class="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-rose-500/25 text-xs font-semibold">15m</button>
-              <button onclick="LNExtras.startSleepTimer(30)" class="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-rose-500/25 text-xs font-semibold">30m</button>
-              <button onclick="LNExtras.startSleepTimer(45)" class="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-rose-500/25 text-xs font-semibold">45m</button>
-              <button onclick="LNExtras.startSleepTimer(60)" class="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-rose-500/25 text-xs font-semibold">60m</button>
-              <button onclick="LNExtras.cancelSleepTimer()" class="px-2.5 py-1.5 rounded-lg bg-red-500/20 text-red-300 text-xs font-semibold">Stop</button>
-            </div>
-          </div>
-
-          <div class="glass rounded-2xl p-4 border border-violet-500/25 space-y-2.5">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-extrabold text-violet-300"><i data-lucide="gamepad-2" class="w-4 h-4 inline -mt-0.5"></i> Game Tebak Lagu</span>
-              <span id="ln-quiz-score" class="text-[11px] font-bold text-zinc-300">Leo 0 - 0 Nana</span>
-            </div>
-            <div id="ln-quiz-area" class="text-xs text-zinc-300 space-y-2">
-              <p class="text-[11px] text-zinc-400">Tebak judul lagu dari potongan lirik!</p>
-              <button onclick="LNExtras.nextQuiz()" class="w-full py-2 rounded-xl bg-gradient-to-r from-violet-600 to-rose-600 text-xs font-bold text-white">Mulai Tebak Lagu</button>
-            </div>
-          </div>
-        </div>
-      </div>
     `;
 
     const heroBanner = mainContainer.children[0];
-    const kitaTab = document.getElementById('tab-kita'), plTab = document.getElementById('tab-playlists');
+    const plTab = document.getElementById('tab-playlists');
     const greet = hub.querySelector('#ln-auto-greeting'), lagu = hub.querySelector('#ln-lagu-kita');
-    if (kitaTab && plTab && lagu) {
-      // sapaan spesial tetap muncul di beranda, sisanya masuk tab Kita, Lagu Kita masuk tab Playlist
-      if (heroBanner) heroBanner.insertAdjacentElement('afterend', greet); else mainContainer.prepend(greet);
-      plTab.insertBefore(lagu, plTab.children[1] || null);
-      kitaTab.appendChild(hub);
-    } else if (heroBanner) heroBanner.insertAdjacentElement('afterend', hub);
-    else mainContainer.prepend(hub);
+    // sapaan spesial tetap muncul di beranda, Lagu Kita masuk tab Playlist
+    if (heroBanner) heroBanner.insertAdjacentElement('afterend', greet); else mainContainer.prepend(greet);
+    if (plTab) plTab.insertBefore(lagu, plTab.children[1] || null); else mainContainer.appendChild(lagu);
     try { window.lucide && lucide.createIcons(); } catch (e) {}
 
     ['room-chat-input', 'fs-room-chat-input'].forEach(inputId => {
@@ -441,19 +366,9 @@
 
   function renderAllExtras() {
     const stats = getSpecialDayStats();
-    const elDays = document.getElementById('ln-days-together');
-    const elAnniv = document.getElementById('ln-anniv-countdown');
-    const elBday = document.getElementById('ln-bday-countdown');
-    const elBdayLbl = document.getElementById('ln-bday-label');
     const elGreet = document.getElementById('ln-auto-greeting');
     const elGreetTxt = document.getElementById('ln-auto-greeting-text');
 
-    if (elDays) elDays.textContent = `${stats.daysTogether} Hari`;
-    if (elAnniv) elAnniv.textContent = stats.daysToAnniv === 0 ? 'Hari Ini! 🎉' : `${stats.daysToAnniv} Hari Lagi`;
-    if (elBday && stats.nearestBday) {
-      elBday.textContent = stats.nearestBday.isToday ? 'Hari Ini! 🎂' : `${stats.nearestBday.days} Hari`;
-      elBdayLbl.textContent = `Ultah ${stats.nearestBday.name}`;
-    }
     if (elGreet && elGreetTxt) {
       if (stats.autoGreeting) {
         elGreet.classList.remove('hidden');
@@ -461,22 +376,6 @@
       } else {
         elGreet.classList.add('hidden');
       }
-    }
-
-    const moodBox = document.getElementById('ln-mood-display');
-    if (moodBox) {
-      moodBox.innerHTML = ['Leo', 'Nana'].map(person => {
-        const m = state.moods[person] || { emoji: '😊', text: '-' };
-        return `
-          <div class="p-2.5 rounded-xl bg-white/[0.04] border border-white/10">
-            <div class="flex items-center justify-between">
-              <span class="font-bold text-rose-300">${person}</span>
-              <span class="text-base">${m.emoji}</span>
-            </div>
-            <p class="text-[11px] text-zinc-200 truncate mt-0.5">${m.text}</p>
-          </div>
-        `;
-      }).join('');
     }
 
     const favCnt = document.getElementById('ln-fav-count');
@@ -493,15 +392,15 @@
         listBox.innerHTML = items.map((item, idx) => `
           <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 transition">
             <div class="min-w-0 flex-1">
-              <div class="text-xs font-semibold text-white truncate">${item.title} ${item.artist ? `- ${item.artist}` : ''}</div>
+              <div class="text-xs font-semibold text-white truncate">${escx(item.title)} ${item.artist ? `- ${escx(item.artist)}` : ''}</div>
               <div class="text-[10px] text-zinc-400">
                 ${currentOurTab === 'fav'
-                  ? `Ditambahkan oleh <span class="text-rose-300 font-bold">${item.addedBy}</span> • ${item.time || ''}`
+                  ? `Ditambahkan oleh <span class="text-rose-300 font-bold">${escx(item.addedBy)}</span> • ${item.time || ''}`
                   : `Diputar bareng • ${item.time || ''}`}
               </div>
             </div>
             <div class="flex items-center gap-1.5 shrink-0">
-              <button onclick="LNExtras.playSongItem('${item.id || ''}', '${(item.title || '').replace(/'/g, "\'")}', '${(item.artist || 'LNMusic').replace(/'/g, "\'")}')" class="px-2.5 py-1 rounded-lg bg-rose-600/80 hover:bg-rose-500 text-[11px] font-bold text-white">Putar</button>
+              <button onclick="LNExtras.playSongAt(${idx})" class="px-2.5 py-1 rounded-lg bg-rose-600/80 hover:bg-rose-500 text-[11px] font-bold text-white">Putar</button>
               ${currentOurTab === 'fav' ? `<button onclick="LNExtras.removeFav(${idx})" class="p-1 text-zinc-500 hover:text-red-400 text-xs">✕</button>` : ''}
             </div>
           </div>
@@ -510,9 +409,6 @@
     }
 
     renderMediaChatsIntoContainers();
-
-    const scoreEl = document.getElementById('ln-quiz-score');
-    if (scoreEl) scoreEl.textContent = `Leo ${state.gameScore.Leo} - ${state.gameScore.Nana} Nana`;
 
     updateCloudBadge(Boolean(state.upstashUrl && state.upstashToken));
   }
@@ -593,90 +489,6 @@
     }
   }
 
-  // 6. SLEEP TIMER BARENG
-  function startSleepTimer(minutes) {
-    cancelSleepTimer();
-    sleepRemaining = minutes * 60;
-    const totalSeconds = sleepRemaining;
-    const badge = document.getElementById('ln-sleep-badge');
-
-    sleepInterval = setInterval(() => {
-      sleepRemaining--;
-      const m = Math.floor(sleepRemaining / 60);
-      const s = sleepRemaining % 60;
-      if (badge) badge.textContent = `${m}:${s < 10 ? '0' : ''}${s} (Fade-out)`;
-
-      const ratio = Math.max(0, sleepRemaining / Math.min(totalSeconds, 120));
-      const targetVol = Math.round(ratio * 85);
-
-      if (typeof window.setVolume === 'function') {
-        window.setVolume(targetVol);
-      }
-
-      if (sleepRemaining <= 0) {
-        cancelSleepTimer();
-        if (typeof htmlAudio !== 'undefined') htmlAudio.pause();
-        if (typeof ytPlayer !== 'undefined' && ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
-          ytPlayer.pauseVideo();
-        }
-        if (typeof window.setVolume === 'function') window.setVolume(85);
-        if (badge) badge.textContent = 'Selesai (Selamat Tidur 💤)';
-      }
-    }, 1000);
-  }
-
-  function cancelSleepTimer() {
-    if (sleepInterval) clearInterval(sleepInterval);
-    sleepInterval = null;
-    const badge = document.getElementById('ln-sleep-badge');
-    if (badge) badge.textContent = 'Nonaktif';
-  }
-
-  // 7. MINI GAME TEBAK LAGU
-  const QUIZ_BANK = [
-    { clue: '"Kau begitu sempurna, di mataku kau begitu indah..."', options: ['Sempurna - Andra & The Backbone', 'Kangen - Dewa 19', 'Anugerah Terindah - Sheila On 7'], ans: 0 },
-    { clue: '"Lembaran foto hitam putih, aku coba ingat lagi warna bajumu kala itu..."', options: ['Hati-Hati di Jalan - Tulus', 'Monokrom - Tulus', 'Pamit - Tulus'], ans: 1 },
-    { clue: '"Bertaut nyawa kita berdua, memeluk erat semua luka..."', options: ['Bertaut - Nadin Amizah', 'Sorai - Nadin Amizah', 'Runtuh - Feby Putri'], ans: 0 },
-    { clue: '"Evaluasi diri, pelan-pelan berjalan lagi..."', options: ['Secukupnya - Hindia', 'Evaluasi - Hindia', 'Rumah ke Rumah - Hindia'], ans: 1 },
-    { clue: '"Ku ingin saat ini, engkau ada di sini, tertawa bersamaku..."', options: ['Komang - Raim Laode', 'Akad - Payung Teduh', 'Celengan Rindu - Fiersa Besari'], ans: 0 }
-  ];
-
-  function nextQuiz() {
-    const q = QUIZ_BANK[Math.floor(Math.random() * QUIZ_BANK.length)];
-    state.activeQuiz = q;
-    const area = document.getElementById('ln-quiz-area');
-    if (!area) return;
-    area.innerHTML = `
-      <div class="p-2.5 rounded-xl bg-white/5 border border-white/10 italic text-rose-200">${q.clue}</div>
-      <div class="space-y-1.5">
-        ${q.options.map((opt, i) => `
-          <button onclick="LNExtras.answerQuiz(${i})" class="w-full text-left px-3 py-2 rounded-lg bg-white/5 hover:bg-violet-500/25 border border-white/10 transition">${opt}</button>
-        `).join('')}
-      </div>
-    `;
-  }
-
-  function answerQuiz(idx) {
-    if (!state.activeQuiz) return;
-    const area = document.getElementById('ln-quiz-area');
-    const correct = idx === state.activeQuiz.ans;
-    const who = getActiveUser() === 'Nana' ? 'Nana' : 'Leo';
-    if (correct) {
-      state.gameScore[who] = (state.gameScore[who] || 0) + 1;
-      saveLocal();
-      syncToCloud();
-      renderAllExtras();
-    }
-    if (area) {
-      area.innerHTML = `
-        <div class="p-2.5 rounded-xl ${correct ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'} font-bold">
-          ${correct ? `🎉 Benar! +1 poin untuk ${who}!` : `❌ Kurang tepat! Jawabannya: ${state.activeQuiz.options[state.activeQuiz.ans]}`}
-        </div>
-        <button onclick="LNExtras.nextQuiz()" class="w-full py-2 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white">Soal Berikutnya →</button>
-      `;
-    }
-  }
-
   window.LNExtras = {
     switchOurSongTab(tab) {
       currentOurTab = tab;
@@ -725,6 +537,10 @@
       syncToCloud();
       renderAllExtras();
     },
+    playSongAt(idx) {
+      const it = (currentOurTab === 'fav' ? state.sharedFavorites : state.playHistory)[idx];
+      if (it) this.playSongItem(it.id || '', it.title || '', it.artist || 'LNMusic');
+    },
     playSongItem(id, title, artist) {
       if (typeof window.playTrack === 'function' && id) {
         window.playTrack({ id, title, artist, type: 'youtube' }, true);
@@ -732,22 +548,8 @@
         window.quickSearch(`${title} ${artist}`, 'music');
       }
     },
-    updateMood() {
-      const emoji = document.getElementById('ln-mood-emoji').value;
-      const text = document.getElementById('ln-mood-text').value.trim() || 'Lagi dengerin musik';
-      const who = getActiveUser() === 'Nana' ? 'Nana' : 'Leo';
-      state.moods[who] = { emoji, text };
-      document.getElementById('ln-mood-text').value = '';
-      saveLocal();
-      syncToCloud();
-      renderAllExtras();
-    },
     sendPhotoChat,
     toggleVoiceNote,
-    startSleepTimer,
-    cancelSleepTimer,
-    nextQuiz,
-    answerQuiz,
     openConfigModal() {
       document.getElementById('cfg-who').value = getActiveUser() === 'Nana' ? 'Nana' : 'Leo';
       document.getElementById('cfg-bday-leo').value = state.bdayLeo;
