@@ -645,10 +645,7 @@
               </div>
               <div id="voice-seats-main" class="grid grid-cols-3 gap-x-3 gap-y-5 justify-items-center"></div>
               <div class="flex items-center justify-center gap-2.5 mt-5">
-                <button onclick="toggleVoice()" class="voice-btn px-5 py-3 rounded-full bg-gradient-to-r from-rose-600 to-violet-600 text-sm font-bold text-white shadow-lg shadow-rose-600/30">🎙️ Voice: Mati</button>
-                <button onclick="sendReaction('❤️')" class="w-11 h-11 rounded-full bg-white/10 hover:bg-white/15 text-lg transition">❤️</button>
-                <button onclick="sendReaction('🔥')" class="w-11 h-11 rounded-full bg-white/10 hover:bg-white/15 text-lg transition">🔥</button>
-                <button onclick="sendReaction('👏')" class="w-11 h-11 rounded-full bg-white/10 hover:bg-white/15 text-lg transition">👏</button>
+                <button onclick="toggleVoice()" class="voice-btn px-6 py-3 rounded-full bg-gradient-to-r from-rose-600 to-violet-600 text-sm font-bold text-white shadow-lg shadow-rose-600/30">🎙️ Voice: Mati</button>
               </div>
               <p class="text-center text-[10px] text-zinc-500 mt-2.5">Pakai earphone supaya suara lagu tidak bocor ke mic.</p>
             </div>
@@ -885,17 +882,7 @@
             </div>
             <div id="fs-chat-messages" class="h-40 overflow-y-auto space-y-2 pr-1 text-xs"></div>
             <form onsubmit="sendRoomChat(event,'fs-')" class="flex items-center gap-1.5 pt-1">
-              <label title="Kirim Foto" class="w-8 h-8 rounded-full bg-white/[0.07] hover:bg-rose-500/20 border border-white/10 text-zinc-300 flex items-center justify-center cursor-pointer shrink-0">
-                <i data-lucide="image-plus" class="w-3.5 h-3.5"></i>
-                <input type="file" accept="image/*" class="hidden" onchange="handleChatPhotoPick(event)" />
-              </label>
-              <button type="button" onclick="toggleChatViewOnce()" title="Foto Sekali Lihat" class="btn-vo-sync h-8 px-2 rounded-full bg-white/[0.07] border border-white/10 text-zinc-400 text-[10px] font-bold inline-flex items-center gap-0.5 shrink-0">
-                <i data-lucide="flame" class="w-3 h-3"></i>1x
-              </button>
-              <button type="button" onclick="toggleVoiceNoteRec()" title="Voice Note" class="btn-vn-sync w-8 h-8 rounded-full bg-white/[0.07] border border-white/10 text-zinc-300 flex items-center justify-center shrink-0">
-                <i data-lucide="mic" class="w-3.5 h-3.5"></i>
-              </button>
-              <input id="fs-room-chat-input" placeholder="Ketik pesan..." class="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-xs text-white focus:border-rose-500 focus:outline-none" />
+              <input id="fs-room-chat-input" placeholder="Ketik pesan..." class="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-full px-3.5 py-2 text-xs text-white focus:border-rose-500 focus:outline-none" />
               <button type="submit" class="w-8 h-8 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center shrink-0"><i data-lucide="send-horizontal" class="w-3.5 h-3.5"></i></button>
             </form>
           </div>
@@ -907,7 +894,7 @@
   </div>
 
   <!-- Floating Reactions Stage -->
-  <div id="reaction-stage" class="fixed bottom-28 right-8 z-50 pointer-events-none flex flex-col items-center"></div>
+  <div id="reaction-stage" class="fixed bottom-28 right-8 z-[120] pointer-events-none flex flex-col items-center"></div>
 
   <!-- ===================================================================== -->
   <!-- MINI BOTTOM PLAYER BAR                                                -->
@@ -1094,7 +1081,7 @@
     <div id="vc-grid" onclick="if(curTab==='videocall'&&!document.getElementById('vc').classList.contains('multi')&&document.getElementById('vc').classList.contains('swapped')){event.stopPropagation();vcSwapView(false);}"></div>
     <video id="vc-self" autoplay playsinline muted onclick="if(curTab==='videocall'&&!document.getElementById('vc').classList.contains('multi')&&!document.getElementById('vc').classList.contains('swapped')){event.stopPropagation();vcSwapView(true);}" title="Ketuk untuk tukar layar"></video>
     <div id="vc-top-hud" onclick="event.stopPropagation()">
-      <span id="vc-live-pill"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> <span id="vc-timer">00:00</span></span>
+      <span id="vc-live-pill"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> <span id="vc-timer">00:00</span> <span class="px-1.5 py-0.5 rounded bg-rose-500/30 text-rose-200 text-[9px] font-extrabold tracking-wider">SUPER HD</span></span>
       <button id="vc-swap-hint" type="button" onclick="vcSwapView()"><i data-lucide="arrow-left-right" class="w-3.5 h-3.5 text-rose-400"></i> <span id="vc-swap-label">Layar: Partner</span></button>
     </div>
     <div id="vc-emote-bar" class="hidden" onclick="event.stopPropagation()">
@@ -1272,6 +1259,15 @@
     ytScript.src = "https://www.youtube.com/iframe_api";
     document.head.appendChild(ytScript);
 
+    function enforceHDAudioVideo() {
+      if (!ytReady || !ytPlayer) return;
+      try {
+        const levels = ytPlayer.getAvailableQualityLevels ? ytPlayer.getAvailableQualityLevels() : [];
+        const best = levels.find(q => ['highres', 'hd1440', 'hd1080', 'hd720'].includes(q)) || levels[0];
+        if (best && ytPlayer.setPlaybackQuality) ytPlayer.setPlaybackQuality(best);
+      } catch (e) {}
+    }
+
     window.onYouTubeIframeAPIReady = function () {
       ytPlayer = new YT.Player('youtube-player', {
         height: '100%',
@@ -1280,14 +1276,20 @@
           playsinline: 1,
           controls: 1,
           modestbranding: 1,
-          rel: 0
+          rel: 0,
+          vq: 'hd1080',
+          hd: 1
         },
         events: {
           onReady: () => {
             ytReady = true;
             ytPlayer.setVolume(document.getElementById('volume-bar').value);
+            enforceHDAudioVideo();
           },
           onStateChange: (event) => {
+            if (event.data === YT.PlayerState.BUFFERING || event.data === YT.PlayerState.PLAYING) {
+              enforceHDAudioVideo();
+            }
             if (event.data === YT.PlayerState.PLAYING) {
               refreshMetaFromPlayer();
               setPlayingUI(true);
@@ -1572,7 +1574,8 @@
         setPlayingUI(true);
       } else {
         if (ytReady && ytPlayer) {
-          ytPlayer.loadVideoById(track.id);
+          ytPlayer.loadVideoById({ videoId: track.id, suggestedQuality: 'hd1080' });
+          enforceHDAudioVideo();
           setPlayingUI(true);
         } else {
           showToast('Menyiapkan pemutar YouTube...');
@@ -2858,7 +2861,7 @@
       if (!layer) {
         layer = document.createElement('div');
         layer.id = 'emote-layer';
-        layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:38;overflow:hidden';
+        layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:120;overflow:hidden';
         document.body.appendChild(layer);
       }
       const add = (el, ms) => { layer.appendChild(el); setTimeout(() => el.remove(), ms); };
@@ -2911,6 +2914,7 @@
       } else {
         connections.forEach(c => c.open && c.send({ type: 'EMOTE', emote: eid, to }));
       }
+      closeProfile();
       showEmoteFx(e, `Kamu → ${tName}`, true);
       playEmoteSound(eid, 0.5);
     }
@@ -2939,17 +2943,23 @@
         const split = vrCtx.createChannelSplitter(2);
         const dry = vrCtx.createGain(), wet = vrCtx.createGain(), out = vrCtx.createGain();
         out.channelCount = 2; out.channelCountMode = 'explicit'; out.channelInterpretation = 'speakers';
+        const limiter = vrCtx.createDynamicsCompressor();
+        limiter.threshold.value = -1.5;
+        limiter.knee.value = 6;
+        limiter.ratio.value = 12;
+        limiter.attack.value = 0.003;
+        limiter.release.value = 0.15;
         const inv = vrCtx.createGain(); inv.gain.value = -1;
-        const side = vrCtx.createGain(); side.gain.value = 0.7;
+        const side = vrCtx.createGain(); side.gain.value = 0.65;
         const hp = vrCtx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 140;
-        const mid = vrCtx.createGain(); mid.gain.value = 0.5;
+        const mid = vrCtx.createGain(); mid.gain.value = 0.45;
         const lp = vrCtx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 140;
         src.connect(dry); dry.connect(out);
         src.connect(split);
         split.connect(side, 0); split.connect(inv, 1); inv.connect(side);
         side.connect(hp); hp.connect(wet);
         split.connect(mid, 0); split.connect(mid, 1); mid.connect(lp); lp.connect(wet);
-        wet.connect(out); out.connect(vrCtx.destination);
+        wet.connect(out); out.connect(limiter); limiter.connect(vrCtx.destination);
         vrNodes = { dry, wet };
         return true;
       } catch (e) { showToast('Browser ini tidak mendukung vokal remover'); return false; }
@@ -3271,9 +3281,40 @@
     // =========================================================================
     let voiceOn = false, voiceMuted = false, localStream = null;
     const voiceCalls = {};
+    function boostWebRTCQuality(call) {
+      const pc = call && call.peerConnection;
+      if (!pc) return;
+      const apply = () => {
+        (pc.getSenders() || []).forEach(sender => {
+          if (!sender.track) return;
+          const params = sender.getParameters ? sender.getParameters() : {};
+          if (!params.encodings || !params.encodings.length) params.encodings = [{}];
+          if (sender.track.kind === 'video') {
+            params.degradationPreference = 'maintain-resolution';
+            params.encodings.forEach(enc => {
+              enc.maxBitrate = 4500000;
+              enc.maxFramerate = 30;
+              enc.scaleResolutionDownBy = 1.0;
+            });
+          } else if (sender.track.kind === 'audio') {
+            params.encodings.forEach(enc => {
+              enc.maxBitrate = 128000;
+            });
+          }
+          if (sender.setParameters) sender.setParameters(params).catch(() => {});
+        });
+      };
+      apply();
+      pc.addEventListener('iceconnectionstatechange', () => {
+        if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') apply();
+      });
+      setTimeout(apply, 1000);
+      setTimeout(apply, 2500);
+    }
     function bindVoice(p) { p.on('call', call => { call.answer(localStream || undefined); hookCall(call); }); }
     function hookCall(call) {
       voiceCalls[call.peer] = call;
+      boostWebRTCQuality(call);
       call.on('stream', s => attachVoice(call.peer, s));
       call.on('close', () => dropVoice(call.peer));
     }
@@ -3575,7 +3616,7 @@
       if (!isRoomConnected) return showToast('Gabung room dulu di tab Bareng');
       if (vcRemoteCount() >= VC_MAX_USERS) return showToast('Video call sudah penuh (6/6 peserta)');
       let s;
-      try { s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 } }, audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
+      try { s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1920, min: 1280 }, height: { ideal: 1080, min: 720 }, frameRate: { ideal: 30, max: 60 } }, audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, sampleRate: 48000, channelCount: 1 } }); }
       catch (e) { return showToast('Izin kamera atau mikrofon ditolak'); }
       if (voiceOn) _stopVoice();
       vcRaw = s; localStream = new MediaStream([...s.getAudioTracks(), ...s.getVideoTracks()]); voiceOn = true; voiceMuted = false; vcOn = true;
@@ -3635,6 +3676,7 @@
       if (!open) { try { lucide.createIcons(); } catch (e) {} }
     }
     function vcSendEmote(emoji) {
+      vcClosePanels();
       spawnFloatingEmoji(emoji);
       const emoteObj = EMOTES.find(x => x.emoji === emoji);
       if (emoteObj) {
@@ -3726,7 +3768,7 @@
       const next = vcFacing === 'user' ? 'environment' : 'user', old = vcRaw.getVideoTracks()[0], was = old ? old.enabled : true;
       if (old) { old.stop(); vcRaw.removeTrack(old); }
       let ns;
-      try { ns = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: next }, width: { ideal: 1280 } }, audio: false }); }
+      try { ns = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: next }, width: { ideal: 1920, min: 1280 }, height: { ideal: 1080, min: 720 }, frameRate: { ideal: 30 } }, audio: false }); }
       catch (e) {
         try { ns = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: vcFacing } }, audio: false }); } catch (e2) { return showToast('Kamera tidak bisa diganti'); }
         showToast('Kamera tidak bisa diganti');
@@ -3817,19 +3859,19 @@
         });
       }
       const st = rt.getSettings ? rt.getSettings() : {};
-      const vw = v.videoWidth || st.width || 640;
-      const vh = v.videoHeight || st.height || 480;
-      const W = 640, H = Math.max(360, Math.round(W * vh / vw));
-      const mk = (readFrequent) => {
+      const vw = v.videoWidth || st.width || 1280;
+      const vh = v.videoHeight || st.height || 720;
+      const W = Math.min(1280, Math.max(960, vw)), H = Math.max(540, Math.round(W * vh / vw));
+      const mk = () => {
         const c = document.createElement('canvas');
         c.width = W; c.height = H;
         return c;
       };
       const cv = mk(), P = { v, cv, ctx: cv.getContext('2d', { willReadFrequently: true }), pc: mk(), mc: document.createElement('canvas'), bgc: mk(), rt };
       vcPipe = P; vcBgBuild();
-      P.track = cv.captureStream(24).getVideoTracks()[0];
+      P.track = cv.captureStream(30).getVideoTracks()[0];
       vcSetTrack(P.track);
-      P.timer = setInterval(vcFrame, 42);
+      P.timer = setInterval(vcFrame, 33);
     }
     function vcPipeStop(final) {
       const P = vcPipe; if (!P) return; vcPipe = null; clearInterval(P.timer);
