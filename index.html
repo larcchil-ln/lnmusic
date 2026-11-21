@@ -133,6 +133,26 @@
       100% { transform: translateY(-140px) scale(1.4); opacity: 0; }
     }
     .emoji-float { animation: floatUp 1.8s ease-out forwards; }
+    #react-layer{position:fixed;inset:0;z-index:130;pointer-events:none;overflow:hidden}
+    .rx{position:absolute;bottom:-50px;line-height:1;opacity:0;will-change:transform,opacity;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45));animation:rxUp var(--d,3s) cubic-bezier(.2,.7,.3,1) var(--dl,0s) forwards}
+    @keyframes rxUp{0%{transform:translate(0,0) scale(.4) rotate(0);opacity:0}10%{opacity:1;transform:translate(calc(var(--dx)*.15),-10vh) scale(1.3) rotate(calc(var(--rot)*.3))}55%{transform:translate(var(--dx),-48vh) scale(1) rotate(var(--rot))}100%{transform:translate(calc(var(--dx)*1.6),-98vh) scale(.8) rotate(calc(var(--rot)*-.6));opacity:0}}
+    .rx.rain{top:-14vh;bottom:auto;animation:rxRain var(--d,2.6s) linear var(--dl,0s) forwards}
+    @keyframes rxRain{0%{transform:translate(0,0) rotate(0);opacity:1}100%{transform:translate(var(--dx),116vh) rotate(var(--rot));opacity:1}}
+    .rx-big{position:absolute;left:50%;top:42%;display:flex;flex-direction:column;align-items:center;gap:10px;transform:translate(-50%,-50%);animation:rxBig 2.4s ease-out forwards}
+    .rx-big .em{font-size:min(44vw,180px);line-height:1;display:block;filter:drop-shadow(0 14px 30px rgba(0,0,0,.6))}
+    .rx-big .tx{padding:6px 16px;border-radius:999px;background:rgba(9,9,13,.82);border:1px solid rgba(244,63,94,.45);color:#fff;font-weight:800;font-size:14px;letter-spacing:.04em;white-space:nowrap}
+    @keyframes rxBig{0%{transform:translate(-50%,-50%) scale(.1);opacity:0}12%{transform:translate(-50%,-50%) scale(1.2);opacity:1}22%{transform:translate(-50%,-50%) scale(1)}80%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-70%) scale(.85);opacity:0}}
+    .rxm-shake{animation:rxShake .16s linear infinite}
+    @keyframes rxShake{0%,100%{transform:translateX(0) rotate(0)}25%{transform:translateX(-6%) rotate(-10deg)}75%{transform:translateX(6%) rotate(10deg)}}
+    .rxm-spin{animation:rxSpin .9s ease-in-out infinite}
+    @keyframes rxSpin{to{transform:rotate(360deg)}}
+    .rxm-bounce{animation:rxBounce .42s ease-in infinite alternate;transform-origin:50% 100%}
+    @keyframes rxBounce{from{transform:translateY(-14%) scale(.92,1.08)}to{transform:translateY(8%) scale(1.1,.88)}}
+    .rxm-zoom{animation:rxZoom .5s ease-in-out infinite alternate}
+    @keyframes rxZoom{from{transform:scale(.85)}to{transform:scale(1.3)}}
+    .rxm-wobble{animation:rxWob .45s ease-in-out infinite alternate}
+    @keyframes rxWob{from{transform:rotate(-16deg) skewX(-6deg)}to{transform:rotate(16deg) skewX(6deg)}}
+    @media (prefers-reduced-motion:reduce){.rxm-shake,.rxm-spin,.rxm-bounce,.rxm-zoom,.rxm-wobble{animation:none}}
 
     @keyframes emopop {
       0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
@@ -663,6 +683,7 @@
                     <button type="button" onclick="sendReaction('😂')" class="hover:scale-125 transition text-base">😂</button>
                     <button type="button" onclick="sendReaction('🥺')" class="hover:scale-125 transition text-base">🥺</button>
                     <button type="button" onclick="sendReaction('🍿')" class="hover:scale-125 transition text-base">🍿</button>
+                    <button type="button" data-rxbtn onclick="rxPanel()" title="Reaksi lucu & stiker gerak" class="px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/30 text-[11px] font-bold text-rose-200 active:scale-95 transition">😆 Lucu</button>
                     <button type="button" onclick="clearRoomChat()" title="Bersihkan Chat" class="ml-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] hover:bg-red-500/20 text-zinc-400 hover:text-red-300 border border-white/10 text-[10px] font-semibold inline-flex items-center gap-1 transition">
                       <i data-lucide="eraser" class="w-3 h-3"></i> Clean
                     </button>
@@ -2325,7 +2346,7 @@
         const msg = chatLog.find(m => m.id === data.id);
         if (msg) { msg.opened = true; msg.media = ''; renderChat(); }
       } else if (data.type === 'REACTION') {
-        spawnFloatingEmoji(data.emoji);
+        spawnFloatingEmoji(data.emoji, data.fx);
       } else if (data.type === 'QUEUE_SET') {
         roomQueue = data.list || [];
         queueAt = data.at || Date.now();
@@ -2550,21 +2571,59 @@
       showToast('Tampilan chat dibersihkan');
     }
 
-    function sendReaction(emoji) {
-      spawnFloatingEmoji(emoji);
-      connections.forEach(c => { if (c.open) c.send({ type: 'REACTION', emoji }); });
+    // ===== Reaksi melayang, hujan emoji & stiker gerak (ringan: hanya CSS transform, maks 70 elemen) =====
+    const RX_STICKERS = [['🤣','shake','NGAKAK'],['🤪','spin','OLENG'],['🐸','bounce','KODOK LOMPAT'],['💀','zoom','MATI KETAWA'],['🕺','wobble','JOGET'],['🐔','bounce','PETOK'],['🗿','zoom','MOAI'],['🥴','spin','PUSING'],['😭','shake','NANGIS DRAMA'],['👻','wobble','BO!'],['🦆','wobble','KWEK'],['🤡','bounce','BADUT']];
+    const RX_FUNNY = ['😂','🤣','💀','😭','🤡','🫠','🥴','🤪','👻','🙈','💩','🐸','🐔','🦆','🗿','🤌','😹','🤭','🫣','🥹','❤️','🔥','🥺','🍿'];
+    const RX_RAIN = [['🤣','Hujan ngakak'],['💖','Hujan cinta'],['🎉','Hujan pesta'],['🤡','Hujan badut']];
+    let rxLast = 0;
+    function rxLayer() { let l = document.getElementById('react-layer'); if (!l) { l = document.createElement('div'); l.id = 'react-layer'; document.body.appendChild(l); } return l; }
+    function rxAdd(ch, o = {}) {
+      const L = rxLayer(); while (L.childElementCount > 70) L.firstElementChild.remove();
+      const el = document.createElement('div'), d = o.d || (2.4 + Math.random() * 1.4), dl = (o.dl || 0) / 1000;
+      el.className = 'rx' + (o.rain ? ' rain' : ''); el.textContent = ch;
+      el.style.cssText = `left:${o.x ?? (8 + Math.random() * 84)}%;font-size:${Math.round(o.s || (30 + Math.random() * 26))}px;--d:${d.toFixed(2)}s;--dl:${dl}s;--dx:${Math.round((Math.random() - .5) * (o.rain ? 60 : 160))}px;--rot:${Math.round((Math.random() - .5) * (o.rain ? 540 : 70))}deg`;
+      L.appendChild(el); setTimeout(() => el.remove(), (d + dl) * 1000 + 300);
     }
-
-    function spawnFloatingEmoji(emoji) {
-      const stage = document.getElementById('reaction-stage');
-      const el = document.createElement('div');
-      el.textContent = emoji;
-      el.className = 'text-3xl emoji-float select-none';
-      stage.appendChild(el);
-      setTimeout(() => el.remove(), 1800);
+    function spawnFloatingEmoji(emoji, fxm) {
+      emoji = String(emoji || '').slice(0, 8); if (!emoji) return;
+      const f = String(fxm || 'float'), st = f.match(/^st:(shake|spin|bounce|zoom|wobble):([A-Z !]{1,16})$/);
+      if (f === 'rain') { for (let i = 0; i < 24; i++) rxAdd(emoji, { rain: true, dl: i * 75, d: 2.2 + Math.random() * 1.2 }); return; }
+      if (st) {
+        const L = rxLayer(); L.querySelectorAll('.rx-big').forEach(x => x.remove());
+        const b = document.createElement('div'); b.className = 'rx-big';
+        const e = document.createElement('span'); e.className = 'em rxm-' + st[1]; e.textContent = emoji;
+        const t = document.createElement('span'); t.className = 'tx'; t.textContent = st[2];
+        b.append(e, t); L.appendChild(b); setTimeout(() => b.remove(), 2500);
+        for (let i = 0; i < 8; i++) rxAdd(emoji, { dl: i * 90 });
+        return;
+      }
+      rxAdd(emoji, { s: 44 + Math.random() * 22 }); rxAdd(emoji, { dl: 90 }); if (Math.random() < .6) rxAdd(emoji, { dl: 180 });
+    }
+    function sendReaction(emoji, fxm) {
+      const now = Date.now(); if (now - rxLast < 110) return; rxLast = now;
+      fxm = fxm || 'float';
+      spawnFloatingEmoji(emoji, fxm);
+      connections.forEach(c => { if (c.open) c.send({ type: 'REACTION', emoji, fx: fxm }); });
+    }
+    function rxPanel() {
+      const old = document.getElementById('react-panel'); if (old) { old.remove(); return; }
+      const p = document.createElement('div'); p.id = 'react-panel';
+      p.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 84px);width:min(94vw,380px);max-height:56vh;overflow:auto;z-index:140;padding:12px;border-radius:22px;background:rgba(15,15,24,.97);border:1px solid rgba(244,63,94,.35);box-shadow:0 18px 44px rgba(0,0,0,.85)';
+      const btn = (inner, js, cls) => `<button type="button" onclick="${js}" class="${cls}">${inner}</button>`;
+      const h = t => `<div class="text-[10px] font-bold text-zinc-400 mb-1">${t}</div>`;
+      p.innerHTML = `<div class="flex items-center justify-between mb-2"><b class="text-xs text-white">Reaksi lucu 😆</b><button type="button" onclick="document.getElementById('react-panel').remove()" class="text-zinc-400 text-xs px-2">Tutup</button></div>`
+        + h('Stiker gerak (muncul besar di layar kalian berdua)') + '<div class="grid grid-cols-4 gap-1.5 mb-3">'
+        + RX_STICKERS.map(([e, a, t]) => btn(`<span class="text-2xl">${e}</span><span class="text-[9px] font-bold text-zinc-300 leading-tight text-center">${t}</span>`, `sendReaction('${e}','st:${a}:${t}')`, 'flex flex-col items-center gap-0.5 p-2 rounded-2xl bg-white/[0.06] active:scale-95 transition')).join('') + '</div>'
+        + h('Hujan emoji') + '<div class="grid grid-cols-2 gap-1.5 mb-3">'
+        + RX_RAIN.map(([e, t]) => btn(`${e} ${t}`, `sendReaction('${e}','rain')`, 'px-3 py-2 rounded-2xl bg-white/[0.06] text-xs font-bold text-white active:scale-95 transition')).join('') + '</div>'
+        + h('Emoji melayang') + '<div class="flex flex-wrap gap-1">'
+        + RX_FUNNY.map(e => btn(e, `sendReaction('${e}')`, 'text-2xl p-1.5 rounded-xl hover:bg-white/10 active:scale-90 transition')).join('') + '</div>';
+      document.body.appendChild(p);
+      setTimeout(() => document.addEventListener('pointerdown', function h2(ev) { if (!p.contains(ev.target) && !ev.target.closest('[data-rxbtn]')) { p.remove(); document.removeEventListener('pointerdown', h2); } }), 0);
     }
 
     function activateRoomUI(code) {
+      try { pushOnRoom(code); } catch (e) {}
       if (isHost && peer?.id && !members[peer.id]) members[peer.id] = { name: myDisplayName, seat: 0, mic: 'off', role: 'admin' };
       renderSeats();
       document.getElementById('room-setup-area').classList.add('hidden');
@@ -3346,14 +3405,15 @@
     // lawan bicara ditentukan jumlah peserta, lalu turun/naik otomatis mengikuti kondisi jaringan.
     // Tiap tingkat: [bitrate maks (bps), skala turun, fps maks]
     const VC_TIERS = [
-      [2500000, 1,   30], // HD 720p
-      [1600000, 1,   30], // HD 720p (hemat)
-      [1000000, 1.5, 30], // ±480p
-      [650000,  1.5, 24],
-      [400000,  2,   24], // ±360p
-      [220000,  3,   15]  // darurat
+      [12000000, 1,   30], // ULTRA: tanpa batas praktis, hanya berdua & jaringan kedua sisi sangat bagus
+      [2500000,  1,   30], // HD 720p
+      [1600000,  1,   30], // HD 720p (hemat)
+      [1000000,  1.5, 30], // ±480p
+      [650000,   1.5, 24],
+      [400000,   2,   24], // ±360p
+      [220000,   3,   15]  // darurat
     ];
-    const vcBaseTier = n => n <= 2 ? 0 : (n === 3 ? 1 : (n === 4 ? 2 : (n === 5 ? 3 : 4)));
+    const vcBaseTier = n => n <= 2 ? 0 : (n === 3 ? 2 : (n === 4 ? 3 : (n === 5 ? 4 : 5)));
     const vcPeerTotal = () => Math.max(2, Object.keys(voiceCalls).length + 1);
     const vcTierOf = call => VC_TIERS[Math.min(VC_TIERS.length - 1, vcBaseTier(vcPeerTotal()) + (call._pen || 0))];
     function callAlive(c) { const st = c && c.peerConnection && c.peerConnection.connectionState; return !!c && st !== 'closed' && st !== 'failed'; }
@@ -3372,7 +3432,8 @@
           const f = l.match(/^a=fmtp:(\d+) /);
           if (f) hasFmtp.add(f[1]);
         });
-        const VK = ['x-google-start-bitrate=1500', 'x-google-min-bitrate=500', 'x-google-max-bitrate=2600'];
+        const duo = vcPeerTotal() <= 2;
+        const VK = duo ? ['x-google-start-bitrate=4000', 'x-google-min-bitrate=800', 'x-google-max-bitrate=14000'] : ['x-google-start-bitrate=1500', 'x-google-min-bitrate=500', 'x-google-max-bitrate=2600'];
         const AK = ['useinbandfec=1', 'usedtx=0', 'maxaveragebitrate=64000'];
         const add = (str, kv) => str + kv.filter(x => !new RegExp('(^|[ ;])' + x.split('=')[0] + '=').test(str)).map(x => ';' + x).join('');
         sec = '';
@@ -3411,7 +3472,7 @@
         } catch (e) {}
       });
       (pc.getReceivers() || []).forEach(r => {
-        try { if (r.track && r.track.kind === 'video' && 'jitterBufferTarget' in r) r.jitterBufferTarget = 200; } catch (e) {}
+        try { if (r.track && r.track.kind === 'video' && 'jitterBufferTarget' in r) r.jitterBufferTarget = vcPeerTotal() <= 2 ? 150 : 200; } catch (e) {}
       });
     }
     function vcTune(call) {
@@ -3426,7 +3487,7 @@
       if (txt) { el.textContent = txt; return; }
       let lvl = 0;
       Object.values(voiceCalls).forEach(c => { if (callAlive(c)) lvl = Math.max(lvl, Math.min(VC_TIERS.length - 1, vcBaseTier(vcPeerTotal()) + (c._pen || 0))); });
-      el.textContent = lvl <= 1 ? 'HD 720p' : (lvl <= 3 ? '480p' : '360p');
+      el.textContent = lvl === 0 ? 'Ultra HD' : (lvl <= 2 ? 'HD 720p' : (lvl <= 4 ? '480p' : '360p'));
     }
     // Pantau jaringan tiap 3 detik: turunkan kualitas saat jaringan buruk, naikkan lagi saat stabil
     function vcMonitor(call) {
@@ -3435,19 +3496,22 @@
       let calm = 0;
       call._mon = setInterval(async () => {
         if (pc.connectionState === 'closed' || voiceCalls[call.peer] !== call) { clearInterval(call._mon); return; }
-        let loss = 0, rtt = 0, why = 'none', sending = false;
+        let loss = 0, rtt = 0, why = 'none', sending = false, bw = 0;
         try {
           const rep = await pc.getStats();
           rep.forEach(r => {
             if (r.type === 'remote-inbound-rtp' && r.kind === 'video') { loss = Math.max(loss, r.fractionLost || 0); rtt = Math.max(rtt, (r.roundTripTime || 0) * 1000); }
             if (r.type === 'outbound-rtp' && r.kind === 'video') { sending = true; why = r.qualityLimitationReason || 'none'; }
+            if (r.type === 'candidate-pair' && r.state === 'succeeded' && r.nominated && r.availableOutgoingBitrate) bw = r.availableOutgoingBitrate;
           });
         } catch (e) { return; }
         if (!sending) return;
         const before = call._pen || 0, last = VC_TIERS.length - 1;
         const bad = loss > 0.08 || rtt > 450 || why === 'bandwidth';
-        const good = loss < 0.02 && rtt < 250 && why === 'none';
-        if (bad || (why === 'cpu' && before < 2)) { call._pen = Math.min(last, before + 1); calm = 0; }
+        let good = loss < 0.02 && rtt < 250 && why === 'none';
+        // naik ke Ultra hanya kalau kedua sisi benar-benar bagus (hindari bolak-balik naik-turun)
+        if (before === 1 && vcBaseTier(vcPeerTotal()) === 0 && !(loss < 0.01 && rtt < 150 && bw > 7e6)) good = false;
+        if (bad || (why === 'cpu' && before < 3)) { call._pen = Math.min(last, before + 1); calm = 0; }
         else if (good && before > 0) { if (++calm >= 4) { call._pen = before - 1; calm = 0; } }
         else calm = 0;
         if ((call._pen || 0) !== before) { vcApplyTier(call); vcQual(); }
@@ -3818,7 +3882,9 @@
       if (vcRemoteCount() >= VC_MAX_USERS) return showToast('Video call sudah penuh (6/6 peserta)');
       // 720p@30 = HD yang lancar. (1080p/60fps membuat HP kewalahan dan jaringan tersedak; "min" membuat kamera sering ditolak)
       const AUD = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, sampleRate: 48000, channelCount: 1 };
+      const duoCall = vcRemoteCount() <= 1; // berdua: minta kamera sampai 1080p, tanpa batas bitrate rendah
       const VIDS = [
+        ...(duoCall ? [{ facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 } }] : []),
         { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } },
         { facingMode: 'user', width: { ideal: 960 }, height: { ideal: 540 }, frameRate: { ideal: 30, max: 30 } },
         { facingMode: 'user' }
@@ -4063,36 +4129,31 @@
       const sv = document.getElementById('vc-self'); if (sv) sv.srcObject = ms;
       const gv = document.getElementById('vc-self-grid'); if (gv) gv.srcObject = ms;
     }
+    // Pipeline efek (v2): kanvas GPU (tanpa willReadFrequently), ukuran mengikuti kamera, ML dijalankan
+    // terpisah & di-cache, flip dibuat lewat kanvas keluaran (bukan menyalin kanvas ke dirinya sendiri),
+    // warp wajah di WebGL, dan resolusi proses turun otomatis kalau HP berat.
+    function vcPipeSize(P, s) {
+      const W = Math.max(320, Math.round(P.bw * s / 2) * 2), H = Math.max(180, Math.round(P.bh * s / 2) * 2);
+      P.s = s; P.ema = 0; P.n = 0;
+      [P.cv, P.pc, P.bgc, P.oc].forEach(c => { c.width = W; c.height = H; });
+      P.sm.width = Math.max(64, Math.round(W / 6)); P.sm.height = Math.max(36, Math.round(H / 6));
+      vcBgBuild();
+    }
     async function vcPipeStart() {
       const rt = vcRaw.getVideoTracks()[0]; if (!rt) return;
       const v = document.createElement('video');
-      v.srcObject = new MediaStream([rt]);
-      v.muted = true;
-      v.playsInline = true;
-      v.setAttribute('playsinline', '');
+      v.srcObject = new MediaStream([rt]); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', '');
       v.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px';
       document.body.appendChild(v);
       try { await v.play(); } catch (e) {}
-      if (!v.videoWidth) {
-        await new Promise(res => {
-          const to = setTimeout(res, 600);
-          v.onloadedmetadata = () => { clearTimeout(to); res(); };
-        });
-      }
+      if (!v.videoWidth) { await new Promise(res => { const to = setTimeout(res, 600); v.onloadedmetadata = () => { clearTimeout(to); res(); }; }); }
       const st = rt.getSettings ? rt.getSettings() : {};
-      const vw = v.videoWidth || st.width || 1280;
-      const vh = v.videoHeight || st.height || 720;
-      const W = Math.min(1280, Math.max(960, vw)), H = Math.max(540, Math.round(W * vh / vw));
-      const mk = () => {
-        const c = document.createElement('canvas');
-        c.width = W; c.height = H;
-        return c;
-      };
-      const cv = mk(), P = { v, cv, ctx: cv.getContext('2d', { willReadFrequently: true }), pc: mk(), mc: document.createElement('canvas'), bgc: mk(), rt };
-      vcPipe = P; vcBgBuild();
-      P.track = cv.captureStream(30).getVideoTracks()[0];
+      const vw = v.videoWidth || st.width || 1280, vh = v.videoHeight || st.height || 720, k = Math.min(1, 1280 / Math.max(vw, vh));
+      const mk = () => document.createElement('canvas'), cv = mk(), oc = mk();
+      const P = { v, cv, oc, ctx: cv.getContext('2d'), octx: oc.getContext('2d'), pc: mk(), mc: mk(), bgc: mk(), sm: mk(), rt, bw: Math.round(vw * k), bh: Math.round(vh * k), mlT: 0, mlMs: 12, ema: 0, n: 0, fast: 0, s: 1 };
+      vcPipe = P; vcPipeSize(P, 1);
+      P.track = oc.captureStream(30).getVideoTracks()[0];
       vcSetTrack(P.track);
-      // Proses frame tepat saat kamera mengirim frame baru (lebih halus dari timer tetap); timer cadangan jika browser tidak mendukung
       P.last = 0;
       const tick = () => { P.last = performance.now(); vcFrame(); };
       if (v.requestVideoFrameCallback) {
@@ -4130,32 +4191,54 @@
       ms.forEach(x => x.close && x.close());
       return mc;
     }
+    function vcSmooth(P) {
+      const r = P.lmRaw; if (!r) { P.lm = null; return null; }
+      if (!P.lm || P.lm.length !== r.length) P.lm = r.map(p => ({ x: p.x, y: p.y }));
+      else for (let i = 0; i < r.length; i++) { const a = P.lm[i], b = r[i]; a.x += (b.x - a.x) * .6; a.y += (b.y - a.y) * .6; }
+      return P.lm;
+    }
     function vcFrame() {
       const P = vcPipe; if (!P || P.busy || P.v.readyState < 2) return; P.busy = true;
+      const t0 = performance.now(); let mlCost = 0;
       try {
-        const { v, cv, ctx, pc } = P, W = cv.width, H = cv.height, t = performance.now(), css = FLTCSS[fx.f] || 'none';
-        const m = fx.b !== 'none' && vcML.seg ? vcMask(P, vcML.seg.segmentForVideo(v, t)) : null;
-        if (m) {
+        const { v, cv, ctx, pc, oc, octx } = P, W = cv.width, H = cv.height, css = FLTCSS[fx.f] || 'none';
+        const needSeg = fx.b !== 'none' && !!vcML.seg, needFace = fx.e !== 'none' && !!vcML.face;
+        if (!needSeg) P.hasMask = false;
+        if (!needFace) P.lmRaw = null;
+        // Model ML hanya jalan sejauh anggaran waktu mengizinkan; hasilnya dipakai ulang di frame berikutnya
+        if ((needSeg || needFace) && t0 - P.mlT >= P.mlMs * 1.2) {
+          const a = performance.now();
+          if (needSeg) { try { vcMask(P, vcML.seg.segmentForVideo(v, a)); P.hasMask = true; } catch (e) {} }
+          if (needFace) { try { const r = vcML.face.detectForVideo(v, performance.now()); P.lmRaw = (r && r.faceLandmarks && r.faceLandmarks[0]) || null; } catch (e) {} }
+          P.mlT = performance.now(); mlCost = P.mlT - a; P.mlMs = P.mlMs * .8 + mlCost * .2;
+        }
+        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+        if (needSeg && P.hasMask) {
           const px = pc.getContext('2d'); px.globalCompositeOperation = 'source-over'; px.clearRect(0, 0, W, H);
-          px.filter = css; px.drawImage(v, 0, 0, W, H); px.filter = 'blur(2px)'; px.globalCompositeOperation = 'destination-in'; px.drawImage(m, 0, 0, W, H); px.filter = 'none'; px.globalCompositeOperation = 'source-over';
-          if (fx.b === 'blur') { ctx.filter = 'blur(14px)' + (css !== 'none' ? ' ' + css : ''); ctx.drawImage(v, 0, 0, W, H); ctx.filter = 'none'; } else ctx.drawImage(P.bgc, 0, 0);
+          px.imageSmoothingEnabled = true; px.imageSmoothingQuality = 'high';
+          px.filter = css; px.drawImage(v, 0, 0, W, H); px.filter = 'none';
+          px.globalCompositeOperation = 'destination-in'; px.drawImage(P.mc, 0, 0, W, H); px.globalCompositeOperation = 'source-over';
+          if (fx.b === 'blur') {
+            // blur murah: perkecil dulu (blur kecil), lalu perbesar halus; jauh lebih ringan dari blur 14px di 720p
+            const sx = P.sm.getContext('2d'); sx.filter = 'blur(2px)'; sx.drawImage(v, 0, 0, P.sm.width, P.sm.height); sx.filter = 'none';
+            ctx.filter = css; ctx.drawImage(P.sm, 0, 0, W, H); ctx.filter = 'none';
+          } else ctx.drawImage(P.bgc, 0, 0);
           ctx.drawImage(pc, 0, 0);
         } else { ctx.filter = css; ctx.drawImage(v, 0, 0, W, H); ctx.filter = 'none'; }
         if (fx.e !== 'none') {
-          let lm = null;
-          if (vcML.face) {
-            try {
-              const r = vcML.face.detectForVideo(v, t);
-              if (r && r.faceLandmarks && r.faceLandmarks[0]) lm = r.faceLandmarks[0];
-            } catch (err) {}
-          }
-          if (lm) {
-            vcFace(ctx, lm, W, H);
-          } else if (['wide', 'chubby', 'bigeyes', 'slim', 'alien'].includes(fx.e)) {
-            vcWarp(ctx, W, H, W * 0.5, H * 0.48, W * 0.28, H * 0.34, fx.e, null);
-          }
+          const lm = vcSmooth(P);
+          if (lm) vcFace(ctx, lm, W, H);
+          else if (['wide', 'chubby', 'bigeyes', 'slim', 'alien'].includes(fx.e)) vcWarp(ctx, W, H, W * 0.5, H * 0.48, W * 0.28, H * 0.34, fx.e, null);
         }
-        if (fx.flip) { ctx.save(); ctx.scale(-1, 1); ctx.drawImage(cv, -W, 0); ctx.restore(); }
+        // Mirror: cukup satu salinan terbalik ke kanvas keluaran
+        if (fx.flip) { octx.setTransform(-1, 0, 0, 1, W, 0); octx.drawImage(cv, 0, 0); octx.setTransform(1, 0, 0, 1, 0, 0); }
+        else octx.drawImage(cv, 0, 0);
+        // Beban render (tanpa ML) tinggi terus -> turunkan resolusi proses; ringan terus -> naikkan lagi
+        const dt = performance.now() - t0 - mlCost; P.ema = P.ema ? P.ema * .9 + dt * .1 : dt;
+        if (++P.n % 30 === 0) {
+          if (P.ema > 22 && P.s > .5) vcPipeSize(P, Math.max(.5, P.s - .25));
+          else if (P.ema < 7 && P.s < 1 && ++P.fast > 6) { P.fast = 0; vcPipeSize(P, Math.min(1, P.s + .25)); }
+        }
       } catch (e) {}
       P.busy = false;
     }
@@ -4212,6 +4295,58 @@
       }
     }
 
+    let vcGL = null;
+    const VC_GL_FS = '#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n'
+      + 'varying vec2 uv;uniform sampler2D t;uniform vec2 res,c,r,e1,e2;uniform float er,m;\n'
+      + 'void main(){vec2 w=uv*res;vec2 s=w;\n'
+      + 'if(m>4.5&&m<5.5){vec2 d=w-e1;float d2=dot(d,d);if(d2<er*er){float f=1.-sqrt(d2)/er;s=e1+d*(1.-.42*f*f);}d=w-e2;d2=dot(d,d);if(d2<er*er){float f=1.-sqrt(d2)/er;s=e2+d*(1.-.42*f*f);}}\n'
+      + 'else{vec2 n=(w-c)/r;float r2=dot(n,n);if(r2<1.){float fl=cos(sqrt(r2)*1.5707963);float f2=fl*fl;float sx=1.;float sy=1.;float ny=n.y;\n'
+      + 'if(m<1.5){sx=1.-.58*f2;sy=1.+.16*f2;}\n'
+      + 'else if(m<2.5){float lo=ny>-.1?min(1.,(ny+.1)*1.35):.25;sx=1.-.52*f2*lo;sy=1.-.12*f2*lo;}\n'
+      + 'else if(m<3.5){float lo=ny>-.15?min(1.,(ny+.15)*1.3):.15;sx=1.+.48*f2*lo;sy=1.-.08*f2;}\n'
+      + 'else if(m<4.5){if(ny<.05){sx=1.-.48*f2;sy=1.-.25*f2;}else{sx=1.+.55*f2*min(1.,ny*1.4);sy=1.-.12*f2;}}\n'
+      + 'else{sx=1.-.28*f2;sy=1.-.28*f2;}\n'
+      + 's=c+(w-c)*vec2(sx,sy);}}\n'
+      + 'gl_FragColor=texture2D(t,clamp(s,vec2(.5),res-.5)/res);}';
+    function vcGLInit() {
+      if (vcGL !== null) return vcGL;
+      vcGL = false;
+      try {
+        const cn = document.createElement('canvas'); cn.width = 16; cn.height = 16;
+        const gl = cn.getContext('webgl', { alpha: false, antialias: false, depth: false, stencil: false, premultipliedAlpha: false });
+        if (!gl) return false;
+        const sh = (t, src) => { const o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
+        const pr = gl.createProgram();
+        gl.attachShader(pr, sh(gl.VERTEX_SHADER, 'attribute vec2 p;varying vec2 uv;void main(){uv=vec2(p.x*.5+.5,.5-p.y*.5);gl_Position=vec4(p,0.,1.);}'));
+        gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, VC_GL_FS)); gl.linkProgram(pr);
+        if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error('link');
+        gl.useProgram(pr);
+        gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+        const loc = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+        gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+        [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]].forEach(([k, v]) => gl.texParameteri(gl.TEXTURE_2D, k, v));
+        const U = {}; ['res', 'c', 'r', 'e1', 'e2', 'er', 'm'].forEach(n => { U[n] = gl.getUniformLocation(pr, n); });
+        cn.addEventListener('webglcontextlost', e => { e.preventDefault(); vcGL = null; });
+        vcGL = { cn, gl, U };
+      } catch (e) { vcGL = false; }
+      return vcGL;
+    }
+    function vcGLWarp(c, W, H, cx, cy, rx, ry, mode, pts) {
+      const G = vcGLInit(); if (!G) return false;
+      const M = { wide: 1, chubby: 2, slim: 3, alien: 4, bigeyes: pts ? 5 : 6 }[mode]; if (!M) return false;
+      try {
+        const { cn, gl, U } = G;
+        if (cn.width !== W || cn.height !== H) { cn.width = W; cn.height = H; }
+        gl.viewport(0, 0, W, H);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c.canvas);
+        gl.uniform2f(U.res, W, H); gl.uniform2f(U.c, cx, cy); gl.uniform2f(U.r, rx, ry);
+        gl.uniform2f(U.e1, pts ? pts.e1.x : 0, pts ? pts.e1.y : 0); gl.uniform2f(U.e2, pts ? pts.e2.x : 0, pts ? pts.e2.y : 0);
+        gl.uniform1f(U.er, pts ? Math.max(18, pts.fw * 0.24) : rx * 0.25); gl.uniform1f(U.m, M);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        c.drawImage(cn, 0, 0);
+        return true;
+      } catch (e) { vcGL = false; return false; }
+    }
     function vcWarp(c, W, H, cx, cy, rx, ry, mode, pts) {
       cx = Math.round(cx); cy = Math.round(cy);
       rx = Math.min(Math.floor(W * 0.49), Math.round(rx));
@@ -4219,6 +4354,7 @@
       const x0 = Math.max(0, cx - rx), y0 = Math.max(0, cy - ry);
       const bw = Math.min(W, cx + rx) - x0, bh = Math.min(H, cy + ry) - y0;
       if (bw < 20 || bh < 20) return;
+      if (vcGLWarp(c, W, H, cx, cy, rx, ry, mode, pts)) return;
       const srcImg = c.getImageData(x0, y0, bw, bh);
       const dstImg = c.createImageData(bw, bh);
       const sd = srcImg.data, dd = dstImg.data;
@@ -4849,6 +4985,44 @@
       // Jangan memuat ulang otomatis: sedang di room/telepon bisa terputus. Tawarkan saja.
       navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) showUpdateBanner(); hadController = true; });
       window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(err => console.warn('SW gagal didaftarkan', err)); });
+    }
+
+    // ===== Notifikasi push: kabari pasangan saat kamu masuk room (server: /api/push, SW: /sw-push.js) =====
+    const PUSH_OK = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    const lnCid = (() => { try { let c = localStorage.getItem('ln_cid'); if (!c) { c = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); localStorage.setItem('ln_cid', c); } return c; } catch (e) { return 'x' + Math.random().toString(36).slice(2, 12); } })();
+    const pushU8 = b => { const s = (b + '='.repeat((4 - b.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/'); return Uint8Array.from(atob(s), ch => ch.charCodeAt(0)); };
+    async function pushPost(body) { try { const r = await fetch('/api/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); return r.ok ? await r.json() : null; } catch (e) { return null; } }
+    async function pushEnable(quiet) {
+      if (!PUSH_OK()) return quiet || showToast('Browser ini belum mendukung notifikasi (iPhone: pasang dulu ke Layar Utama)');
+      try {
+        const perm = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+        if (perm !== 'granted') return quiet || showToast('Izin notifikasi ditolak');
+        const { publicKey } = await (await fetch('/api/push', { cache: 'no-store' })).json(); if (!publicKey) throw new Error('key');
+        const reg = await navigator.serviceWorker.ready;
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: pushU8(publicKey) });
+        if (!(await pushPost({ action: 'subscribe', cid: lnCid, name: myDisplayName, sub: sub.toJSON() }))) throw new Error('save');
+        localStorage.setItem('ln_push', '1'); quiet || showToast('Notifikasi aktif 💕 Pasanganmu akan dikabari saat kamu masuk room');
+      } catch (e) { quiet || showToast('Gagal mengaktifkan notifikasi'); }
+    }
+    function pushOffer() {
+      try { localStorage.setItem('ln_push_asked', '1'); } catch (e) {}
+      if (document.getElementById('push-offer')) return;
+      const b = document.createElement('div'); b.id = 'push-offer';
+      b.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 92px);max-width:420px;margin:0 auto;z-index:150;padding:12px 14px;border-radius:20px;background:rgba(15,15,24,.97);border:1px solid rgba(244,63,94,.4);box-shadow:0 18px 44px rgba(0,0,0,.8);color:#fff;font-size:12px;display:flex;gap:10px;align-items:center';
+      b.innerHTML = '<span style="flex:1;line-height:1.4">🔔 Aktifkan notifikasi supaya kamu dikabari saat pasangan masuk room?</span><button type="button" id="push-yes" style="padding:7px 14px;border-radius:999px;background:linear-gradient(135deg,#f43f5e,#8b5cf6);font-weight:700">Aktifkan</button><button type="button" id="push-no" style="padding:7px 8px;color:#a1a1aa">Nanti</button>';
+      document.body.appendChild(b);
+      b.querySelector('#push-yes').onclick = () => { b.remove(); pushEnable(); };
+      b.querySelector('#push-no').onclick = () => b.remove();
+    }
+    function pushOnRoom(code) {
+      setTimeout(() => {
+        pushPost({ action: 'notify', cid: lnCid, name: myDisplayName, room: String(code || '').slice(0, 20) });
+        if (!PUSH_OK()) return;
+        let asked = false, on = false; try { asked = !!localStorage.getItem('ln_push_asked'); on = localStorage.getItem('ln_push') === '1'; } catch (e) {}
+        if (Notification.permission === 'default' && !asked) pushOffer();
+        else if (Notification.permission === 'granted' && on) pushEnable(true); // segarkan langganan di server
+      }, 2500);
     }
 
     updateNetworkBadge();
