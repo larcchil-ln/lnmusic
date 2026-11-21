@@ -141,21 +141,38 @@
     @media(min-width:768px){#vc.full{left:16rem;bottom:96px}}
     @media(min-width:1024px){#vc.full{left:18rem}}
     #vc.mini{right:12px;bottom:158px;width:104px;height:148px;border-radius:20px;border:1px solid rgba(255,255,255,.25);box-shadow:0 10px 30px rgba(0,0,0,.6)}
-    #vc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(45%,1fr));width:100%;height:100%;transition:all .25s ease}
-    #vc-grid video,#vc-self{width:100%;height:100%;object-fit:cover;transition:all .25s ease}
+    #vc-grid{display:grid;grid-template-columns:1fr;grid-auto-rows:1fr;gap:4px;width:100%;height:100%;transition:all .25s ease;background:#09090b}
+    #vc-grid.g-2{grid-template-columns:repeat(2,1fr)}
+    #vc-grid.g-4{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr)}
+    #vc-grid.g-6{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr)}
+    @media(min-width:768px){
+      #vc-grid.g-3{grid-template-columns:repeat(3,1fr);grid-template-rows:1fr}
+      #vc-grid.g-6{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr)}
+    }
+    .vc-tile{position:relative;width:100%;height:100%;overflow:hidden;background:#141418;border-radius:10px}
+    #vc-grid:not([class*="g-"]) .vc-tile{border-radius:0}
+    .vc-tile video,#vc-self{width:100%;height:100%;object-fit:cover;transition:all .25s ease}
+    .vc-name{position:absolute;left:8px;bottom:8px;padding:3px 9px;border-radius:999px;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);font-size:11px;font-weight:600;color:#fff;pointer-events:none;z-index:2}
     #vc:not(.swapped) #vc-grid{position:relative;z-index:1}
     #vc:not(.swapped) #vc-self{position:absolute;right:12px;top:12px;width:28%;max-width:150px;height:26%;border-radius:16px;border:2px solid rgba(255,255,255,.35);background:#18181b;z-index:2;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.55)}
+    #vc.multi #vc-self{display:none!important}
+    #vc.multi #vc-swap-hint{display:none!important}
     #vc.swapped #vc-self{position:relative;width:100%;height:100%;border-radius:0;border:none;z-index:1;cursor:default}
     #vc.swapped #vc-grid{position:absolute;right:12px;top:12px;width:28%;max-width:150px;height:26%;border-radius:16px;border:2px solid rgba(255,255,255,.35);background:#18181b;z-index:2;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.55);overflow:hidden;display:flex}
-    #vc.swapped #vc-grid video:not(:first-child){display:none}
+    #vc.swapped #vc-grid .vc-tile:not(:first-child),#vc.swapped #vc-grid .vc-name{display:none}
     #vc-swap-hint{position:absolute;top:12px;left:12px;z-index:2;padding:5px 10px;border-radius:999px;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);font-size:11px;font-weight:600;color:#fff;display:flex;align-items:center;gap:5px;cursor:pointer}
-    #vc.mini #vc-swap-hint,#vc.mini #vc-ctl{display:none}
-    #vc.mini:not(.swapped) #vc-self,#vc.mini:not(.swapped) #vc-grid video:not(:first-child){display:none}
+    #vc.mini #vc-swap-hint,#vc.mini #vc-ctl,#vc.mini #vc-emote-bar,#vc.mini .vc-name{display:none!important}
+    #vc.mini:not(.swapped) #vc-self,#vc.mini:not(.swapped) #vc-grid .vc-tile:not(:first-child){display:none}
     #vc.mini.swapped #vc-grid{display:none}
     #vc.mini.swapped #vc-self{display:block}
-    #vc-ctl{position:absolute;bottom:18px;left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:3}
-    #vc-ctl button{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.16);backdrop-filter:blur(10px);display:grid;place-items:center;color:#fff}
+    #vc-ctl{position:absolute;bottom:16px;left:8px;right:8px;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;z-index:3}
+    #vc-ctl button{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.16);backdrop-filter:blur(10px);display:grid;place-items:center;color:#fff;transition:transform .15s}
+    #vc-ctl button:active{transform:scale(.92)}
     #vc-ctl button.red{background:#e5484d}#vc-ctl button.off{background:#fff;color:#111}
+    #vc-ctl button.end-all{width:auto;padding:0 13px;border-radius:999px;background:#dc2626;font-size:11px;font-weight:700;gap:5px;display:flex;align-items:center;border:1px solid rgba(255,255,255,.25)}
+    #vc-emote-bar{position:absolute;left:12px;right:12px;bottom:74px;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;background:rgba(15,15,20,.9);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:6px 12px;z-index:4;max-width:380px;margin:0 auto}
+    #vc-emote-bar button{font-size:20px;line-height:1;padding:4px;border-radius:50%;transition:transform .15s}
+    #vc-emote-bar button:hover{transform:scale(1.25)}
     #vc-fx{position:absolute;left:10px;right:10px;bottom:84px;max-height:48%;overflow-y:auto;background:rgba(15,15,20,.9);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:6px 12px 12px;z-index:4}
     #vc.mini #vc-fx{display:none}
     .fxr b{font-size:11px;color:#a1a1aa;display:block;margin:8px 0 6px}
@@ -894,9 +911,19 @@
   </div>
 
   <div id="vc" class="hidden mini" onclick="if(curTab!=='videocall')switchTab('videocall')">
-    <div id="vc-grid" onclick="if(curTab==='videocall'&&document.getElementById('vc').classList.contains('swapped')){event.stopPropagation();vcSwapView(false);}"></div>
-    <video id="vc-self" autoplay playsinline muted onclick="if(curTab==='videocall'&&!document.getElementById('vc').classList.contains('swapped')){event.stopPropagation();vcSwapView(true);}" title="Ketuk untuk tukar layar"></video>
+    <div id="vc-grid" onclick="if(curTab==='videocall'&&!document.getElementById('vc').classList.contains('multi')&&document.getElementById('vc').classList.contains('swapped')){event.stopPropagation();vcSwapView(false);}"></div>
+    <video id="vc-self" autoplay playsinline muted onclick="if(curTab==='videocall'&&!document.getElementById('vc').classList.contains('multi')&&!document.getElementById('vc').classList.contains('swapped')){event.stopPropagation();vcSwapView(true);}" title="Ketuk untuk tukar layar"></video>
     <button id="vc-swap-hint" type="button" onclick="event.stopPropagation();vcSwapView()"><i data-lucide="arrow-left-right" class="w-3.5 h-3.5"></i> <span id="vc-swap-label">Layar: Partner</span></button>
+    <div id="vc-emote-bar" class="hidden" onclick="event.stopPropagation()">
+      <button type="button" onclick="vcSendEmote('❤️')" title="Cinta">❤️</button>
+      <button type="button" onclick="vcSendEmote('😂')" title="Ngakak">😂</button>
+      <button type="button" onclick="vcSendEmote('🔥')" title="Keren">🔥</button>
+      <button type="button" onclick="vcSendEmote('👏')" title="Tepuk tangan">👏</button>
+      <button type="button" onclick="vcSendEmote('🥺')" title="Gemes">🥺</button>
+      <button type="button" onclick="vcSendEmote('😘')" title="Cium">😘</button>
+      <button type="button" onclick="vcSendEmote('🎉')" title="Pesta">🎉</button>
+      <button type="button" onclick="vcSendEmote('😱')" title="Kaget">😱</button>
+    </div>
     <div id="vc-fx" class="hidden" onclick="event.stopPropagation()">
       <div class="fxr"><b>Efek wajah</b><div class="fxc" id="fx-e"></div></div>
       <div class="fxr"><b>Latar belakang</b><div class="fxc" id="fx-b"></div><label class="fxu">Unggah wallpaper sendiri<input type="file" accept="image/*" hidden onchange="vcWall(this)"></label></div>
@@ -907,9 +934,11 @@
       <button onclick="vcMic()" id="vc-b-mic" title="Mikrofon"><i data-lucide="mic"></i></button>
       <button onclick="vcCamT()" id="vc-b-cam" title="Kamera"><i data-lucide="video"></i></button>
       <button onclick="vcSwitchCam()" title="Ganti kamera depan/belakang"><i data-lucide="switch-camera"></i></button>
+      <button onclick="vcEmoteT()" title="Kirim Emote"><i data-lucide="smile"></i></button>
       <button onclick="vcFxT()" title="Efek dan latar"><i data-lucide="sparkles"></i></button>
       <button onclick="vcMin()" title="Perkecil"><i data-lucide="minimize-2"></i></button>
-      <button onclick="vcEnd()" class="red" title="Akhiri"><i data-lucide="phone-off"></i></button>
+      <button onclick="vcEnd()" class="red" title="Keluar Video Call"><i data-lucide="phone-off"></i></button>
+      <button id="vc-b-stop-all" onclick="vcStopAll()" class="end-all hidden" title="Hentikan Video Call untuk semua peserta"><i data-lucide="octagon-x" class="w-4 h-4"></i> Stop Total</button>
     </div>
   </div>
   <audio id="html5-audio"></audio>
@@ -1830,9 +1859,23 @@
     function handleIncomingSyncData(data, senderConn) {
       if (!data || typeof data !== 'object') return;
       const fromGuest = isHost && senderConn && !isAdminPeer(senderConn.peer);
-      if (fromGuest && /^(SYNC_|STATE|HISTORY|QUEUE_SET|QUEUE_DEL|LYR_)/.test(String(data.type))) return;
-      if (isHost && !/^(QUEUE_|SEAT|MIC|MEMBERS|HELLO|STATE|HISTORY|PROFILE|EMOTE|NOTICE)/.test(String(data.type))) {
+      if (fromGuest && /^(SYNC_|STATE|HISTORY|QUEUE_SET|QUEUE_DEL|QUEUE_MOVE|LYR_|KICK|VC_STOP_ALL)/.test(String(data.type))) return;
+      if (isHost && !/^(QUEUE_|SEAT|MIC|MEMBERS|HELLO|STATE|HISTORY|PROFILE|EMOTE|NOTICE|KICK|VC_STOP_ALL)/.test(String(data.type))) {
         connections.forEach(c => { if (c !== senderConn && c.open) c.send(data); });
+      }
+      if (data.type === 'KICK') {
+        if (!data.targetId || data.targetId === peer?.id) {
+          showToast('Kamu dikeluarkan dari room oleh Admin.');
+          logout();
+        }
+        return;
+      }
+      if (data.type === 'VC_STOP_ALL') {
+        if (isHost && senderConn) {
+          connections.forEach(c => { if (c !== senderConn && c.open) c.send(data); });
+        }
+        vcForceResetAll(data.by || 'Admin');
+        return;
       }
 
       if (data.type === 'HELLO') {
@@ -1929,6 +1972,9 @@
         broadcastQueue();
       } else if (isHost && data.type === 'QUEUE_DEL') {
         roomQueue = roomQueue.filter(x => x.qid !== data.qid);
+        broadcastQueue();
+      } else if (isHost && data.type === 'QUEUE_MOVE') {
+        queueMoveLocal(data.qid, data.dir);
         broadcastQueue();
       } else if (canManageRoom() && data.type === 'SEAT' && senderConn) {
         setSeat(senderConn.peer, data.seat);
@@ -2200,7 +2246,8 @@
       if (own) {
         extra = `<button onclick="startProfileEdit()" class="mt-4 w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white">✏️ Edit Nama, Foto &amp; Bio</button>${sfx}`;
       } else {
-        extra = `<div class="mt-4 text-left"><div class="text-xs font-extrabold">Kirim emote ke ${esc(name)}</div>
+        const kickBtn = canManageRoom() ? `<button onclick="kickUser('${esc(key)}')" class="mt-3 w-full py-2.5 rounded-xl bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-xs font-bold text-red-300 flex items-center justify-center gap-1.5"><i data-lucide="user-x" class="w-4 h-4"></i> Keluarkan dari Room</button>` : '';
+        extra = `${kickBtn}<div class="mt-4 text-left"><div class="text-xs font-extrabold">Kirim emote ke ${esc(name)}</div>
           <label class="flex items-center gap-2 text-[11px] text-zinc-400 mt-1.5"><input type="checkbox" id="emote-all" /> Kirim ke semua orang di room</label>
           ${emoteGrid()}${sfx}</div>`;
       }
@@ -2210,6 +2257,7 @@
           <div class="flex items-center gap-2"><span class="text-lg font-extrabold">${esc(name)}${own ? ' (kamu)' : ''}</span>${badge}</div>
           ${bio}
         </div>${extra}</div>`;
+      try { lucide.createIcons(); } catch (e) {}
     }
 
     // Emotes & Web Audio Synthesizer
@@ -2619,21 +2667,27 @@
       </div>`;
     }
 
-    const rsRow = (t, i, kind) => `<div class="flex items-center gap-2 p-1.5 rounded-xl bg-white/5">
+    const rsRow = (t, i, kind, total = 0) => `<div class="flex items-center gap-2 p-1.5 rounded-xl bg-white/5">
       <img src="${esc(t.thumb || DEFAULT_LOGO)}" class="w-9 h-9 rounded-lg object-cover shrink-0" />
       <div class="min-w-0 flex-1"><div class="text-[11px] font-semibold text-white truncate">${esc(t.title)}</div><div class="text-[10px] text-zinc-400 truncate">${esc(t.artist)}${t.by ? ' • ' + esc(t.by) : ''}</div></div>
       ${kind === 'res'
         ? `<button onclick="rsPlay(${i})" class="px-2 py-1 rounded-lg bg-rose-600 text-[10px] font-bold text-white">Putar</button><button onclick="rsAdd(${i})" class="px-2 py-1 rounded-lg bg-white/10 text-[10px] font-bold text-white">+ Antre</button>`
-        : `<button onclick="rsQueuePlay('${esc(t.qid)}')" class="px-2 py-1 rounded-lg bg-rose-600 text-[10px] font-bold text-white">Putar</button><button onclick="queueRemove('${esc(t.qid)}')" class="px-2 py-1 rounded-lg bg-white/10 text-[10px] font-bold text-white">✕</button>`}
+        : `<div class="flex items-center gap-1 shrink-0">
+            <button onclick="queueMove('${esc(t.qid)}', -1)" ${i === 0 ? 'disabled' : ''} class="p-1 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 text-white" title="Naikkan antrean"><i data-lucide="chevron-up" class="w-3.5 h-3.5"></i></button>
+            <button onclick="queueMove('${esc(t.qid)}', 1)" ${i >= total - 1 ? 'disabled' : ''} class="p-1 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 text-white" title="Turunkan antrean"><i data-lucide="chevron-down" class="w-3.5 h-3.5"></i></button>
+            <button onclick="rsQueuePlay('${esc(t.qid)}')" class="px-2 py-1 rounded-lg bg-rose-600 text-[10px] font-bold text-white">Putar</button>
+            <button onclick="queueRemove('${esc(t.qid)}')" class="px-2 py-1 rounded-lg bg-white/10 text-[10px] font-bold text-white" title="Hapus">✕</button>
+          </div>`}
     </div>`;
 
     function renderRoomSearch() {
       const res = rsResults.map((t, i) => rsRow(t, i, 'res')).join('') || '';
-      const q = roomQueue.map((t, i) => rsRow(t, i, 'q')).join('') || '<div class="text-[11px] text-zinc-500">Belum ada lagu di antrean. Cari lalu tekan "+ Antre".</div>';
+      const q = roomQueue.map((t, i) => rsRow(t, i, 'q', roomQueue.length)).join('') || '<div class="text-[11px] text-zinc-500">Belum ada lagu di antrean. Cari lalu tekan "+ Antre".</div>';
       document.querySelectorAll('.rs-results').forEach(e => e.innerHTML = res);
       document.querySelectorAll('.rs-queue').forEach(e => e.innerHTML = q);
       document.querySelectorAll('.rs-status').forEach(e => e.textContent = rsStatus);
       document.querySelectorAll('.rs-mode').forEach(e => e.textContent = rsMode === 'music' ? '🎵 Musik' : '🎬 Video');
+      try { lucide.createIcons(); } catch (e) {}
     }
 
     function setRsMode(m) { rsMode = m; if (rsQuery) roomSearchInput(rsQuery); else renderRoomSearch(); }
@@ -2674,6 +2728,21 @@
     function queueRemove(qid) {
       if (isHost || !partnerOnline()) { roomQueue = roomQueue.filter(x => x.qid !== qid); broadcastQueue(); }
       else connections.forEach(c => c.open && c.send({ type: 'QUEUE_DEL', qid }));
+    }
+
+    function queueMoveLocal(qid, dir) {
+      const idx = roomQueue.findIndex(x => x.qid === qid);
+      if (idx < 0) return;
+      const target = idx + (dir < 0 ? -1 : 1);
+      if (target < 0 || target >= roomQueue.length) return;
+      const tmp = roomQueue[idx];
+      roomQueue[idx] = roomQueue[target];
+      roomQueue[target] = tmp;
+    }
+
+    function queueMove(qid, dir) {
+      if (isHost || !partnerOnline()) { queueMoveLocal(qid, dir); broadcastQueue(); }
+      else connections.forEach(c => c.open && c.send({ type: 'QUEUE_MOVE', qid, dir }));
     }
 
     function rsQueuePlay(qid) { const t = roomQueue.find(x => x.qid === qid); if (!t) return; playTrack({ ...t }, false); queueRemove(qid); }
@@ -2880,37 +2949,116 @@
         : 'Semua normal di perangkat ini. Kalau teman masih gagal, minta mereka muat ulang dan jalankan tes ini juga di perangkat mereka.';
     }
 
-    // Video Call (memakai koneksi PeerJS room yang sama dengan voice)
+    // Video Call Multi-User hingga 6 peserta (memakai koneksi PeerJS room yang sama dengan voice)
+    const VC_MAX_USERS = 6;
     let vcOn = false;
     const _attachVoice = attachVoice, _dropVoice = dropVoice, _stopVoice = stopVoice;
     attachVoice = function (id, s) {
-      if (s.getVideoTracks().length) { vcAttach(id, s); try { watchLevel(id, s); } catch (e) {} if (!vcOn) vcInvite(); return; }
+      if (s.getVideoTracks().length) {
+        if (!document.getElementById('vct-' + id) && vcRemoteCount() >= VC_MAX_USERS - 1) {
+          showToast('Video call penuh (maksimal 6 peserta)');
+          return;
+        }
+        vcAttach(id, s);
+        try { watchLevel(id, s); } catch (e) {}
+        if (!vcOn) vcInvite();
+        return;
+      }
       _attachVoice(id, s);
     };
-    dropVoice = function (id) { document.getElementById('vcv-' + id)?.remove(); _dropVoice(id); };
+    dropVoice = function (id) {
+      document.getElementById('vct-' + id)?.remove();
+      _dropVoice(id);
+      vcUpdateGrid();
+    };
+    const vcRemoteCount = () => document.querySelectorAll('#vc-grid .vc-tile[data-remote="1"]').length;
     let vcSwapped = false;
     function vcSwapView(force) {
-      const el = document.getElementById('vc'); if (!el) return;
+      const el = document.getElementById('vc'); if (!el || el.classList.contains('multi')) return;
       vcSwapped = typeof force === 'boolean' ? force : !vcSwapped;
       el.classList.toggle('swapped', vcSwapped);
       const lbl = document.getElementById('vc-swap-label');
       if (lbl) lbl.textContent = vcSwapped ? 'Layar: Kamu' : 'Layar: Partner';
     }
-    stopVoice = function () { vcPipeStop(true); if (vcRaw) vcRaw.getTracks().forEach(t => t.stop()); vcRaw = null; document.getElementById('vc-fx')?.classList.add('hidden'); _stopVoice(); vcOn = false; vcSwapped = false; document.getElementById('vc')?.classList.remove('swapped'); document.getElementById('vc-grid').innerHTML = ''; vcLayout(); };
+    stopVoice = function () {
+      vcPipeStop(true);
+      if (vcRaw) vcRaw.getTracks().forEach(t => t.stop());
+      vcRaw = null;
+      document.getElementById('vc-fx')?.classList.add('hidden');
+      document.getElementById('vc-emote-bar')?.classList.add('hidden');
+      _stopVoice();
+      vcOn = false; vcSwapped = false;
+      const el = document.getElementById('vc');
+      if (el) el.classList.remove('swapped', 'multi');
+      const grid = document.getElementById('vc-grid');
+      if (grid) { grid.innerHTML = ''; grid.className = ''; }
+      vcLayout();
+    };
     function vcAttach(id, s) {
-      let v = document.getElementById('vcv-' + id);
-      if (!v) { v = document.createElement('video'); v.id = 'vcv-' + id; v.autoplay = true; v.playsInline = true; document.getElementById('vc-grid').appendChild(v); }
-      v.srcObject = s; v.play().catch(() => {});
+      const grid = document.getElementById('vc-grid');
+      let tile = document.getElementById('vct-' + id);
+      if (!tile) {
+        tile = document.createElement('div');
+        tile.id = 'vct-' + id;
+        tile.dataset.remote = '1';
+        tile.className = 'vc-tile';
+        const nm = (members[id] && members[id].name) || 'Peserta';
+        tile.innerHTML = `<video id="vcv-${esc(id)}" autoplay playsinline></video><span class="vc-name">${esc(nm)}</span>`;
+        grid.appendChild(tile);
+      } else {
+        const lbl = tile.querySelector('.vc-name');
+        if (lbl && members[id]?.name) lbl.textContent = members[id].name;
+      }
+      const v = tile.querySelector('video');
+      v.srcObject = s;
+      v.play().catch(() => {});
+      vcUpdateGrid();
+    }
+    function vcUpdateGrid() {
+      const el = document.getElementById('vc'), grid = document.getElementById('vc-grid');
+      if (!el || !grid) return;
+      const remotes = vcRemoteCount();
+      const total = remotes + (vcOn ? 1 : 0);
+      const isMulti = vcOn && total >= 3;
+      el.classList.toggle('multi', isMulti);
+      if (isMulti && vcSwapped) {
+        vcSwapped = false;
+        el.classList.remove('swapped');
+      }
+      let selfTile = document.getElementById('vct-self');
+      if (isMulti && localStream) {
+        if (!selfTile) {
+          selfTile = document.createElement('div');
+          selfTile.id = 'vct-self';
+          selfTile.className = 'vc-tile';
+          selfTile.innerHTML = `<video id="vc-self-grid" autoplay playsinline muted></video><span class="vc-name">${esc(myDisplayName)} (kamu)</span>`;
+          grid.appendChild(selfTile);
+        }
+        const gv = selfTile.querySelector('video');
+        if (gv && gv.srcObject !== localStream) {
+          gv.srcObject = localStream;
+          gv.play().catch(() => {});
+        }
+        gv.style.transform = (fx.mir && vcFacing === 'user') ? 'scaleX(-1)' : '';
+      } else if (selfTile) {
+        selfTile.remove();
+      }
+      grid.className = '';
+      if (total === 2 && !vcOn) grid.classList.add('g-2');
+      else if (total === 3) grid.classList.add('g-3', 'g-4');
+      else if (total === 4) grid.classList.add('g-4');
+      else if (total >= 5) grid.classList.add('g-6');
     }
     function vcInvite() {
-      document.getElementById('vc-hint').textContent = 'Partner sudah mulai video call. Tekan gabung untuk menyalakan kamera.';
+      document.getElementById('vc-hint').textContent = 'Ada video call aktif di room. Tekan gabung untuk menyalakan kamera (maks 6 peserta).';
       document.getElementById('vc-start-btn').textContent = 'Gabung video call';
       document.getElementById('vc-nav-dot').classList.remove('hidden');
-      showToast('Partner mengajak video call');
+      showToast('Ada video call aktif di room!');
     }
     async function vcToggle() {
       if (vcOn) return vcEnd();
       if (!isRoomConnected) return showToast('Gabung room dulu di tab Bareng');
+      if (vcRemoteCount() >= VC_MAX_USERS) return showToast('Video call sudah penuh (6/6 peserta)');
       let s;
       try { s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 } }, audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
       catch (e) { return showToast('Izin kamera atau mikrofon ditolak'); }
@@ -2918,12 +3066,52 @@
       vcRaw = s; localStream = new MediaStream([...s.getAudioTracks(), ...s.getVideoTracks()]); voiceOn = true; voiceMuted = false; vcOn = true;
       const sv = document.getElementById('vc-self'); sv.srcObject = localStream; vcFacing = 'user'; vcMirUI(); vcFxUI(); vcApply();
       watchLevel(peer.id, s);
-      new Set([...Object.keys(members), ...connections.map(c => c.peer)]).forEach(id => id !== peer.id && callPeer(id));
-      appendSystemChat(myDisplayName + ' memulai video call');
+      const targets = Array.from(new Set([...Object.keys(members), ...connections.map(c => c.peer)])).filter(id => id !== peer.id).slice(0, VC_MAX_USERS - 1);
+      targets.forEach(id => callPeer(id));
+      appendSystemChat(myDisplayName + ' bergabung ke video call');
       document.getElementById('vc-nav-dot').classList.add('hidden');
-      updateVoiceUI(); announceMic(); vcLayout(); switchTab('videocall');
+      updateVoiceUI(); announceMic(); vcUpdateGrid(); vcLayout(); switchTab('videocall');
     }
     function vcEnd() { stopVoice(); announceMic(); if (curTab === 'videocall') switchTab(vcPrev); }
+    function vcStopAll() {
+      if (!canManageRoom()) return showToast('Hanya admin yang bisa menghentikan total video call');
+      connections.forEach(c => { if (c.open) c.send({ type: 'VC_STOP_ALL', by: myDisplayName }); });
+      vcForceResetAll(myDisplayName);
+    }
+    function vcForceResetAll(byName) {
+      Object.keys(voiceCalls).forEach(id => {
+        try { voiceCalls[id].close(); } catch (e) {}
+        dropVoice(id);
+      });
+      if (vcOn || voiceOn) stopVoice();
+      announceMic();
+      const hint = document.getElementById('vc-hint');
+      const btn = document.getElementById('vc-start-btn');
+      const dot = document.getElementById('vc-nav-dot');
+      if (hint) hint.textContent = 'Gabung room di tab Bareng dulu, lalu mulai video call sambil dengerin lagu.';
+      if (btn) btn.textContent = 'Mulai video call';
+      if (dot) dot.classList.add('hidden');
+      appendSystemChat(`🛑 Video call dihentikan total oleh ${byName}.`);
+      showToast(`Video call dihentikan total oleh ${byName}`);
+      if (curTab === 'videocall') switchTab(vcPrev);
+    }
+    function vcEmoteT() {
+      document.getElementById('vc-fx')?.classList.add('hidden');
+      document.getElementById('vc-emote-bar')?.classList.toggle('hidden');
+    }
+    function vcSendEmote(emoji) {
+      spawnFloatingEmoji(emoji);
+      const emoteObj = EMOTES.find(x => x.emoji === emoji);
+      if (emoteObj) {
+        showEmoteFx(emoteObj, `${myDisplayName}`, true);
+        playEmoteSound(emoteObj.id, 0.45);
+      }
+      connections.forEach(c => {
+        if (!c.open) return;
+        if (emoteObj) c.send({ type: 'EMOTE', emote: emoteObj.id, to: 'all', from: peer?.id, fromName: myDisplayName });
+        else c.send({ type: 'REACTION', emoji });
+      });
+    }
     function vcMin() { switchTab(vcPrev === 'videocall' ? 'together' : vcPrev); }
     function vcMic() { if (!localStream) return; voiceMuted = !voiceMuted; localStream.getAudioTracks().forEach(t => t.enabled = !voiceMuted); vcBtn('vc-b-mic', voiceMuted, 'mic-off', 'mic'); updateVoiceUI(); announceMic(); }
     function vcCamT() { if (!localStream) return; const t = localStream.getVideoTracks()[0]; if (!t) return; const on = !t.enabled; t.enabled = on; vcRaw?.getVideoTracks().forEach(x => x.enabled = on); vcBtn('vc-b-cam', !on, 'video-off', 'video'); }
@@ -2933,21 +3121,31 @@
       el.classList.toggle('hidden', !vcOn);
       el.classList.toggle('full', vcOn && curTab === 'videocall');
       el.classList.toggle('mini', vcOn && curTab !== 'videocall');
-      if (!(vcOn && curTab === 'videocall')) document.getElementById('vc-fx')?.classList.add('hidden');
+      if (!(vcOn && curTab === 'videocall')) {
+        document.getElementById('vc-fx')?.classList.add('hidden');
+        document.getElementById('vc-emote-bar')?.classList.add('hidden');
+      }
+      const stopAllBtn = document.getElementById('vc-b-stop-all');
+      if (stopAllBtn) stopAllBtn.classList.toggle('hidden', !(vcOn && canManageRoom()));
       const b = document.getElementById('vc-start-btn'); if (b && vcOn) b.textContent = 'Akhiri video call';
       if (b && !vcOn && !b.textContent.startsWith('Gabung')) b.textContent = 'Mulai video call';
     }
 
 
     // Efek wajah, latar, filter (MediaPipe dimuat saat dipilih)
-    const FX = { none: 'Tanpa', glasses: 'Kacamata', heart: 'Mata hati', crown: 'Mahkota', flower: 'Bunga', cat: 'Kucing', bear: 'Beruang', rabbit: 'Kelinci', clown: 'Badut', blush: 'Pipi merah', halo: 'Malaikat', devil: 'Iblis', kiss: 'Cium', sparkle: 'Kilau', hat: 'Topi' };
+    const FX = { none: 'Tanpa', wide: 'Muka Melebar', glasses: 'Kacamata', heart: 'Mata hati', crown: 'Mahkota', flower: 'Bunga', cat: 'Kucing', bear: 'Beruang', rabbit: 'Kelinci', clown: 'Badut', blush: 'Pipi merah', halo: 'Malaikat', devil: 'Iblis', kiss: 'Cium', sparkle: 'Kilau', hat: 'Topi' };
     const BGS = { none: 'Asli', blur: 'Blur', sunset: 'Senja', galaxy: 'Galaksi', ocean: 'Laut', pastel: 'Pastel', sakura: 'Sakura', night: 'Malam', mint: 'Mint' };
     const FLT = { none: 'Normal', warm: 'Hangat', cool: 'Dingin', bw: 'Hitam putih', vintage: 'Vintage', glow: 'Cerah' };
     const FLTCSS = { none: 'none', warm: 'sepia(.25) saturate(1.3) hue-rotate(-10deg)', cool: 'saturate(1.1) hue-rotate(15deg) brightness(1.05)', bw: 'grayscale(1) contrast(1.1)', vintage: 'sepia(.55) contrast(.95) brightness(1.05)', glow: 'brightness(1.12) contrast(1.05) saturate(1.15)' };
     const BGG = { sunset: ['#ff7e5f', '#feb47b', '#6a3093'], galaxy: ['#0f0c29', '#302b63', '#24243e'], ocean: ['#2193b0', '#6dd5ed', '#b2fefa'], pastel: ['#ffd1ff', '#fad0c4', '#a1c4fd'], sakura: ['#ffdde1', '#ee9ca7', '#ffd1dc'], night: ['#0f2027', '#203a43', '#2c5364'], mint: ['#a8edea', '#fed6e3', '#d4fc79'] };
     let fx = { e: 'none', b: 'none', f: 'none', mir: true, flip: false, img: null }, vcRaw = null, vcPipe = null, vcML = {}, vcFacing = 'user';
     // Pratinjau cermin hanya untuk kamera depan; kamera belakang tampil apa adanya
-    const vcMirUI = () => document.getElementById('vc-self').classList.toggle('mir', fx.mir && vcFacing === 'user');
+    const vcMirUI = () => {
+      const on = fx.mir && vcFacing === 'user';
+      document.getElementById('vc-self')?.classList.toggle('mir', on);
+      const gv = document.getElementById('vc-self-grid');
+      if (gv) gv.style.transform = on ? 'scaleX(-1)' : '';
+    };
     async function vcSwitchCam() {
       if (!vcRaw) return;
       try { const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput'); if (cams.length < 2) return showToast('Perangkat ini hanya punya satu kamera'); } catch (e) {}
@@ -2994,7 +3192,9 @@
       const old = localStream.getVideoTracks()[0]; if (old === tr) return;
       if (old) localStream.removeTrack(old); localStream.addTrack(tr);
       Object.values(voiceCalls).forEach(c => (c.peerConnection?.getSenders() || []).forEach(s => { if (s.track && s.track.kind === 'video') s.replaceTrack(tr).catch(() => {}); }));
-      const sv = document.getElementById('vc-self'); if (sv) sv.srcObject = new MediaStream([tr]);
+      const ms = new MediaStream([tr]);
+      const sv = document.getElementById('vc-self'); if (sv) sv.srcObject = ms;
+      const gv = document.getElementById('vc-self-grid'); if (gv) gv.srcObject = ms;
     }
     async function vcPipeStart() {
       const rt = vcRaw.getVideoTracks()[0]; if (!rt) return;
@@ -3078,6 +3278,41 @@
         if (e === 'cat') { tri({ x: nose.x - fw * .04 * dx, y: nose.y - fw * .04 * dy }, { x: nose.x + fw * .04 * dx, y: nose.y + fw * .04 * dy }, { x: nose.x + fw * .035 * ux * -1, y: nose.y + fw * .035 * uy * -1 }, '#ff7a9c'); c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 2; [-1, 1].forEach(k => [-.05, .02, .09].forEach(o => { const a = side(nose, k * .16), b = side(up(nose, -o), k * .5); c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke(); })); }
       } else if (e === 'bear') { [-1, 1].forEach(k => { const p = up(side(top, k * .36), -.02); ell(p, fw * .17, fw * .17, '#8d5a3b'); ell(p, fw * .09, fw * .09, '#e8c4a0'); }); ell(nose, fw * .08, fw * .06, '#5b3a29'); }
       else if (e === 'rabbit') [-1, 1].forEach(k => { const p = up(side(top, k * .2), .42); ell(p, fw * .1, fw * .32, '#fff'); ell(up(side(top, k * .2), .42), fw * .05, fw * .24, '#ffc2d1'); });
+      else if (e === 'wide') {
+        // Efek distorsi muka melebar (horizontal bulge warp ala filter WhatsApp)
+        const cx = Math.round(nose.x), cy = Math.round((nose.y + mo.y) * 0.5);
+        const rx = Math.min(W * 0.48, Math.max(60, Math.round(fw * 0.92)));
+        const ry = Math.min(H * 0.48, Math.max(60, Math.round(Math.hypot(chin.x - top.x, chin.y - top.y) * 0.68)));
+        const x0 = Math.max(0, cx - rx), y0 = Math.max(0, cy - ry);
+        const bw = Math.min(W, cx + rx) - x0, bh = Math.min(H, cy + ry) - y0;
+        if (bw > 16 && bh > 16) {
+          const srcImg = c.getImageData(x0, y0, bw, bh);
+          const dstImg = c.createImageData(bw, bh);
+          const sd = srcImg.data, dd = dstImg.data;
+          const strength = 0.52;
+          for (let py = 0; py < bh; py++) {
+            const ny = (py + y0 - cy) / ry;
+            const ny2 = ny * ny;
+            for (let px = 0; px < bw; px++) {
+              const nx = (px + x0 - cx) / rx;
+              const r2 = nx * nx + ny2;
+              let sx = px, sy = py;
+              if (r2 < 1) {
+                const falloff = Math.cos(Math.sqrt(r2) * Math.PI * 0.5);
+                const scaleX = 1 - strength * falloff * falloff;
+                const scaleY = 1 + 0.12 * falloff * falloff;
+                sx = Math.round((nx * scaleX) * rx + cx - x0);
+                sy = Math.round((ny * scaleY) * ry + cy - y0);
+                if (sx < 0) sx = 0; else if (sx >= bw) sx = bw - 1;
+                if (sy < 0) sy = 0; else if (sy >= bh) sy = bh - 1;
+              }
+              const di = (py * bw + px) * 4, si = (sy * bw + sx) * 4;
+              dd[di] = sd[si]; dd[di + 1] = sd[si + 1]; dd[di + 2] = sd[si + 2]; dd[di + 3] = sd[si + 3];
+            }
+          }
+          c.putImageData(dstImg, x0, y0);
+        }
+      }
     }
 
     // Voice Seats
@@ -3117,12 +3352,33 @@
     }, 150);
 
     const avatarGrad = n => { let h = 0; for (const c of String(n)) h = (h * 31 + c.charCodeAt(0)) % 360; return `linear-gradient(135deg,hsl(${h} 85% 62%),hsl(${(h + 55) % 360} 85% 55%))`; };
+    function kickUser(id) {
+      if (!canManageRoom()) return showToast('Hanya admin yang bisa mengeluarkan peserta');
+      if (!id || id === peer?.id) return;
+      const nm = (members[id] && members[id].name) || 'Peserta';
+      if (!confirm(`Keluarkan ${nm} dari room?`)) return;
+      const conn = connections.find(c => c.peer === id);
+      if (conn && conn.open) {
+        try { conn.send({ type: 'KICK', targetId: id }); } catch (e) {}
+        setTimeout(() => { try { conn.close(); } catch (e) {} }, 250);
+      }
+      delete members[id];
+      dropVoice(id);
+      broadcastMembers();
+      connections.forEach(c => { if (c.open && c.peer !== id) c.send({ type: 'NOTICE', text: `🚫 ${nm} dikeluarkan dari room oleh Admin.` }); });
+      appendSystemChat(`🚫 ${nm} dikeluarkan dari room.`);
+      closeProfile();
+      showToast(`${nm} telah dikeluarkan`);
+    }
+
     function seatHTML(m, i, c) {
       const sz = c ? 'w-11 h-11' : 'w-16 h-16', mic = m.mic === 'on' ? '🎙️' : '🔇';
+      const canKick = !c && canManageRoom() && m.id !== peer?.id;
       return `<div data-seat-id="${esc(m.id)}" onclick="openProfile('${esc(m.id)}')" class="seat flex flex-col items-center gap-1 shrink-0 cursor-pointer active:scale-95 transition">
         <div class="ring relative ${sz} rounded-full p-[3px]" style="background:${avatarGrad(m.name)}">
           <div class="w-full h-full rounded-full bg-zinc-950/40 overflow-hidden flex items-center justify-center ${c ? 'text-base' : 'text-xl'} font-extrabold text-white">${avatarInner(m.id, m.name)}</div>
           ${i === 0 ? '<span class="absolute -top-2.5 left-1/2 -translate-x-1/2 text-sm">👑</span>' : ''}
+          ${canKick ? `<button type="button" onclick="event.stopPropagation();kickUser('${esc(m.id)}')" title="Keluarkan ${esc(m.name)}" class="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-red-600 hover:bg-red-500 text-white border border-zinc-950 shadow-lg flex items-center justify-center transition"><i data-lucide="user-x" class="w-3.5 h-3.5"></i></button>` : ''}
           <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-zinc-900 border border-white/20 text-[10px] flex items-center justify-center">${mic}</span>
         </div>
         <div class="text-[11px] font-semibold text-white truncate max-w-[76px]">${esc(m.name)}${m.id === peer?.id ? ' (kamu)' : ''}</div>
@@ -3139,6 +3395,7 @@
       if (main) main.innerHTML = make(false);
       if (fs) fs.innerHTML = isRoomConnected ? make(true) : '';
       const cnt = document.getElementById('voice-count'); if (cnt) cnt.textContent = `${by.filter(Boolean).length}/${SEAT_N}`;
+      try { lucide.createIcons(); } catch (e) {}
     }
 
     // Romantic Tracks for Nana
