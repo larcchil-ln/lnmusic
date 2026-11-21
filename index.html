@@ -24,6 +24,9 @@
       font-family: 'Plus Jakarta Sans', sans-serif;
       -webkit-tap-highlight-color: transparent;
     }
+    html, body {
+      overscroll-behavior-y: contain;
+    }
     body {
       background-color: #060609;
       background-image:
@@ -32,6 +35,37 @@
         radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
       color: #fafafa;
       overflow-x: hidden;
+    }
+    #fullscreen-player {
+      overscroll-behavior-y: contain;
+      will-change: transform, opacity;
+    }
+    @media (min-width: 1024px) {
+      #fs-stage-wrap {
+        max-width: 1480px !important;
+        padding-left: 2.5rem !important;
+        padding-right: 2.5rem !important;
+        gap: 2rem !important;
+      }
+      #fs-video-container {
+        max-width: 100% !important;
+        width: 100% !important;
+        border-radius: 1.75rem !important;
+        box-shadow: 0 30px 90px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.12) !important;
+      }
+      #fs-cover-container {
+        width: 26rem !important;
+        height: 26rem !important;
+      }
+      #fs-lyrics-container {
+        max-width: 100% !important;
+      }
+    }
+    @media (min-width: 1280px) {
+      #fs-cover-container {
+        width: 29rem !important;
+        height: 29rem !important;
+      }
     }
 
     /* Custom Scrollbar */
@@ -506,26 +540,68 @@
             </div>
           </div>
 
-          <!-- Login / Guest Setup -->
-          <div id="room-setup-area" class="max-w-md mx-auto w-full">
-            <div class="p-6 rounded-2xl bg-white/[0.03] border border-white/10 space-y-4">
-              <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
-                <i data-lucide="lock" class="w-5 h-5"></i>
+          <!-- Login / Custom Room / Guest Setup -->
+          <div id="room-setup-area" class="max-w-3xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Card 1: Buat Room Baru / Gabung Room Bebas (Siapapun Bisa) -->
+            <div class="p-5 md:p-6 rounded-2xl bg-gradient-to-br from-rose-500/[0.08] via-zinc-950/60 to-violet-500/[0.08] border border-rose-500/25 flex flex-col justify-between space-y-4">
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500/25 to-violet-500/25 text-rose-300 flex items-center justify-center border border-white/10">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                  </div>
+                  <span class="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[10px] font-bold">Publik / Bebas</span>
+                </div>
+                <div>
+                  <h4 class="font-extrabold text-base text-white">Buat Room Baru / Gabung Kode</h4>
+                  <p class="text-xs text-zinc-400 mt-0.5">Siapapun bisa bikin room sendiri atau gabung pakai kode room dari teman tanpa login.</p>
+                </div>
+                <div class="flex p-1 rounded-xl bg-zinc-950/90 border border-white/10 text-xs font-semibold">
+                  <button type="button" id="croom-tab-create" onclick="switchCustomRoomTab('create')" class="flex-1 py-2 rounded-lg bg-gradient-to-r from-rose-600 to-violet-600 text-white transition">Buat Room</button>
+                  <button type="button" id="croom-tab-join" onclick="switchCustomRoomTab('join')" class="flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition">Gabung Kode</button>
+                </div>
+                <form id="form-create-custom-room" onsubmit="doCreateCustomRoom(event)" class="space-y-2.5">
+                  <input id="croom-host-name" type="text" maxlength="20" placeholder="Nama kamu (Host)" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-none" />
+                  <input id="croom-title" type="text" maxlength="28" placeholder="Nama Room (opsional, misal: Nobar Santai)" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-none" />
+                  <p id="croom-create-error" class="hidden text-xs text-rose-400"></p>
+                  <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 to-violet-600 hover:opacity-95 text-xs font-bold text-white transition shadow-lg shadow-rose-600/25 flex items-center justify-center gap-1.5">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Buat &amp; Masuk Room Baru
+                  </button>
+                </form>
+                <form id="form-join-custom-room" onsubmit="doJoinCustomRoom(event)" class="hidden space-y-2.5">
+                  <input id="jroom-guest-name" type="text" maxlength="20" placeholder="Nama kamu" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-violet-500 focus:outline-none" />
+                  <input id="jroom-code" type="text" maxlength="20" autocapitalize="characters" placeholder="Kode Room (contoh: LN-8492)" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white uppercase tracking-wider focus:border-violet-500 focus:outline-none" />
+                  <p id="croom-join-error" class="hidden text-xs text-rose-400"></p>
+                  <button type="submit" class="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white transition shadow-lg shadow-violet-600/25 flex items-center justify-center gap-1.5">
+                    <i data-lucide="log-in" class="w-4 h-4"></i> Gabung ke Room
+                  </button>
+                </form>
               </div>
-              <h4 class="font-bold text-base">Masuk ke Room Kita</h4>
-              <p class="text-xs text-zinc-400">Login dengan akunmu</p>
-              <form onsubmit="doLogin(event)" class="space-y-3">
+              <p class="text-[10px] text-zinc-500">Pembuat room otomatis menjadi Host (Admin) yang bisa mengatur antrean, video call, dan peserta.</p>
+            </div>
+
+            <!-- Card 2: Room Kita (Nuki & Nana + Tamu) -->
+            <div class="p-5 md:p-6 rounded-2xl bg-white/[0.03] border border-white/10 space-y-4">
+              <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
+                  <i data-lucide="lock" class="w-5 h-5"></i>
+                </div>
+                <span class="px-2.5 py-0.5 rounded-full bg-white/10 text-zinc-300 text-[10px] font-bold">Room Pribadi</span>
+              </div>
+              <div>
+                <h4 class="font-extrabold text-base">Masuk ke Room Kita</h4>
+                <p class="text-xs text-zinc-400 mt-0.5">Login dengan akunmu atau gabung sebagai tamu</p>
+              </div>
+              <form onsubmit="doLogin(event)" class="space-y-2.5">
                 <input id="login-user" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" placeholder="Username" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-none" />
                 <input id="login-pass" type="password" autocomplete="current-password" placeholder="Password" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-none" />
                 <p id="login-error" class="hidden text-xs text-rose-400"></p>
-                <button type="submit" class="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white transition shadow-lg shadow-rose-600/20">Masuk</button>
+                <button type="submit" class="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white transition shadow-lg shadow-rose-600/20">Masuk</button>
               </form>
-              <div class="flex items-center gap-3 text-[11px] text-zinc-500"><div class="flex-1 h-px bg-white/10"></div>atau<div class="flex-1 h-px bg-white/10"></div></div>
-              <form onsubmit="doGuestLogin(event)" class="space-y-3">
-                <p class="text-xs text-zinc-400">Masuk sebagai <b class="text-zinc-200">Tamu</b>: tinggal isi nama, tanpa password. Tamu bisa ngobrol, voice, kirim emote, dan tambah lagu ke antrean. Tamu tidak bisa melihat riwayat chat pribadi.</p>
+              <div class="flex items-center gap-3 text-[11px] text-zinc-500"><div class="flex-1 h-px bg-white/10"></div>atau tamu di Room Kita<div class="flex-1 h-px bg-white/10"></div></div>
+              <form onsubmit="doGuestLogin(event)" class="space-y-2">
                 <div class="flex gap-2">
-                  <input id="guest-name" type="text" maxlength="20" autocomplete="nickname" placeholder="Nama kamu (contoh: Dina)" class="flex-1 min-w-0 bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-violet-500 focus:outline-none" />
-                  <button type="submit" class="px-4 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white transition">Gabung</button>
+                  <input id="guest-name" type="text" maxlength="20" autocomplete="nickname" placeholder="Nama tamu (contoh: Dina)" class="flex-1 min-w-0 bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-violet-500 focus:outline-none" />
+                  <button type="submit" class="px-4 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white transition">Gabung</button>
                 </div>
               </form>
             </div>
@@ -535,10 +611,11 @@
           <div id="room-active-area" class="hidden space-y-5">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-rose-500/15 to-violet-500/15 border border-rose-500/25">
               <div>
-                <span class="text-[11px] text-zinc-400">Room Pribadi:</span>
+                <span id="active-room-type-label" class="text-[11px] text-zinc-400">Room Pribadi:</span>
                 <span id="partner-status" class="ml-1 text-[11px] text-zinc-200"></span>
-                <div class="flex items-center gap-2.5 mt-0.5">
+                <div class="flex flex-wrap items-center gap-2 mt-0.5">
                   <span id="active-room-code" class="text-xl font-extrabold tracking-wider text-white">Nuki &amp; Nana</span>
+                  <span id="active-room-id-badge" class="hidden px-2.5 py-0.5 rounded-lg bg-white/10 border border-white/15 text-[11px] font-mono font-bold text-rose-300"></span>
                 </div>
               </div>
               <div class="flex flex-wrap items-center gap-2">
@@ -578,24 +655,48 @@
 
             <!-- Live Chat & Quick Watch Link -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div class="lg:col-span-2 rounded-2xl bg-zinc-950/80 border border-white/10 p-4 flex flex-col h-72">
-                <div class="flex items-center justify-between pb-2.5 mb-2 border-b border-white/10">
-                  <span class="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
+              <div class="lg:col-span-2 rounded-2xl bg-zinc-950/80 border border-white/10 p-4 flex flex-col h-80">
+                <div class="flex items-center justify-between gap-2 pb-2.5 mb-2 border-b border-white/10">
+                  <span class="text-xs font-bold text-zinc-300 flex items-center gap-1.5 shrink-0">
                     <i data-lucide="message-circle-heart" class="w-4 h-4 text-rose-400"></i> Live Chat &amp; Reaksi
                   </span>
-                  <div class="flex gap-1.5">
-                    <button onclick="sendReaction('❤️')" class="hover:scale-125 transition text-base">❤️</button>
-                    <button onclick="sendReaction('🔥')" class="hover:scale-125 transition text-base">🔥</button>
-                    <button onclick="sendReaction('😂')" class="hover:scale-125 transition text-base">😂</button>
-                    <button onclick="sendReaction('🥺')" class="hover:scale-125 transition text-base">🥺</button>
-                    <button onclick="sendReaction('🍿')" class="hover:scale-125 transition text-base">🍿</button>
+                  <div class="flex items-center gap-1.5">
+                    <button type="button" onclick="sendReaction('❤️')" class="hover:scale-125 transition text-base">❤️</button>
+                    <button type="button" onclick="sendReaction('🔥')" class="hover:scale-125 transition text-base">🔥</button>
+                    <button type="button" onclick="sendReaction('😂')" class="hover:scale-125 transition text-base">😂</button>
+                    <button type="button" onclick="sendReaction('🥺')" class="hover:scale-125 transition text-base">🥺</button>
+                    <button type="button" onclick="sendReaction('🍿')" class="hover:scale-125 transition text-base">🍿</button>
+                    <button type="button" onclick="clearRoomChat()" title="Bersihkan Chat" class="ml-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] hover:bg-red-500/20 text-zinc-400 hover:text-red-300 border border-white/10 text-[10px] font-semibold inline-flex items-center gap-1 transition">
+                      <i data-lucide="eraser" class="w-3 h-3"></i> Clean
+                    </button>
                   </div>
                 </div>
                 <div id="room-chat-messages" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs"></div>
-                <form onsubmit="sendRoomChat(event)" class="flex gap-2 mt-2.5 pt-2 border-t border-white/10">
-                  <input type="text" id="room-chat-input" placeholder="Ketik pesan buat pasanganmu..." class="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-rose-500 focus:outline-none" />
-                  <button type="submit" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-semibold text-white shrink-0">Kirim</button>
-                </form>
+                <div class="mt-2.5 pt-2 border-t border-white/10 space-y-1.5">
+                  <div id="chat-rec-bar" class="hidden items-center justify-between px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-[11px] text-rose-200">
+                    <span class="inline-flex items-center gap-2 font-semibold"><span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> Merekam suara... <span id="chat-rec-sec">0:00</span></span>
+                    <div class="flex items-center gap-1.5">
+                      <button type="button" onclick="cancelVoiceNote()" class="px-2 py-0.5 rounded-lg bg-white/10 text-zinc-300 hover:text-white text-[10px]">Batal</button>
+                      <button type="button" onclick="stopAndSendVoiceNote()" class="px-2.5 py-0.5 rounded-lg bg-rose-600 text-white font-bold text-[10px]">Kirim VN</button>
+                    </div>
+                  </div>
+                  <form onsubmit="sendRoomChat(event)" class="flex items-center gap-1.5">
+                    <label title="Kirim Foto" class="w-9 h-9 rounded-full bg-white/[0.07] hover:bg-rose-500/20 border border-white/10 text-zinc-300 hover:text-rose-300 flex items-center justify-center cursor-pointer shrink-0 transition active:scale-95">
+                      <i data-lucide="image-plus" class="w-4 h-4"></i>
+                      <input type="file" accept="image/*" class="hidden" onchange="handleChatPhotoPick(event)" />
+                    </label>
+                    <button type="button" id="btn-view-once" onclick="toggleChatViewOnce()" title="Mode Foto Sekali Lihat (1x buka lalu hilang)" class="h-9 px-2.5 rounded-full bg-white/[0.07] hover:bg-white/15 border border-white/10 text-zinc-400 text-[11px] font-bold inline-flex items-center gap-1 shrink-0 transition active:scale-95">
+                      <i data-lucide="flame" class="w-3.5 h-3.5"></i><span>1x</span>
+                    </button>
+                    <button type="button" id="btn-chat-vn" onclick="toggleVoiceNoteRec()" title="Rekam Voice Note" class="w-9 h-9 rounded-full bg-white/[0.07] hover:bg-violet-500/20 border border-white/10 text-zinc-300 hover:text-violet-300 flex items-center justify-center shrink-0 transition active:scale-95">
+                      <i data-lucide="mic" class="w-4 h-4"></i>
+                    </button>
+                    <input type="text" id="room-chat-input" placeholder="Ketik pesan..." class="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-full px-3.5 py-2 text-xs text-white focus:border-rose-500 focus:outline-none" />
+                    <button type="submit" class="w-9 h-9 rounded-full bg-gradient-to-r from-rose-600 to-violet-600 hover:opacity-95 text-white flex items-center justify-center shrink-0 shadow-md shadow-rose-600/25 transition active:scale-95" title="Kirim Pesan">
+                      <i data-lucide="send-horizontal" class="w-4 h-4"></i>
+                    </button>
+                  </form>
+                </div>
               </div>
 
               <div class="rounded-2xl bg-zinc-950/80 border border-white/10 p-4 flex flex-col justify-between space-y-3">
@@ -646,25 +747,28 @@
       <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-zinc-950/80 to-zinc-950"></div>
     </div>
 
-    <!-- Header -->
-    <div class="relative z-10 flex items-center justify-between px-5 md:px-10 pt-5 pb-3" style="padding-top:max(20px,env(safe-area-inset-top))">
-      <button onclick="closeFullscreenPlayer()" class="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition" title="Perkecil Player">
-        <i data-lucide="chevron-down" class="w-6 h-6"></i>
-      </button>
-      <div class="text-center">
-        <span class="text-[10px] uppercase tracking-[0.2em] text-rose-300 font-bold block">Sedang Diputar di LNMusic</span>
-        <span id="fs-context-label" class="text-xs text-zinc-300 font-medium">Create by X</span>
+    <!-- Header (Swipe-down handle area on mobile) -->
+    <div id="fs-drag-header" class="relative z-10 px-5 md:px-10 pt-3 pb-3 select-none touch-none" style="padding-top:max(14px,env(safe-area-inset-top))">
+      <div class="md:hidden w-10 h-1.5 rounded-full bg-white/25 mx-auto mb-2.5"></div>
+      <div class="flex items-center justify-between">
+        <button onclick="closeFullscreenPlayer()" class="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition" title="Perkecil Player">
+          <i data-lucide="chevron-down" class="w-6 h-6"></i>
+        </button>
+        <div class="text-center">
+          <span class="text-[10px] uppercase tracking-[0.2em] text-rose-300 font-bold block">Sedang Diputar di LNMusic</span>
+          <span id="fs-context-label" class="text-xs text-zinc-300 font-medium">Create by X</span>
+        </div>
+        <button onclick="openAddToPlaylistModal(currentTrack)" class="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-rose-400 transition" title="Simpan ke Playlist">
+          <i data-lucide="heart-plus" class="w-5 h-5"></i>
+        </button>
       </div>
-      <button onclick="openAddToPlaylistModal(currentTrack)" class="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-rose-400 transition" title="Simpan ke Playlist">
-        <i data-lucide="heart-plus" class="w-5 h-5"></i>
-      </button>
     </div>
 
     <!-- Center Stage -->
-    <div class="relative z-10 flex-1 max-w-6xl w-full mx-auto px-5 md:px-10 py-2 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+    <div id="fs-stage-wrap" class="relative z-10 flex-1 max-w-7xl w-full mx-auto px-5 md:px-10 py-2 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
 
       <!-- Left: Visual Stage (Cover / Video / Lyrics) -->
-      <div class="lg:col-span-7 flex flex-col items-center justify-center space-y-4">
+      <div class="lg:col-span-8 flex flex-col items-center justify-center space-y-4 w-full">
         <div id="fs-media-toggle" class="inline-flex rounded-full bg-white/10 p-1 border border-white/10 backdrop-blur-md">
           <button onclick="setFullscreenVisual('cover')" id="btn-vis-cover" class="px-4 py-1.5 rounded-full text-xs font-bold bg-white text-zinc-950 transition"><span class="inline-flex items-center gap-1.5"><i data-lucide="disc-3" class="w-3.5 h-3.5"></i>Cover</span></button>
           <button onclick="setFullscreenVisual('video')" id="btn-vis-video" class="px-4 py-1.5 rounded-full text-xs font-semibold text-zinc-300 hover:text-white transition"><span class="inline-flex items-center gap-1.5"><i data-lucide="clapperboard" class="w-3.5 h-3.5"></i>Bioskop</span></button>
@@ -704,7 +808,7 @@
       </div>
 
       <!-- Right: Playback Controls, Vocal Remover & Queue/Chat -->
-      <div class="lg:col-span-5 flex flex-col justify-between space-y-5 bg-white/[0.04] border border-white/10 rounded-3xl p-5 md:p-6 backdrop-blur-xl">
+      <div class="lg:col-span-4 flex flex-col justify-between space-y-4 bg-white/[0.04] border border-white/10 rounded-3xl p-5 backdrop-blur-xl">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
             <h2 id="fs-title" class="text-xl md:text-2xl font-extrabold text-white truncate">Belum ada lagu</h2>
@@ -774,11 +878,25 @@
           </div>
           <div id="fsp-queue"><div id="fs-queue-list" class="max-h-36 overflow-y-auto space-y-1.5 pr-1"></div></div>
           <div id="fsp-search" class="hidden"><div id="room-search-fs"></div></div>
-          <div id="fsp-chat" class="hidden">
+          <div id="fsp-chat" class="hidden space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] text-zinc-400">Obrolan Room</span>
+              <button type="button" onclick="clearRoomChat()" class="px-2 py-0.5 rounded-full bg-white/5 hover:bg-red-500/20 text-zinc-400 hover:text-red-300 text-[10px] font-semibold inline-flex items-center gap-1 transition"><i data-lucide="eraser" class="w-3 h-3"></i> Clean</button>
+            </div>
             <div id="fs-chat-messages" class="h-40 overflow-y-auto space-y-2 pr-1 text-xs"></div>
-            <form onsubmit="sendRoomChat(event,'fs-')" class="flex gap-1.5 mt-2">
-              <input id="fs-room-chat-input" placeholder="Ketik pesan..." class="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-rose-500 focus:outline-none" />
-              <button type="submit" class="px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-semibold text-white shrink-0">Kirim</button>
+            <form onsubmit="sendRoomChat(event,'fs-')" class="flex items-center gap-1.5 pt-1">
+              <label title="Kirim Foto" class="w-8 h-8 rounded-full bg-white/[0.07] hover:bg-rose-500/20 border border-white/10 text-zinc-300 flex items-center justify-center cursor-pointer shrink-0">
+                <i data-lucide="image-plus" class="w-3.5 h-3.5"></i>
+                <input type="file" accept="image/*" class="hidden" onchange="handleChatPhotoPick(event)" />
+              </label>
+              <button type="button" onclick="toggleChatViewOnce()" title="Foto Sekali Lihat" class="btn-vo-sync h-8 px-2 rounded-full bg-white/[0.07] border border-white/10 text-zinc-400 text-[10px] font-bold inline-flex items-center gap-0.5 shrink-0">
+                <i data-lucide="flame" class="w-3 h-3"></i>1x
+              </button>
+              <button type="button" onclick="toggleVoiceNoteRec()" title="Voice Note" class="btn-vn-sync w-8 h-8 rounded-full bg-white/[0.07] border border-white/10 text-zinc-300 flex items-center justify-center shrink-0">
+                <i data-lucide="mic" class="w-3.5 h-3.5"></i>
+              </button>
+              <input id="fs-room-chat-input" placeholder="Ketik pesan..." class="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 text-xs text-white focus:border-rose-500 focus:outline-none" />
+              <button type="submit" class="w-8 h-8 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center shrink-0"><i data-lucide="send-horizontal" class="w-3.5 h-3.5"></i></button>
             </form>
           </div>
         </div>
@@ -881,9 +999,26 @@
   <!-- ===================================================================== -->
   <!-- MODALS & SPLASH                                               -->
   <!-- ===================================================================== -->
-  <!-- Profile Modal -->
-  <div id="profile-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-[70] flex items-end sm:items-center justify-center p-3" onclick="if(event.target===this)closeProfile()">
-    <div id="profile-modal-body" class="glass rounded-3xl max-w-sm w-full p-5 border border-white/15 max-h-[90vh] overflow-y-auto"></div>
+  <!-- Profile & Emote Modal -->
+  <div id="profile-modal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-[75] flex items-end sm:items-center justify-center p-3" onclick="if(event.target===this)closeProfile()">
+    <div id="profile-modal-body" class="glass rounded-3xl max-w-sm w-full p-5 border border-white/15 max-h-[90vh] overflow-y-auto shadow-2xl"></div>
+  </div>
+
+  <!-- Photo Viewer Lightbox Modal -->
+  <div id="photo-viewer-modal" class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-[85] flex flex-col items-center justify-center p-4 select-none" onclick="closePhotoViewer()">
+    <div class="w-full max-w-2xl flex items-center justify-between mb-3 px-1" onclick="event.stopPropagation()">
+      <div class="flex items-center gap-2">
+        <span id="pv-sender" class="text-xs font-bold text-white"></span>
+        <span id="pv-vo-badge" class="hidden px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[10px] font-bold">🔥 Foto Sekali Lihat</span>
+      </div>
+      <button type="button" onclick="closePhotoViewer()" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+    <div class="relative max-w-2xl max-h-[78vh] rounded-3xl overflow-hidden border border-white/15 bg-zinc-900 shadow-2xl flex items-center justify-center" onclick="event.stopPropagation()">
+      <img id="pv-img" src="" alt="Preview Foto" class="max-w-full max-h-[78vh] object-contain" />
+    </div>
+    <p id="pv-hint" class="text-[11px] text-zinc-400 mt-3">Ketuk di luar foto untuk menutup</p>
   </div>
 
   <!-- Create Playlist Modal -->
@@ -1003,7 +1138,7 @@
       </div>
     </div>
     <div id="vc-ctl" onclick="event.stopPropagation()">
-      <button id="vc-b-stop-all" onclick="vcStopAll()" class="end-all hidden" title="Hentikan Video Call untuk semua peserta"><i data-lucide="octagon-x" class="w-3.5 h-3.5"></i> End Session </button>
+      <button id="vc-b-stop-all" onclick="vcStopAll()" class="end-all hidden" title="Hentikan Video Call untuk semua peserta"><i data-lucide="octagon-x" class="w-3.5 h-3.5"></i> Stop Total Semua</button>
       <div class="vc-dock">
         <button onclick="vcMic()" id="vc-b-mic" title="Mikrofon"><i data-lucide="mic"></i></button>
         <button onclick="vcCamT()" id="vc-b-cam" title="Kamera"><i data-lucide="video"></i></button>
@@ -1659,7 +1794,7 @@
     // 9. AUTHENTICATION, ROOM STATE & PERSISTENCE
     // =========================================================================
     const ID_SUFFIX = 'k7x2q9m4';
-    const ROOM_LABEL = 'Room Mengobrol';
+    const ROOM_LABEL = 'Nuki & Nana';
     const USERS = {
       nuki: { name: 'Nuki', partner: 'nana', hash: '969a8ff0c04cacdbf3b1571fda2369c022cd11b8f20cd75feda6895df99e6043', peerId: 'lnmusic-nuki-' + ID_SUFFIX },
       nana: { name: 'Nana', partner: 'nuki', hash: 'c4314da79256da8fe80faa6e33c7ffb7bb26869ffe46e93e85c4040bf7bd0c77', peerId: 'lnmusic-nana-' + ID_SUFFIX }
@@ -1715,11 +1850,75 @@
       enterRoom(u);
     }
 
+    // Custom Public Room Support (Siapapun bisa bikin room baru / gabung kode)
+    let customRoom = null; // { role: 'host'|'guest', code: 'LN-XXXX', peerId: 'lnmusic-room-...', title: '...' }
+
+    function switchCustomRoomTab(tab) {
+      const isCreate = tab === 'create';
+      document.getElementById('form-create-custom-room')?.classList.toggle('hidden', !isCreate);
+      document.getElementById('form-join-custom-room')?.classList.toggle('hidden', isCreate);
+      const tC = document.getElementById('croom-tab-create');
+      const tJ = document.getElementById('croom-tab-join');
+      if (tC) tC.className = isCreate ? 'flex-1 py-2 rounded-lg bg-gradient-to-r from-rose-600 to-violet-600 text-white transition' : 'flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition';
+      if (tJ) tJ.className = !isCreate ? 'flex-1 py-2 rounded-lg bg-violet-600 text-white transition' : 'flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition';
+    }
+
+    function doCreateCustomRoom(e) {
+      if (e) e.preventDefault();
+      const errEl = document.getElementById('croom-create-error');
+      const rawName = document.getElementById('croom-host-name').value.trim();
+      if (rawName.length < 2) {
+        errEl.textContent = 'Isi nama kamu minimal 2 huruf';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      errEl.classList.add('hidden');
+      const hostName = cleanName(rawName);
+      const code = 'LN-' + Math.floor(1000 + Math.random() * 9000);
+      const rawTitle = document.getElementById('croom-title').value.trim();
+      const title = rawTitle ? cleanName(rawTitle) : `Room ${hostName}`;
+      customRoom = { role: 'host', code, peerId: 'lnmusic-croom-' + code.toLowerCase(), title };
+      try {
+        localStorage.setItem(SESSION_KEY, 'custom');
+        localStorage.setItem('lnmusic_custom_room', JSON.stringify({ ...customRoom, name: hostName }));
+      } catch (err) {}
+      enterRoom('custom', hostName);
+    }
+
+    function doJoinCustomRoom(e) {
+      if (e) e.preventDefault();
+      const errEl = document.getElementById('croom-join-error');
+      const rawName = document.getElementById('jroom-guest-name').value.trim();
+      const rawCode = document.getElementById('jroom-code').value.trim().toUpperCase();
+      if (rawName.length < 2) {
+        errEl.textContent = 'Isi nama kamu minimal 2 huruf';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      const normCode = rawCode.startsWith('LN-') ? rawCode : ('LN-' + rawCode.replace(/[^A-Z0-9]/g, ''));
+      if (!/^LN-[A-Z0-9]{4,8}$/.test(normCode)) {
+        errEl.textContent = 'Masukkan kode room yang valid (contoh: LN-8492)';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      errEl.classList.add('hidden');
+      const guestName = cleanName(rawName);
+      customRoom = { role: 'guest', code: normCode, peerId: 'lnmusic-croom-' + normCode.toLowerCase(), title: `Room ${normCode}` };
+      try {
+        localStorage.setItem(SESSION_KEY, 'custom');
+        localStorage.setItem('lnmusic_custom_room', JSON.stringify({ ...customRoom, name: guestName }));
+      } catch (err) {}
+      enterRoom('custom', guestName);
+    }
+
     const slimTrack = t => ({ id: t.id, title: t.title, artist: t.artist, thumb: t.thumb, type: t.type, isVideo: !!t.isVideo });
-    const slimChat = () => chatLog.filter(m => !m.sys).slice(-500).map(m => ({ id: m.id, ts: m.ts, sender: m.sender, text: m.text }));
+    const slimChat = () => chatLog.filter(m => !m.sys && !m.viewOnce).slice(-300).map(m => ({
+      id: m.id, ts: m.ts, sender: m.sender, text: m.text || '',
+      kind: m.kind || 'text', media: m.media || '', dur: m.dur || 0
+    }));
 
     function saveChat() {
-      if (session === 'guest') return;
+      if (session === 'guest' || session === 'custom') return;
       try { localStorage.setItem(CHAT_KEY, JSON.stringify(slimChat())); } catch (e) {}
     }
 
@@ -1729,12 +1928,16 @@
     }
 
     function mergeChat(list) {
-      if (!Array.isArray(list) || session === 'guest') return;
+      if (!Array.isArray(list) || session === 'guest' || session === 'custom') return;
       const have = new Set(chatLog.filter(m => !m.sys).map(m => m.id));
       let added = 0;
       list.forEach(m => {
-        if (m && m.id && typeof m.text === 'string' && !have.has(m.id)) {
-          chatLog.push({ id: m.id, ts: m.ts || 0, sender: String(m.sender || '?'), text: m.text, isMe: m.sender === myDisplayName });
+        if (m && m.id && !have.has(m.id)) {
+          chatLog.push({
+            id: m.id, ts: m.ts || 0, sender: String(m.sender || '?'),
+            text: String(m.text || ''), kind: m.kind || 'text',
+            media: m.media || '', dur: m.dur || 0, isMe: m.sender === myDisplayName
+          });
           have.add(m.id); added++;
         }
       });
@@ -1802,9 +2005,21 @@
       if (!session) return;
       const open = connections.filter(c => c.open);
       let on, txt, pill;
-      if (session === 'guest') {
+      if (session === 'custom' && customRoom) {
+        const count = open.length;
+        if (customRoom.role === 'host') {
+          on = count > 0;
+          txt = on ? `🟢 ${count} peserta bergabung` : `⚪ Menunggu teman gabung (Kode: ${customRoom.code})...`;
+          pill = on ? `Host • ${customRoom.code} (${count + 1} online)` : `Room Aktif • ${customRoom.code}`;
+          on = true;
+        } else {
+          on = count > 0;
+          txt = on ? `🟢 Terhubung ke ${customRoom.title}` : `⚪ Menghubungkan ke ${customRoom.code}...`;
+          pill = on ? `Terhubung • ${customRoom.code}` : `Menunggu host ${customRoom.code}...`;
+        }
+      } else if (session === 'guest') {
         on = open.length > 0;
-        txt = on ? '🟢 Terhubung ke room' : '⚪ Menunggu Teman / Teman online...';
+        txt = on ? '🟢 Terhubung ke room' : '⚪ Menunggu Nuki / Nana online...';
         pill = on ? 'Terhubung • ' + ROOM_LABEL : 'Menunggu host...';
       } else {
         const pid = USERS[USERS[session].partner].peerId;
@@ -1820,9 +2035,16 @@
     }
 
     function enterRoom(u, guestName) {
-      session = u; myDisplayName = u === 'guest' ? cleanName(guestName) : USERS[u].name; currentRoomCode = ROOM_LABEL;
+      session = u;
+      if (u === 'custom' && customRoom) {
+        myDisplayName = cleanName(guestName);
+        currentRoomCode = customRoom.title || customRoom.code;
+      } else {
+        myDisplayName = u === 'guest' ? cleanName(guestName) : USERS[u].name;
+        currentRoomCode = ROOM_LABEL;
+      }
       profiles = {}; loadMyProfile();
-      if (u === 'guest') { chatLog = []; roomQueue = []; } else { loadChat(); restoreRoomState(); }
+      if (u === 'guest' || u === 'custom') { chatLog = []; roomQueue = []; } else { loadChat(); restoreRoomState(); }
       renderChat();
       clearInterval(stateTimer); stateTimer = setInterval(saveRoomState, 4000);
       startSession();
@@ -1833,14 +2055,17 @@
     async function startSession(attempt = 0) {
       if (!session) return;
       teardownPeer();
-      isHost = session === 'nuki';
-      const p = await newPeer(session === 'guest' ? null : USERS[session].peerId);
+      isHost = session === 'nuki' || (session === 'custom' && customRoom?.role === 'host');
+      const desiredPeerId = session === 'custom'
+        ? (customRoom?.role === 'host' ? customRoom.peerId : null)
+        : (session === 'guest' ? null : USERS[session].peerId);
+      const p = await newPeer(desiredPeerId);
       if (!session) { try { p.destroy(); } catch (e) {} return; }
       peer = p;
       bindVoice(p);
       keepSignalingAlive(p);
       isRoomConnected = true;
-      activateRoomUI(ROOM_LABEL);
+      activateRoomUI(currentRoomCode);
 
       p.on('open', () => {
         if (peer !== p) return;
@@ -1864,7 +2089,7 @@
         console.warn('PeerJS error:', err);
         if (err.type === 'unavailable-id') {
           if (attempt < 10) { setTimeout(() => { if (session) startSession(attempt + 1); }, 3000); }
-          else showToast('Akun ini sedang aktif di perangkat lain. Tutup dulu di perangkat itu.');
+          else showToast('ID Room atau akun ini sedang aktif di perangkat lain.');
           return;
         }
         if (err.type === 'peer-unavailable') return;
@@ -1876,9 +2101,9 @@
 
     function guestConnectLoop(p) {
       clearInterval(connectLoopTimer);
-      const targets = session === 'nana'
-        ? [USERS.nuki.peerId]
-        : [USERS.nuki.peerId, USERS.nana.peerId];
+      const targets = (session === 'custom' && customRoom)
+        ? [customRoom.peerId]
+        : (session === 'nana' ? [USERS.nuki.peerId] : [USERS.nuki.peerId, USERS.nana.peerId]);
       let idx = 0;
 
       const tick = () => {
@@ -1932,7 +2157,7 @@
 
     function handleIncomingSyncData(data, senderConn) {
       if (!data || typeof data !== 'object') return;
-      const fromGuest = isHost && senderConn && !isAdminPeer(senderConn.peer);
+      const fromGuest = isHost && senderConn && (session === 'custom' || !isAdminPeer(senderConn.peer));
       if (fromGuest && /^(SYNC_|STATE|HISTORY|QUEUE_SET|QUEUE_DEL|QUEUE_MOVE|LYR_|KICK|VC_STOP_ALL)/.test(String(data.type))) return;
       if (isHost && !/^(QUEUE_|SEAT|MIC|MEMBERS|HELLO|STATE|HISTORY|PROFILE|EMOTE|NOTICE|KICK|VC_STOP_ALL)/.test(String(data.type))) {
         connections.forEach(c => { if (c !== senderConn && c.open) c.send(data); });
@@ -2034,7 +2259,13 @@
         if ((data.queueAt || 0) > queueAt) { roomQueue = data.queue || []; queueAt = data.queueAt; renderRoomSearch(); saveRoomState(); }
         if (data.track && (data.trackAt || 0) > trackAt) applyRemoteTrack(data.track, data.time, data.playing, data.trackAt);
       } else if (data.type === 'CHAT') {
-        appendUserChat(data.name, data.text, false, { id: data.id, ts: data.ts });
+        appendUserChat(data.name, data.text, false, {
+          id: data.id, ts: data.ts, kind: data.kind || 'text',
+          media: data.media || '', viewOnce: !!data.viewOnce, dur: data.dur || 0
+        });
+      } else if (data.type === 'VIEW_ONCE_OPENED') {
+        const msg = chatLog.find(m => m.id === data.id);
+        if (msg) { msg.opened = true; msg.media = ''; renderChat(); }
       } else if (data.type === 'REACTION') {
         spawnFloatingEmoji(data.emoji);
       } else if (data.type === 'QUEUE_SET') {
@@ -2099,11 +2330,162 @@
       const input = document.getElementById(p + 'room-chat-input');
       const text = input.value.trim();
       if (!text) return;
-      if (!isRoomConnected) return showToast('Login dulu untuk ngobrol');
+      if (!isRoomConnected) return showToast('Masuk room dulu untuk ngobrol');
       const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7), ts = Date.now();
-      appendUserChat(myDisplayName, text, true, { id, ts });
-      connections.forEach(c => { if (c.open) c.send({ type: 'CHAT', name: myDisplayName, text, id, ts }); });
+      appendUserChat(myDisplayName, text, true, { id, ts, kind: 'text' });
+      connections.forEach(c => { if (c.open) c.send({ type: 'CHAT', name: myDisplayName, text, id, ts, kind: 'text' }); });
       input.value = '';
+    }
+
+    // Modern Photo, View-Once (Sekali Lihat), Voice Note & Clean Chat
+    let chatViewOnceMode = false;
+    function toggleChatViewOnce() {
+      chatViewOnceMode = !chatViewOnceMode;
+      const cls = chatViewOnceMode
+        ? 'h-9 px-2.5 rounded-full bg-amber-500/25 border border-amber-400/60 text-amber-300 text-[11px] font-bold inline-flex items-center gap-1 shrink-0 transition shadow-sm shadow-amber-500/20'
+        : 'h-9 px-2.5 rounded-full bg-white/[0.07] hover:bg-white/15 border border-white/10 text-zinc-400 text-[11px] font-bold inline-flex items-center gap-1 shrink-0 transition active:scale-95';
+      const b1 = document.getElementById('btn-view-once');
+      if (b1) b1.className = cls;
+      document.querySelectorAll('.btn-vo-sync').forEach(el => {
+        el.className = chatViewOnceMode
+          ? 'btn-vo-sync h-8 px-2 rounded-full bg-amber-500/25 border border-amber-400/60 text-amber-300 text-[10px] font-bold inline-flex items-center gap-0.5 shrink-0'
+          : 'btn-vo-sync h-8 px-2 rounded-full bg-white/[0.07] border border-white/10 text-zinc-400 text-[10px] font-bold inline-flex items-center gap-0.5 shrink-0';
+      });
+      showToast(chatViewOnceMode ? '🔥 Mode Foto Sekali Lihat AKTIF' : 'Mode Foto Normal');
+    }
+
+    function handleChatPhotoPick(ev) {
+      const file = ev.target.files && ev.target.files[0];
+      ev.target.value = '';
+      if (!file) return;
+      if (!isRoomConnected) return showToast('Masuk room dulu untuk kirim foto');
+      if (!/^image\//.test(file.type)) return showToast('Pilih file foto/gambar');
+      const img = new Image(), url = URL.createObjectURL(file);
+      img.onload = () => {
+        const MAX = 900;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = c.toDataURL('image/jpeg', 0.78);
+        URL.revokeObjectURL(url);
+        const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7), ts = Date.now();
+        const vo = chatViewOnceMode;
+        appendUserChat(myDisplayName, vo ? '🔥 Foto sekali lihat' : '📷 Foto', true, {
+          id, ts, kind: 'photo', media: dataUrl, viewOnce: vo
+        });
+        connections.forEach(c => {
+          if (c.open) c.send({ type: 'CHAT', name: myDisplayName, text: vo ? '🔥 Foto sekali lihat' : '📷 Foto', id, ts, kind: 'photo', media: dataUrl, viewOnce: vo });
+        });
+        if (vo) toggleChatViewOnce();
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); showToast('Foto tidak bisa dibaca'); };
+      img.src = url;
+    }
+
+    let pvActiveId = null, pvIsViewOnce = false;
+    function openPhotoViewer(msgId) {
+      const m = chatLog.find(x => x.id === msgId);
+      if (!m || !m.media) return showToast('Foto sudah kedaluwarsa atau dibuka');
+      if (m.viewOnce && m.opened) return showToast('Foto sekali lihat sudah pernah dibuka');
+      pvActiveId = msgId;
+      pvIsViewOnce = !!m.viewOnce && !m.isMe;
+      document.getElementById('pv-sender').textContent = `Dari ${m.sender}`;
+      document.getElementById('pv-img').src = m.media;
+      document.getElementById('pv-vo-badge').classList.toggle('hidden', !m.viewOnce);
+      document.getElementById('pv-hint').textContent = pvIsViewOnce
+        ? 'Foto sekali lihat: akan otomatis terhapus setelah ditutup'
+        : 'Ketuk di luar foto untuk menutup';
+      document.getElementById('photo-viewer-modal').classList.remove('hidden');
+      try { lucide.createIcons(); } catch (e) {}
+    }
+
+    function closePhotoViewer() {
+      const modal = document.getElementById('photo-viewer-modal');
+      if (modal) modal.classList.add('hidden');
+      document.getElementById('pv-img').src = '';
+      if (pvActiveId && pvIsViewOnce) {
+        const m = chatLog.find(x => x.id === pvActiveId);
+        if (m) {
+          m.opened = true;
+          m.media = '';
+          renderChat();
+          connections.forEach(c => { if (c.open) c.send({ type: 'VIEW_ONCE_OPENED', id: pvActiveId }); });
+        }
+      }
+      pvActiveId = null; pvIsViewOnce = false;
+    }
+
+    // Voice Note Recorder
+    let vnRecorder = null, vnChunks = [], vnRecTimer = null, vnRecStart = 0, vnCancelFlag = false;
+    async function toggleVoiceNoteRec() {
+      if (!isRoomConnected) return showToast('Masuk room dulu untuk kirim voice note');
+      if (vnRecorder && vnRecorder.state === 'recording') {
+        stopAndSendVoiceNote();
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        vnChunks = [];
+        vnCancelFlag = false;
+        const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
+        vnRecorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+        vnRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) vnChunks.push(e.data); };
+        vnRecorder.onstop = () => {
+          stream.getTracks().forEach(t => t.stop());
+          clearInterval(vnRecTimer);
+          document.getElementById('chat-rec-bar')?.classList.add('hidden');
+          document.getElementById('chat-rec-bar')?.classList.remove('flex');
+          document.getElementById('btn-chat-vn')?.classList.remove('bg-rose-600', 'text-white');
+          if (vnCancelFlag || !vnChunks.length) return;
+          const durSec = Math.max(1, Math.round((Date.now() - vnRecStart) / 1000));
+          const blob = new Blob(vnChunks, { type: vnRecorder.mimeType || 'audio/webm' });
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const audioData = reader.result;
+            const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7), ts = Date.now();
+            appendUserChat(myDisplayName, `🎤 Voice Note (${durSec}d)`, true, { id, ts, kind: 'voice', media: audioData, dur: durSec });
+            connections.forEach(c => {
+              if (c.open) c.send({ type: 'CHAT', name: myDisplayName, text: `🎤 Voice Note (${durSec}d)`, id, ts, kind: 'voice', media: audioData, dur: durSec });
+            });
+          };
+          reader.readAsDataURL(blob);
+        };
+        vnRecorder.start();
+        vnRecStart = Date.now();
+        const bar = document.getElementById('chat-rec-bar');
+        if (bar) { bar.classList.remove('hidden'); bar.classList.add('flex'); }
+        document.getElementById('btn-chat-vn')?.classList.add('bg-rose-600', 'text-white');
+        vnRecTimer = setInterval(() => {
+          const s = Math.floor((Date.now() - vnRecStart) / 1000);
+          const el = document.getElementById('chat-rec-sec');
+          if (el) el.textContent = formatTime(s);
+          if (s >= 45) stopAndSendVoiceNote();
+        }, 300);
+      } catch (err) {
+        showToast('Izin mikrofon ditolak');
+      }
+    }
+
+    function stopAndSendVoiceNote() {
+      if (vnRecorder && vnRecorder.state === 'recording') vnRecorder.stop();
+    }
+    function cancelVoiceNote() {
+      vnCancelFlag = true;
+      if (vnRecorder && vnRecorder.state === 'recording') vnRecorder.stop();
+      showToast('Rekaman dibatalkan');
+    }
+
+    function clearRoomChat() {
+      if (!chatLog.length) return showToast('Chat sudah bersih');
+      chatLog = [];
+      saveChat();
+      renderChat();
+      showToast('Tampilan chat dibersihkan');
     }
 
     function sendReaction(emoji) {
@@ -2126,6 +2508,15 @@
       document.getElementById('room-setup-area').classList.add('hidden');
       document.getElementById('room-active-area').classList.remove('hidden');
       document.getElementById('active-room-code').textContent = code;
+      const typeLbl = document.getElementById('active-room-type-label');
+      const codeBadge = document.getElementById('active-room-id-badge');
+      if (session === 'custom' && customRoom) {
+        if (typeLbl) typeLbl.textContent = customRoom.role === 'host' ? 'Room Kamu (Host):' : 'Room Publik:';
+        if (codeBadge) { codeBadge.textContent = 'Kode: ' + customRoom.code; codeBadge.classList.remove('hidden'); }
+      } else {
+        if (typeLbl) typeLbl.textContent = 'Room Pribadi:';
+        if (codeBadge) codeBadge.classList.add('hidden');
+      }
       document.getElementById('sidebar-room-dot').classList.remove('hidden');
       document.getElementById('fs-context-label').textContent = 'Live Sync Room • ' + code;
       updatePartnerStatus();
@@ -2134,8 +2525,8 @@
 
     function logout() {
       saveRoomState(); saveChat();
-      session = null; clearInterval(stateTimer);
-      try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+      session = null; customRoom = null; clearInterval(stateTimer);
+      try { localStorage.removeItem(SESSION_KEY); localStorage.removeItem('lnmusic_custom_room'); } catch (e) {}
       isRoomConnected = false; isHost = false;
       teardownPeer(); stopVoice();
       try { htmlAudio.pause(); if (ytReady && ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo(); setPlayingUI(false); } catch (e) {}
@@ -2268,12 +2659,26 @@
 
     function setSfx(v) { sfxOn = !!v; try { localStorage.setItem('lnmusic_sfx', v ? '1' : '0'); } catch (e) {} }
 
+    let activeEmoteTab = 'romantis';
+    function switchEmoteCat(cat) {
+      activeEmoteTab = cat;
+      renderProfileModal();
+    }
     function emoteGrid() {
-      return [['romantis', '💕 Romantis'], ['lucu', '😆 Lucu']].map(([cat, title]) =>
-        `<div class="text-[11px] font-bold text-zinc-400 mt-3 mb-1.5">${title}</div><div class="grid grid-cols-4 gap-2">${
-          EMOTES.filter(e => e.cat === cat).map(e =>
-            `<button onclick="sendEmote('${e.id}')" class="py-2 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 transition flex flex-col items-center gap-0.5"><span class="text-2xl leading-none">${e.emoji}</span><span class="text-[9px] text-zinc-400">${esc(e.label)}</span></button>`
-          ).join('')}</div>`).join('');
+      const list = EMOTES.filter(e => e.cat === activeEmoteTab);
+      return `
+        <div class="flex items-center gap-1.5 p-1 rounded-full bg-white/[0.06] border border-white/10 mt-2.5 mb-2.5">
+          <button type="button" onclick="switchEmoteCat('romantis')" class="flex-1 py-1.5 rounded-full text-[11px] font-bold transition ${activeEmoteTab === 'romantis' ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow' : 'text-zinc-400 hover:text-white'}">💕 Romantis</button>
+          <button type="button" onclick="switchEmoteCat('lucu')" class="flex-1 py-1.5 rounded-full text-[11px] font-bold transition ${activeEmoteTab === 'lucu' ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow' : 'text-zinc-400 hover:text-white'}">😆 Seru &amp; Lucu</button>
+        </div>
+        <div class="grid grid-cols-4 gap-1.5 max-h-48 overflow-y-auto pr-0.5 no-scrollbar">
+          ${list.map(e =>
+            `<button type="button" onclick="sendEmote('${e.id}')" title="${esc(e.label)}" class="group py-2 px-1 rounded-2xl bg-white/[0.04] hover:bg-rose-500/20 border border-transparent hover:border-rose-500/35 active:scale-90 transition flex flex-col items-center gap-1">
+              <span class="text-2xl leading-none group-hover:scale-110 transition-transform">${e.emoji}</span>
+              <span class="text-[9px] font-medium text-zinc-400 group-hover:text-white truncate max-w-full">${esc(e.label)}</span>
+            </button>`
+          ).join('')}
+        </div>`;
     }
 
     function renderProfileModal() {
@@ -2690,12 +3095,40 @@
 
     // Room Chat
     let chatLog = [], chatUnread = 0, fsTab = 'queue';
+    function renderChatBubble(m) {
+      if (m.kind === 'photo') {
+        if (m.viewOnce) {
+          if (m.opened) {
+            return `<div class="px-3 py-2 rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-400 italic text-[11px] inline-flex items-center gap-1.5"><i data-lucide="eye-off" class="w-3.5 h-3.5"></i> Foto sekali lihat telah dibuka</div>`;
+          }
+          return `<button type="button" onclick="openPhotoViewer('${esc(m.id)}')" class="px-3.5 py-2.5 rounded-2xl border ${m.isMe ? 'bg-gradient-to-r from-rose-600 to-amber-600 border-amber-300/40 text-white' : 'bg-white/10 hover:bg-white/15 border-amber-400/40 text-amber-200'} text-xs font-bold inline-flex items-center gap-2 shadow-md transition active:scale-95">
+            <span class="w-6 h-6 rounded-full bg-black/25 flex items-center justify-center">🔥</span>
+            <span>Foto Sekali Lihat • Ketuk buka</span>
+          </button>`;
+        }
+        return `<div onclick="openPhotoViewer('${esc(m.id)}')" class="group relative max-w-[200px] rounded-2xl overflow-hidden border border-white/15 cursor-pointer shadow-lg">
+          <img src="${m.media}" alt="Foto" class="w-full max-h-44 object-cover group-hover:scale-105 transition duration-300" />
+          <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+            <span class="px-2.5 py-1 rounded-full bg-black/70 text-[10px] font-bold text-white flex items-center gap-1"><i data-lucide="maximize-2" class="w-3 h-3"></i> Perbesar</span>
+          </div>
+        </div>`;
+      }
+      if (m.kind === 'voice') {
+        return `<div class="px-3 py-2 rounded-2xl max-w-[240px] ${m.isMe ? 'bg-rose-600 text-white' : 'bg-white/10 text-zinc-100'} space-y-1">
+          <div class="text-[10px] font-bold opacity-85 flex items-center gap-1"><i data-lucide="mic" class="w-3 h-3"></i> Voice Note (${m.dur || 1}d)</div>
+          <audio controls preload="metadata" src="${m.media}" class="h-7 w-48 max-w-full rounded-lg"></audio>
+        </div>`;
+      }
+      return `<div class="px-3 py-1.5 rounded-2xl max-w-[80%] break-words ${m.isMe ? 'bg-rose-600 text-white' : 'bg-white/10 text-zinc-100'}">${esc(m.text)}</div>`;
+    }
+
     function renderChat() {
       const h = chatLog.length ? chatLog.slice(-120).map(m => m.sys
         ? `<div class="text-center text-[11px] text-rose-300/80 py-1">${esc(m.text)}</div>`
-        : `<div class="flex flex-col ${m.isMe ? 'items-end' : 'items-start'}"><span class="text-[10px] text-zinc-500 mb-0.5">${esc(m.sender)}</span><div class="px-3 py-1.5 rounded-2xl max-w-[80%] break-words ${m.isMe ? 'bg-rose-600 text-white' : 'bg-white/10 text-zinc-100'}">${esc(m.text)}</div></div>`).join('')
+        : `<div class="flex flex-col ${m.isMe ? 'items-end' : 'items-start'}"><span class="text-[10px] text-zinc-500 mb-0.5">${esc(m.sender)}</span>${renderChatBubble(m)}</div>`).join('')
         : '<div class="text-center text-[11px] text-zinc-500 py-4">Belum ada pesan. Mulai ngobrol 💬</div>';
       ['room-chat-messages', 'fs-chat-messages'].forEach(id => { const b = document.getElementById(id); if (b) { b.innerHTML = h; b.scrollTop = b.scrollHeight; } });
+      try { lucide.createIcons(); } catch (e) {}
     }
 
     function appendSystemChat(msg) { chatLog.push({ sys: true, text: msg, ts: Date.now() }); renderChat(); }
@@ -2703,7 +3136,15 @@
     function appendUserChat(sender, text, isMe, meta) {
       const id = (meta && meta.id) || (Date.now().toString(36) + Math.random().toString(36).slice(2, 7));
       if (chatLog.some(m => m.id === id)) return;
-      chatLog.push({ id, ts: (meta && meta.ts) || Date.now(), sender, text, isMe: sender === myDisplayName });
+      chatLog.push({
+        id, ts: (meta && meta.ts) || Date.now(), sender, text,
+        kind: (meta && meta.kind) || 'text',
+        media: (meta && meta.media) || '',
+        viewOnce: !!(meta && meta.viewOnce),
+        dur: (meta && meta.dur) || 0,
+        opened: false,
+        isMe: sender === myDisplayName
+      });
       saveChat();
       renderChat();
       if (sender === myDisplayName) return;
@@ -3979,9 +4420,14 @@
     });
 
     function copyInviteLink() {
-      const url = location.origin + location.pathname + '?join=1';
+      const url = (session === 'custom' && customRoom)
+        ? `${location.origin}${location.pathname}?room=${encodeURIComponent(customRoom.code)}`
+        : `${location.origin}${location.pathname}?join=1`;
+      const msg = (session === 'custom' && customRoom)
+        ? `Link & Kode Room (${customRoom.code}) disalin!`
+        : 'Link undangan disalin! Kirim ke temanmu.';
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(url).then(() => showToast('Link undangan disalin! Kirim ke temanmu.')).catch(() => prompt('Salin link undangan ini:', url));
+        navigator.clipboard.writeText(url).then(() => showToast(msg)).catch(() => prompt('Salin link undangan ini:', url));
       } else {
         prompt('Salin link undangan ini:', url);
       }
@@ -3989,6 +4435,17 @@
 
     (function checkInviteParam() {
       const params = new URLSearchParams(location.search);
+      const roomParam = params.get('room');
+      if (roomParam && !localStorage.getItem(SESSION_KEY)) {
+        switchTab('together');
+        switchCustomRoomTab('join');
+        const codeInput = document.getElementById('jroom-code');
+        const nameInput = document.getElementById('jroom-guest-name');
+        if (codeInput) codeInput.value = roomParam.toUpperCase();
+        if (nameInput) setTimeout(() => nameInput.focus(), 300);
+        showToast(`Masukkan namamu untuk gabung Room ${roomParam.toUpperCase()}!`);
+        return;
+      }
       if (params.get('join') === '1' && !localStorage.getItem(SESSION_KEY)) {
         switchTab('together');
         const guestInput = document.getElementById('guest-name');
@@ -4003,10 +4460,68 @@
     (function initSession() {
       let u = null;
       try { u = localStorage.getItem(SESSION_KEY); } catch (e) {}
-      if (u === 'guest') {
+      if (u === 'custom') {
+        try {
+          const saved = JSON.parse(localStorage.getItem('lnmusic_custom_room') || 'null');
+          if (saved && saved.code && saved.peerId && saved.name) {
+            customRoom = { role: saved.role, code: saved.code, peerId: saved.peerId, title: saved.title || saved.code };
+            enterRoom('custom', saved.name);
+          }
+        } catch (e) {}
+      } else if (u === 'guest') {
         let n = ''; try { n = localStorage.getItem('lnmusic_guest_name') || ''; } catch (e) {}
         if (n) enterRoom('guest', n);
       } else if (u && USERS[u]) enterRoom(u);
+    })();
+
+    // Mobile Swipe-Down Gesture to Minimize Fullscreen Player (prevents accidental pull-to-refresh)
+    (function initFullscreenSwipeDown() {
+      const fs = document.getElementById('fullscreen-player');
+      if (!fs) return;
+      let startY = 0, startX = 0, dy = 0, tracking = false;
+      fs.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        const onHeader = !!e.target.closest('#fs-drag-header');
+        if (!onHeader && fs.scrollTop > 4) return;
+        if (e.target.closest('input[type="range"], #lyrics-body, #fs-chat-messages, #fs-queue-list')) return;
+        startY = e.touches[0].clientY;
+        startX = e.touches[0].clientX;
+        dy = 0;
+        tracking = true;
+      }, { passive: true });
+
+      fs.addEventListener('touchmove', (e) => {
+        if (!tracking) return;
+        const curY = e.touches[0].clientY;
+        const curX = e.touches[0].clientX;
+        const diffY = curY - startY;
+        const diffX = curX - startX;
+        if (Math.abs(diffX) > Math.abs(diffY) && dy === 0) {
+          tracking = false;
+          return;
+        }
+        if (diffY > 0 && fs.scrollTop <= 0) {
+          if (e.cancelable) e.preventDefault();
+          dy = diffY;
+          fs.style.transition = 'none';
+          fs.style.transform = `translateY(${dy}px)`;
+        }
+      }, { passive: false });
+
+      const finishSwipe = () => {
+        if (!tracking) return;
+        tracking = false;
+        fs.style.transition = '';
+        if (dy > 110) {
+          fs.style.transform = '';
+          closeFullscreenPlayer();
+        } else {
+          fs.style.transform = '';
+        }
+        dy = 0;
+      };
+      fs.addEventListener('touchend', finishSwipe, { passive: true });
+      fs.addEventListener('touchcancel', finishSwipe, { passive: true });
     })();
 
     window.addEventListener('pagehide', () => { saveRoomState(); saveChat(); });
