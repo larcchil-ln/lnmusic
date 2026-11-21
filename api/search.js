@@ -3,6 +3,7 @@
 //
 // Pemakaian:
 //   /api/search?q=tulus&mode=music            -> cari lagu (kategori Music)
+//   /api/search?q=tulus&mode=music&n=40       -> minta 40 hasil (maks 50)
 //   /api/search?q=film&mode=video&short=1     -> cari video (short=1: durasi pendek)
 //   /api/search?chart=1&region=ID             -> lagu terpopuler per negara
 //
@@ -31,7 +32,9 @@ module.exports = async (req, res) => {
   if (!key) return res.status(500).json({ error: 'YOUTUBE_API_KEY belum diatur di Vercel' });
   if (req.method !== 'GET') return res.status(405).json({ error: 'Metode tidak didukung' });
 
-  const { q = '', mode = 'music', short = '', chart = '', region = 'ID' } = req.query || {};
+  const { q = '', mode = 'music', short = '', chart = '', region = 'ID', n = '' } = req.query || {};
+  // jumlah hasil: default 12, bisa diminta sampai 50 (batas YouTube). Biaya kuota tetap 100 unit per pencarian.
+  const want = Math.min(50, Math.max(12, parseInt(n, 10) || 12));
   const isVideo = mode === 'video';
 
   try {
@@ -52,7 +55,7 @@ module.exports = async (req, res) => {
     if (!query) return res.status(400).json({ error: 'Parameter q kosong' });
 
     const p = new URLSearchParams({
-      part: 'snippet', type: 'video', maxResults: '12', q: query, key,
+      part: 'snippet', type: 'video', maxResults: String(want), q: query, key,
       safeSearch: 'none'
     });
     if (!isVideo) p.set('videoCategoryId', '10');
