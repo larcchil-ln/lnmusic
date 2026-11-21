@@ -348,9 +348,6 @@
           <span class="flex items-center gap-3"><i data-lucide="users" class="w-4 h-4 text-rose-400"></i> Bareng (Live Sync)</span>
           <span id="sidebar-room-dot" class="hidden w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
         </button>
-        <button onclick="switchTab('hub')" id="nav-hub" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition">
-          <span class="flex items-center gap-3"><i data-lucide="link-2" class="w-4 h-4 text-rose-400"></i> Hub Link</span>
-        </button>
         <button onclick="switchTab('videocall')" id="nav-videocall" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition">
           <span class="flex items-center gap-3"><i data-lucide="video" class="w-4 h-4 text-violet-400"></i> Video Call</span>
           <span id="vc-nav-dot" class="hidden w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
@@ -753,8 +750,6 @@
         </div>
       </section>
 
-      <!-- TAB: HUB LINK (diisi oleh ln-hub.js) -->
-      <section id="tab-hub" class="hidden space-y-4"></section>
 
       <!-- TAB: VIDEO CALL -->
       <section id="tab-videocall" class="hidden space-y-5">
@@ -1015,7 +1010,7 @@
   <!-- ===================================================================== -->
   <!-- MOBILE BOTTOM NAVIGATION                                              -->
   <!-- ===================================================================== -->
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-white/10 grid grid-cols-6 py-2 z-40" style="padding-bottom:max(8px,env(safe-area-inset-bottom))">
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-white/10 grid grid-cols-5 py-2 z-40" style="padding-bottom:max(8px,env(safe-area-inset-bottom))">
     <button onclick="switchTab('online')" id="mob-nav-online" class="mnav flex flex-col items-center gap-1 text-rose-400 text-[10px] font-semibold">
       <i data-lucide="compass" class="w-4 h-4"></i> Jelajah
     </button>
@@ -1027,9 +1022,6 @@
     </button>
     <button onclick="switchTab('together')" id="mob-nav-together" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium">
       <i data-lucide="users" class="w-4 h-4"></i> Bareng
-    </button>
-    <button onclick="switchTab('hub')" id="mob-nav-hub" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium">
-      <i data-lucide="link-2"></i> Hub
     </button>
     <button onclick="switchTab('videocall')" id="mob-nav-videocall" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium">
       <i data-lucide="video"></i> Call
@@ -4864,7 +4856,7 @@
     function switchTab(tab) {
       if (tab === 'videocall' && curTab !== 'videocall') vcPrev = curTab;
       curTab = tab;
-      ['online', 'offline', 'playlists', 'together', 'hub', 'videocall'].forEach(t => {
+      ['online', 'offline', 'playlists', 'together', 'videocall'].forEach(t => {
         document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
         const deskBtn = document.getElementById('nav-' + t);
         const mobBtn = document.getElementById('mob-nav-' + t);
@@ -5144,8 +5136,8 @@
   </script>
   <script src="./ln-guard.js"></script>
   <script src="./ln-extras.js"></script>
-  <script src="./ln-hub.js"></script>
   <script src="./ln-fix.js"></script>
+  <script src="./ln-nav.js"></script>
 <script>
 /* Hapus tombol emoji 📷 / 🎤 lama di bar chat (disuntik skrip eksternal) supaya kolom teks lebih lega */
 (function () {
