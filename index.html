@@ -75,6 +75,17 @@
     ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { scrollbar-width: none; }
+    /* ===== Revisi chat: tombol Clean, chip reaksi, ikon modern ===== */
+    .ln-clean-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;height:28px;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#a1a1aa;font-size:11px;font-weight:700;line-height:1;white-space:nowrap;flex:0 0 auto;transition:all .15s}
+    .ln-clean-btn:hover,.ln-clean-btn:active{background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.4);color:#fca5a5}
+    .ln-rx-chip{flex:0 0 auto;width:34px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;font-size:17px;line-height:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);transition:transform .15s,background .15s}
+    .ln-rx-chip:hover{background:rgba(255,255,255,.12);transform:scale(1.12)}
+    .ln-rx-chip:active{transform:scale(.92)}
+    .ln-ico-btn{width:32px;height:32px;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;color:#d4d4d8;background:linear-gradient(145deg,rgba(255,255,255,.10),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.08);transition:all .15s}
+    .ln-ico-btn:hover{color:#fda4af;border-color:rgba(244,63,94,.45);background:rgba(244,63,94,.16)}
+    .ln-ico-btn:active{transform:scale(.92)}
+    .btn-vn.vn-on{background:#e11d48!important;color:#fff!important;border-color:transparent!important;box-shadow:0 0 0 4px rgba(225,29,72,.22)}
+
 
     /* Modern Glassmorphism Surfaces */
     .glass {
@@ -673,20 +684,22 @@
             <!-- Live Chat & Quick Watch Link -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div class="lg:col-span-2 rounded-2xl bg-zinc-950/80 border border-white/10 p-4 flex flex-col h-80">
-                <div class="flex items-center justify-between gap-2 pb-2.5 mb-2 border-b border-white/10">
-                  <span class="text-xs font-bold text-zinc-300 flex items-center gap-1.5 shrink-0">
-                    <i data-lucide="message-circle-heart" class="w-4 h-4 text-rose-400"></i> Live Chat &amp; Reaksi
-                  </span>
-                  <div class="flex items-center gap-1.5">
-                    <button type="button" onclick="sendReaction('❤️')" class="hover:scale-125 transition text-base">❤️</button>
-                    <button type="button" onclick="sendReaction('🔥')" class="hover:scale-125 transition text-base">🔥</button>
-                    <button type="button" onclick="sendReaction('😂')" class="hover:scale-125 transition text-base">😂</button>
-                    <button type="button" onclick="sendReaction('🥺')" class="hover:scale-125 transition text-base">🥺</button>
-                    <button type="button" onclick="sendReaction('🍿')" class="hover:scale-125 transition text-base">🍿</button>
-                    <button type="button" data-rxbtn onclick="rxPanel()" title="Reaksi lucu & stiker gerak" class="px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/30 text-[11px] font-bold text-rose-200 active:scale-95 transition">😆 Lucu</button>
-                    <button type="button" onclick="clearRoomChat()" title="Bersihkan Chat" class="ml-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] hover:bg-red-500/20 text-zinc-400 hover:text-red-300 border border-white/10 text-[10px] font-semibold inline-flex items-center gap-1 transition">
-                      <i data-lucide="eraser" class="w-3 h-3"></i> Clean
+                <div class="pb-2.5 mb-2 border-b border-white/10 space-y-2">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-xs font-bold text-zinc-300 flex items-center gap-1.5 min-w-0">
+                      <i data-lucide="message-circle-heart" class="w-4 h-4 text-rose-400 shrink-0"></i> <span class="truncate">Live Chat &amp; Reaksi</span>
+                    </span>
+                    <button type="button" onclick="clearRoomChat()" title="Bersihkan Chat" class="ln-clean-btn">
+                      <i data-lucide="eraser" class="w-3.5 h-3.5"></i><span>Clean</span>
                     </button>
+                  </div>
+                  <div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
+                    <button type="button" onclick="sendReaction('❤️')" class="ln-rx-chip">❤️</button>
+                    <button type="button" onclick="sendReaction('🔥')" class="ln-rx-chip">🔥</button>
+                    <button type="button" onclick="sendReaction('😂')" class="ln-rx-chip">😂</button>
+                    <button type="button" onclick="sendReaction('🥺')" class="ln-rx-chip">🥺</button>
+                    <button type="button" onclick="sendReaction('🍿')" class="ln-rx-chip">🍿</button>
+                    <button type="button" data-rxbtn onclick="rxPanel()" title="Reaksi lucu & stiker gerak" class="ml-auto shrink-0 h-8 px-3 rounded-full bg-rose-500/20 border border-rose-400/30 text-[11px] font-bold text-rose-200 active:scale-95 transition whitespace-nowrap">😆 Lucu</button>
                   </div>
                 </div>
                 <div id="room-chat-messages" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs"></div>
@@ -706,7 +719,7 @@
                     <button type="button" id="btn-view-once" onclick="toggleChatViewOnce()" title="Mode Foto Sekali Lihat (1x buka lalu hilang)" class="h-9 px-2.5 rounded-full bg-white/[0.07] hover:bg-white/15 border border-white/10 text-zinc-400 text-[11px] font-bold inline-flex items-center gap-1 shrink-0 transition active:scale-95">
                       <i data-lucide="flame" class="w-3.5 h-3.5"></i><span>1x</span>
                     </button>
-                    <button type="button" id="btn-chat-vn" onclick="toggleVoiceNoteRec()" title="Rekam Voice Note" class="w-9 h-9 rounded-full bg-white/[0.07] hover:bg-violet-500/20 border border-white/10 text-zinc-300 hover:text-violet-300 flex items-center justify-center shrink-0 transition active:scale-95">
+                    <button type="button" id="btn-chat-vn" onclick="toggleVoiceNoteRec()" title="Rekam Voice Note" class="btn-vn w-9 h-9 rounded-full bg-white/[0.07] hover:bg-violet-500/20 border border-white/10 text-zinc-300 hover:text-violet-300 flex items-center justify-center shrink-0 transition active:scale-95">
                       <i data-lucide="mic" class="w-4 h-4"></i>
                     </button>
                     <input type="text" id="room-chat-input" placeholder="Ketik pesan..." class="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-full px-3.5 py-2 text-xs text-white focus:border-rose-500 focus:outline-none" />
@@ -897,14 +910,31 @@
           <div id="fsp-queue"><div id="fs-queue-list" class="max-h-36 overflow-y-auto space-y-1.5 pr-1"></div></div>
           <div id="fsp-search" class="hidden"><div id="room-search-fs"></div></div>
           <div id="fsp-chat" class="hidden space-y-1.5">
-            <div class="flex items-center justify-between">
-              <span class="text-[10px] text-zinc-400">Obrolan Room</span>
-              <button type="button" onclick="clearRoomChat()" class="px-2 py-0.5 rounded-full bg-white/5 hover:bg-red-500/20 text-zinc-400 hover:text-red-300 text-[10px] font-semibold inline-flex items-center gap-1 transition"><i data-lucide="eraser" class="w-3 h-3"></i> Clean</button>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[11px] font-semibold text-zinc-400">Obrolan Room</span>
+              <button type="button" onclick="clearRoomChat()" title="Bersihkan Chat" class="ln-clean-btn"><i data-lucide="eraser" class="w-3.5 h-3.5"></i><span>Clean</span></button>
             </div>
             <div id="fs-chat-messages" class="h-40 overflow-y-auto space-y-2 pr-1 text-xs"></div>
+            <div id="fs-chat-rec-bar" class="hidden items-center justify-between px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-[11px] text-rose-200">
+              <span class="inline-flex items-center gap-2 font-semibold"><span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> Merekam... <span id="fs-chat-rec-sec">0:00</span></span>
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="cancelVoiceNote()" class="px-2 py-0.5 rounded-lg bg-white/10 text-zinc-300 text-[10px]">Batal</button>
+                <button type="button" onclick="stopAndSendVoiceNote()" class="px-2.5 py-0.5 rounded-lg bg-rose-600 text-white font-bold text-[10px]">Kirim VN</button>
+              </div>
+            </div>
             <form onsubmit="sendRoomChat(event,'fs-')" class="flex items-center gap-1.5 pt-1">
+              <label data-ln-keep title="Kirim Foto" class="ln-ico-btn cursor-pointer">
+                <i data-lucide="image-plus" class="w-[15px] h-[15px]"></i>
+                <input type="file" accept="image/*" class="hidden" onchange="handleChatPhotoPick(event)" />
+              </label>
+              <button data-ln-keep type="button" onclick="toggleChatViewOnce()" title="Foto Sekali Lihat (1x buka lalu hilang)" class="btn-vo-sync h-8 px-2 rounded-full bg-white/[0.07] border border-white/10 text-zinc-400 text-[10px] font-bold inline-flex items-center gap-0.5 shrink-0">
+                <i data-lucide="flame" class="w-3.5 h-3.5"></i><span>1x</span>
+              </button>
+              <button data-ln-keep type="button" onclick="toggleVoiceNoteRec()" title="Rekam Voice Note" class="btn-vn ln-ico-btn">
+                <i data-lucide="mic" class="w-[15px] h-[15px]"></i>
+              </button>
               <input id="fs-room-chat-input" placeholder="Ketik pesan..." class="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-full px-3.5 py-2 text-xs text-white focus:border-rose-500 focus:outline-none" />
-              <button type="submit" class="w-8 h-8 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center shrink-0"><i data-lucide="send-horizontal" class="w-3.5 h-3.5"></i></button>
+              <button type="submit" class="w-8 h-8 rounded-full bg-gradient-to-r from-rose-600 to-violet-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-rose-600/25 active:scale-95 transition"><i data-lucide="send-horizontal" class="w-3.5 h-3.5"></i></button>
             </form>
           </div>
         </div>
@@ -1346,17 +1376,30 @@
       'https://yt.artemislena.eu'
     ];
 
+    // Pencarian "lengkap": minta banyak hasil sekaligus; kalau server masih membatasi ~12,
+    // otomatis gabungkan hasil dari 2 variasi kata kunci (tanpa duplikat) sampai SEARCH_MAX.
+    const SEARCH_MAX = 40;
+    async function fetchSearchMore(query, mode = 'music', short = false) {
+      const base = await fetchSearchResults(query, mode, short, SEARCH_MAX);
+      if (!base.length || base.length >= 24) return base.slice(0, SEARCH_MAX);
+      const sfx = mode === 'music' ? ['official audio', 'lirik'] : ['official', 'full'];
+      const more = await Promise.all(sfx.map(x => fetchSearchResults(query + ' ' + x, mode, short, SEARCH_MAX).catch(() => [])));
+      const seen = new Set(), out = [];
+      [base, ...more].forEach(list => (list || []).forEach(t => { if (t && t.id && !seen.has(t.id)) { seen.add(t.id); out.push(t); } }));
+      return out.slice(0, SEARCH_MAX);
+    }
+
     function extractYouTubeID(url) {
       const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|music\.youtube\.com\/watch\?v=|live\/|shorts\/)([^#\&\?]*).*/;
       const match = String(url || '').match(regExp);
       return (match && match[2].length === 11) ? match[2] : null;
     }
 
-    async function fetchSearchResults(query, mode = 'music', short = false) {
+    async function fetchSearchResults(query, mode = 'music', short = false, n = 12) {
       // 1) Server Vercel (/api/search) memakai YouTube Data API, key aman di environment variable
       try {
         const ctrl = new AbortController(), tm = setTimeout(() => ctrl.abort(), 6000);
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&mode=${mode}${short ? '&short=1' : ''}`, { signal: ctrl.signal });
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&mode=${mode}${short ? '&short=1' : ''}${n > 12 ? '&n=' + n + '&max=' + n + '&limit=' + n : ''}`, { signal: ctrl.signal });
         clearTimeout(tm);
         if (res.ok) {
           const data = await res.json();
@@ -1377,7 +1420,7 @@
           const items = (data.items || []).filter(i => i.url && i.url.includes('/watch?v='));
           const filtered = short ? items.filter(i => i.duration > 0 && i.duration <= 90) : items;
           if (filtered.length > 0) {
-            return filtered.slice(0, 12).map(item => {
+            return filtered.slice(0, n).map(item => {
               const vidId = item.url.split('v=')[1]?.split('&')[0];
               return {
                 id: vidId,
@@ -1403,7 +1446,7 @@
           if (Array.isArray(items) && items.length > 0) {
             const filtered = short ? items.filter(i => i.lengthSeconds > 0 && i.lengthSeconds <= 90) : items;
             if (filtered.length > 0) {
-              return filtered.slice(0, 12).map(item => ({
+              return filtered.slice(0, n).map(item => ({
                 id: item.videoId,
                 title: item.title,
                 artist: item.author || 'YouTube',
@@ -1464,7 +1507,7 @@
       document.getElementById('search-spinner').classList.remove('hidden');
       document.getElementById('search-status-text').textContent = 'Mencari secara realtime...';
       searchTimeout = setTimeout(async () => {
-        const results = await fetchSearchResults(q, searchMode);
+        const results = await fetchSearchMore(q, searchMode);
         if (document.getElementById('yt-search-input').value.trim() !== q) return;
         document.getElementById('search-spinner').classList.add('hidden');
         if (results.length > 0) {
@@ -2504,6 +2547,10 @@
     }
 
     // Voice Note Recorder
+    function vnUI(on) {
+      ['chat-rec-bar', 'fs-chat-rec-bar'].forEach(id => { const b = document.getElementById(id); if (!b) return; b.classList.toggle('hidden', !on); b.classList.toggle('flex', on); });
+      document.querySelectorAll('.btn-vn').forEach(b => b.classList.toggle('vn-on', on));
+    }
     let vnRecorder = null, vnChunks = [], vnRecTimer = null, vnRecStart = 0, vnCancelFlag = false;
     async function toggleVoiceNoteRec() {
       if (!isRoomConnected) return showToast('Masuk room dulu untuk kirim voice note');
@@ -2521,9 +2568,7 @@
         vnRecorder.onstop = () => {
           stream.getTracks().forEach(t => t.stop());
           clearInterval(vnRecTimer);
-          document.getElementById('chat-rec-bar')?.classList.add('hidden');
-          document.getElementById('chat-rec-bar')?.classList.remove('flex');
-          document.getElementById('btn-chat-vn')?.classList.remove('bg-rose-600', 'text-white');
+          vnUI(false);
           if (vnCancelFlag || !vnChunks.length) return;
           const durSec = Math.max(1, Math.round((Date.now() - vnRecStart) / 1000));
           const blob = new Blob(vnChunks, { type: vnRecorder.mimeType || 'audio/webm' });
@@ -2540,13 +2585,10 @@
         };
         vnRecorder.start();
         vnRecStart = Date.now();
-        const bar = document.getElementById('chat-rec-bar');
-        if (bar) { bar.classList.remove('hidden'); bar.classList.add('flex'); }
-        document.getElementById('btn-chat-vn')?.classList.add('bg-rose-600', 'text-white');
+        vnUI(true);
         vnRecTimer = setInterval(() => {
           const s = Math.floor((Date.now() - vnRecStart) / 1000);
-          const el = document.getElementById('chat-rec-sec');
-          if (el) el.textContent = formatTime(s);
+          ['chat-rec-sec', 'fs-chat-rec-sec'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = formatTime(s); });
           if (s >= 45) stopAndSendVoiceNote();
         }, 300);
       } catch (err) {
@@ -2605,6 +2647,7 @@
       spawnFloatingEmoji(emoji, fxm);
       connections.forEach(c => { if (c.open) c.send({ type: 'REACTION', emoji, fx: fxm }); });
     }
+    function rxClose() { const x = document.getElementById('react-panel'); if (x) x.remove(); }
     function rxPanel() {
       const old = document.getElementById('react-panel'); if (old) { old.remove(); return; }
       const p = document.createElement('div'); p.id = 'react-panel';
@@ -2613,11 +2656,11 @@
       const h = t => `<div class="text-[10px] font-bold text-zinc-400 mb-1">${t}</div>`;
       p.innerHTML = `<div class="flex items-center justify-between mb-2"><b class="text-xs text-white">Reaksi lucu 😆</b><button type="button" onclick="document.getElementById('react-panel').remove()" class="text-zinc-400 text-xs px-2">Tutup</button></div>`
         + h('Stiker gerak (muncul besar di layar kalian berdua)') + '<div class="grid grid-cols-4 gap-1.5 mb-3">'
-        + RX_STICKERS.map(([e, a, t]) => btn(`<span class="text-2xl">${e}</span><span class="text-[9px] font-bold text-zinc-300 leading-tight text-center">${t}</span>`, `sendReaction('${e}','st:${a}:${t}')`, 'flex flex-col items-center gap-0.5 p-2 rounded-2xl bg-white/[0.06] active:scale-95 transition')).join('') + '</div>'
+        + RX_STICKERS.map(([e, a, t]) => btn(`<span class="text-2xl">${e}</span><span class="text-[9px] font-bold text-zinc-300 leading-tight text-center">${t}</span>`, `sendReaction('${e}','st:${a}:${t}');rxClose()`, 'flex flex-col items-center gap-0.5 p-2 rounded-2xl bg-white/[0.06] active:scale-95 transition')).join('') + '</div>'
         + h('Hujan emoji') + '<div class="grid grid-cols-2 gap-1.5 mb-3">'
-        + RX_RAIN.map(([e, t]) => btn(`${e} ${t}`, `sendReaction('${e}','rain')`, 'px-3 py-2 rounded-2xl bg-white/[0.06] text-xs font-bold text-white active:scale-95 transition')).join('') + '</div>'
+        + RX_RAIN.map(([e, t]) => btn(`${e} ${t}`, `sendReaction('${e}','rain');rxClose()`, 'px-3 py-2 rounded-2xl bg-white/[0.06] text-xs font-bold text-white active:scale-95 transition')).join('') + '</div>'
         + h('Emoji melayang') + '<div class="flex flex-wrap gap-1">'
-        + RX_FUNNY.map(e => btn(e, `sendReaction('${e}')`, 'text-2xl p-1.5 rounded-xl hover:bg-white/10 active:scale-90 transition')).join('') + '</div>';
+        + RX_FUNNY.map(e => btn(e, `sendReaction('${e}');rxClose()`, 'text-2xl p-1.5 rounded-xl hover:bg-white/10 active:scale-90 transition')).join('') + '</div>';
       document.body.appendChild(p);
       setTimeout(() => document.addEventListener('pointerdown', function h2(ev) { if (!p.contains(ev.target) && !ev.target.closest('[data-rxbtn]')) { p.remove(); document.removeEventListener('pointerdown', h2); } }), 0);
     }
@@ -3305,7 +3348,7 @@
           <button onclick="setRsMode(rsMode === 'music' ? 'video' : 'music')" class="rs-mode px-2.5 rounded-xl bg-white/10 text-[11px] font-semibold text-white shrink-0"></button>
         </div>
         <div class="rs-status text-[10px] text-zinc-500"></div>
-        <div class="rs-results space-y-1.5 max-h-56 overflow-y-auto"></div>
+        <div class="rs-results space-y-1.5 max-h-72 overflow-y-auto"></div>
         <div class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 pt-1">Antrean Room</div>
         <div class="rs-queue space-y-1.5 max-h-40 overflow-y-auto"></div>
       </div>`;
@@ -3347,7 +3390,7 @@
       }
       rsStatus = 'Mencari...'; renderRoomSearch();
       rsTimer = setTimeout(async () => {
-        const q = rsQuery, r = await fetchSearchResults(q, rsMode);
+        const q = rsQuery, r = await fetchSearchMore(q, rsMode);
         if (q !== rsQuery) return;
         rsResults = r; rsStatus = r.length ? `${r.length} hasil` : 'Tidak ada hasil / server pencarian sibuk. Coba lagi atau tempel link.';
         renderRoomSearch();
@@ -5033,5 +5076,27 @@
   <script src="./ln-extras.js"></script>
   <script src="./ln-hub.js"></script>
   <script src="./ln-fix.js"></script>
+<script>
+/* Hapus tombol emoji 📷 / 🎤 lama di bar chat (disuntik skrip eksternal) supaya kolom teks lebih lega */
+(function () {
+  var RE = /^(📷|📸|🎤|🎙️?)$/;
+  function sweep() {
+    document.querySelectorAll('form[onsubmit*="sendRoomChat"]').forEach(function (f) {
+      f.querySelectorAll('button,label,span,div').forEach(function (el) {
+        if (el.closest('[data-ln-keep]') || el.hasAttribute('data-ln-keep')) return;
+        if (el.id === 'btn-chat-vn' || el.id === 'btn-view-once') return;
+        if (el.querySelector('svg,i[data-lucide],input[type=text]')) return;
+        if (RE.test((el.textContent || '').trim())) el.remove();
+      });
+    });
+  }
+  var t = null;
+  function later() { clearTimeout(t); t = setTimeout(sweep, 120); }
+  new MutationObserver(later).observe(document.body, { childList: true, subtree: true });
+  window.addEventListener('load', function () { sweep(); setTimeout(sweep, 800); setTimeout(sweep, 2500); });
+  sweep();
+})();
+</script>
+
 </body>
 </html>
