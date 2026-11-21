@@ -576,7 +576,7 @@
                   </button>
                 </form>
               </div>
-              <p class="text-[10px] text-zinc-500">Pembuat room otomatis menjadi Host (Admin) yang bisa mengatur antrean, video call, dan peserta.</p>
+              <p class="text-[10px] text-zinc-500">Pembuat room otomatis menjadi Host (Admin) yang bisa mengatur antrean, video call, peserta, dan memberi izin play bareng ke tamu.</p>
             </div>
 
             <!-- Card 2: Room Kita (Nuki & Nana + Tamu) -->
@@ -1081,7 +1081,7 @@
     <div id="vc-grid" onclick="if(curTab==='videocall'&&!document.getElementById('vc').classList.contains('multi')&&document.getElementById('vc').classList.contains('swapped')){event.stopPropagation();vcSwapView(false);}"></div>
     <video id="vc-self" autoplay playsinline muted onclick="if(curTab==='videocall'&&!document.getElementById('vc').classList.contains('multi')&&!document.getElementById('vc').classList.contains('swapped')){event.stopPropagation();vcSwapView(true);}" title="Ketuk untuk tukar layar"></video>
     <div id="vc-top-hud" onclick="event.stopPropagation()">
-      <span id="vc-live-pill"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> <span id="vc-timer">00:00</span> <span class="px-1.5 py-0.5 rounded bg-rose-500/30 text-rose-200 text-[9px] font-extrabold tracking-wider">SUPER HD</span></span>
+      <span id="vc-live-pill"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> <span id="vc-timer">00:00</span> <span id="vc-q" class="px-1.5 py-0.5 rounded bg-rose-500/30 text-rose-200 text-[9px] font-extrabold tracking-wider">HD 720p</span></span>
       <button id="vc-swap-hint" type="button" onclick="vcSwapView()"><i data-lucide="arrow-left-right" class="w-3.5 h-3.5 text-rose-400"></i> <span id="vc-swap-label">Layar: Partner</span></button>
     </div>
     <div id="vc-emote-bar" class="hidden" onclick="event.stopPropagation()">
@@ -1293,10 +1293,10 @@
             if (event.data === YT.PlayerState.PLAYING) {
               refreshMetaFromPlayer();
               setPlayingUI(true);
-              if (!isRemoteAction) broadcastSync('PLAY', ytPlayer.getCurrentTime());
+              if (!isRemoteAction && !revertIfNoPerm(true)) broadcastSync('PLAY', ytPlayer.getCurrentTime());
             } else if (event.data === YT.PlayerState.PAUSED) {
               setPlayingUI(false);
-              if (!isRemoteAction) broadcastSync('PAUSE', ytPlayer.getCurrentTime());
+              if (!isRemoteAction && !revertIfNoPerm(false)) broadcastSync('PAUSE', ytPlayer.getCurrentTime());
             } else if (event.data === YT.PlayerState.ENDED) {
               handleTrackEnd();
             }
@@ -1524,6 +1524,7 @@
 
     function playTrack(track, autoOpenFull = true) {
       if (!track) return;
+      if (!isRemoteAction && track.type === 'youtube' && !guardPlayCtl()) return;
       currentTrack = track;
       trackAt = Date.now();
 
@@ -1606,6 +1607,7 @@
         if (htmlAudio.paused) { htmlAudio.play(); setPlayingUI(true); }
         else { htmlAudio.pause(); setPlayingUI(false); }
       } else if (ytReady && ytPlayer) {
+        if (!isRemoteAction && !guardPlayCtl()) return;
         const state = ytPlayer.getPlayerState();
         if (state === YT.PlayerState.PLAYING) {
           ytPlayer.pauseVideo();
@@ -1686,6 +1688,7 @@
       if (currentTrack.type === 'offline' && htmlAudio.duration) {
         htmlAudio.currentTime = (percent / 100) * htmlAudio.duration;
       } else if (ytReady && ytPlayer && ytPlayer.getDuration) {
+        if (!isRemoteAction && !guardPlayCtl()) return;
         const targetSec = (percent / 100) * ytPlayer.getDuration();
         ytPlayer.seekTo(targetSec, true);
         if (!isRemoteAction) broadcastSync('SEEK', targetSec);
@@ -1727,6 +1730,7 @@
     let myDisplayName = 'Leo';
     let currentRoomCode = '';
     let isRemoteAction = false;
+    let roomPlaying = null, lastRevert = 0; // keadaan play/pause terakhir dari room (untuk tamu tanpa izin)
 
     // TURN dari Cloudflare: kredensial sementara dibuat oleh fungsi /api/turn (token rahasia ada di Vercel)
     const BASE_ICE = [
@@ -1967,6 +1971,7 @@
     function applyRemoteTrack(track, time, playing, at) {
       whenYtReady(() => {
         isRemoteAction = true;
+        roomPlaying = playing !== false;
         playTrack({ ...track }, false);
         trackAt = at || Date.now();
         setTimeout(() => {
@@ -2054,6 +2059,41 @@
     }
 
     const canManageRoom = () => isHost || (session === 'nana' && !connections.some(c => c.open && c.peer === USERS.nuki.peerId));
+
+    // ===== Izin "play bareng" untuk tamu =====
+    // Admin (Host / Nuki / Nana) selalu boleh. Tamu hanya boleh setelah Admin memberi izin (members[id].ctl).
+    function isGuestSession() { return session === 'guest' || (session === 'custom' && !isHost); }
+    function myPlayPerm() { return !!(peer && members[peer.id] && members[peer.id].ctl); }
+    function canPlayControl() { return !isRoomConnected || !isGuestSession() || myPlayPerm() || !partnerOnline(); }
+    function guardPlayCtl() {
+      if (canPlayControl()) return true;
+      showToast('Kamu belum punya izin play bareng. Minta Admin memberi izin ya 🎛️');
+      return false;
+    }
+    // Tamu tanpa izin mengklik play/pause langsung di video YouTube: kembalikan ke keadaan room
+    function revertIfNoPerm(playingNow) {
+      if (canPlayControl() || roomPlaying === null || roomPlaying === playingNow) return false;
+      if (Date.now() - lastRevert < 1500) return true;
+      lastRevert = Date.now();
+      isRemoteAction = true;
+      try { roomPlaying ? ytPlayer.playVideo() : ytPlayer.pauseVideo(); } catch (e) {}
+      setPlayingUI(!!roomPlaying);
+      setTimeout(() => { isRemoteAction = false; }, 900);
+      guardPlayCtl();
+      return true;
+    }
+    function togglePlayPerm(id) {
+      if (!canManageRoom()) return showToast('Hanya Admin yang bisa memberi izin');
+      const m = members[id];
+      if (!m || m.role === 'admin' || isAdminPeer(id)) return;
+      m.ctl = !m.ctl;
+      broadcastMembers();
+      const txt = m.ctl ? `🎛️ ${m.name} diberi izin play bareng oleh Admin.` : `🎛️ Izin play bareng ${m.name} dicabut oleh Admin.`;
+      connections.forEach(c => c.open && c.send({ type: 'NOTICE', text: txt }));
+      appendSystemChat(txt);
+      showToast(m.ctl ? `${m.name} sekarang boleh play bareng` : `Izin play bareng ${m.name} dicabut`);
+      if (!document.getElementById('profile-modal').classList.contains('hidden')) renderProfileModal();
+    }
 
     async function startSession(attempt = 0) {
       if (!session) return;
@@ -2161,7 +2201,14 @@
     function handleIncomingSyncData(data, senderConn) {
       if (!data || typeof data !== 'object') return;
       const fromGuest = isHost && senderConn && (session === 'custom' || !isAdminPeer(senderConn.peer));
-      if (fromGuest && /^(SYNC_|STATE|HISTORY|QUEUE_SET|QUEUE_DEL|QUEUE_MOVE|LYR_|KICK|VC_STOP_ALL)/.test(String(data.type))) return;
+      if (fromGuest) {
+        const ctl = !!(members[senderConn.peer] && members[senderConn.peer].ctl);
+        const blocked = ctl ? /^(STATE|HISTORY|QUEUE_SET|LYR_|KICK|VC_STOP_ALL)/ : /^(SYNC_|STATE|HISTORY|QUEUE_SET|QUEUE_DEL|QUEUE_MOVE|LYR_|KICK|VC_STOP_ALL)/;
+        if (blocked.test(String(data.type))) return;
+        // tamu berizin: hanya terima perintah putar yang bentuknya valid
+        if (data.type === 'SYNC_TRACK' && !(data.track && data.track.type === 'youtube' && /^[\w-]{11}$/.test(String(data.track.id)))) return;
+        if (data.type === 'SYNC_STATE' && !(['PLAY', 'PAUSE', 'SEEK'].includes(data.action) && Number.isFinite(+data.time))) return;
+      }
       if (isHost && !/^(QUEUE_|SEAT|MIC|MEMBERS|HELLO|STATE|HISTORY|PROFILE|EMOTE|NOTICE|KICK|VC_STOP_ALL)/.test(String(data.type))) {
         connections.forEach(c => { if (c !== senderConn && c.open) c.send(data); });
       }
@@ -2170,6 +2217,12 @@
           showToast('Kamu dikeluarkan dari room oleh Admin.');
           logout();
         }
+        return;
+      }
+      if (data.type === 'VC_LEAVE') {
+        const lid = String(data.id || '');
+        const lc = lid && lid !== peer?.id ? voiceCalls[lid] : null;
+        if (lc) { lc._replaced = true; clearInterval(lc._mon); try { lc.close(); } catch (e) {} dropVoice(lid); }
         return;
       }
       if (data.type === 'VC_STOP_ALL') {
@@ -2199,6 +2252,7 @@
         renderSeats();
       } else if (data.type === 'SYNC_TRACK') {
         isRemoteAction = true;
+        roomPlaying = data.playing !== false;
         playTrack(data.track, true);
         if (data.at) trackAt = data.at;
         setTimeout(() => {
@@ -2210,6 +2264,7 @@
         }, 1200);
         appendSystemChat(`🎵 Memutar bersama: ${data.track.title}`);
       } else if (data.type === 'SYNC_STATE') {
+        if (data.action === 'PLAY') roomPlaying = true; else if (data.action === 'PAUSE') roomPlaying = false;
         if (!ytReady || !ytPlayer) return;
         isRemoteAction = true;
         if (data.action === 'PLAY') {
@@ -2291,7 +2346,9 @@
       } else if (data.type === 'LYR_OFFSET') {
         lyrApplyRemote(data.id, +data.offset);
       } else if (data.type === 'MEMBERS') {
+        const hadPerm = myPlayPerm();
         members = data.members || {};
+        if (isGuestSession() && myPlayPerm() !== hadPerm) showToast(hadPerm ? 'Izin play bareng kamu dicabut oleh Admin' : '🎛️ Admin memberi kamu izin play bareng!');
         renderSeats();
         if (voiceOn) Object.keys(members).filter(id => id !== peer.id && !voiceCalls[id]).forEach(callPeer);
       }
@@ -2299,6 +2356,8 @@
 
     function broadcastSync(action, time = 0, track = null) {
       if (!isRoomConnected || !connections.length) return;
+      if (!canPlayControl()) return; // tamu tanpa izin tidak mengirim perintah putar
+      if (action === 'PLAY' || action === 'TRACK') roomPlaying = true; else if (action === 'PAUSE') roomPlaying = false;
       const payload = action === 'TRACK'
         ? { type: 'SYNC_TRACK', track: slimTrack(track), time, playing: true, at: trackAt }
         : { type: 'SYNC_STATE', action, time };
@@ -2691,11 +2750,11 @@
       const key = own ? ((peer && peer.id) || '__me') : profileViewId;
       const m = members[key] || {};
       const name = own ? myDisplayName : (m.name || 'Pengguna');
-      const role = own ? (session === 'guest' ? 'guest' : 'admin') : (m.role || (isAdminPeer(key) ? 'admin' : 'guest'));
+      const role = own ? (isGuestSession() ? 'guest' : 'admin') : (m.role || (isAdminPeer(key) ? 'admin' : 'guest'));
       const prof = own ? myProfile : (profiles[key] || { bio: '', avatar: '' });
       const badge = role === 'admin'
         ? '<span class="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[10px] font-bold">Admin</span>'
-        : '<span class="px-2 py-0.5 rounded-full bg-white/10 text-zinc-300 text-[10px] font-bold">Tamu</span>';
+        : '<span class="px-2 py-0.5 rounded-full bg-white/10 text-zinc-300 text-[10px] font-bold">Tamu</span>' + (m.ctl ? ' <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 text-[10px] font-bold">Boleh Play</span>' : '');
       const close = '<button onclick="closeProfile()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/10 text-zinc-300 text-sm">✕</button>';
 
       if (own && profileEditing) {
@@ -2729,7 +2788,8 @@
         extra = `<button onclick="startProfileEdit()" class="mt-4 w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white">✏️ Edit Nama, Foto &amp; Bio</button>${sfx}`;
       } else {
         const kickBtn = canManageRoom() ? `<button onclick="kickUser('${esc(key)}')" class="mt-3 w-full py-2.5 rounded-xl bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-xs font-bold text-red-300 flex items-center justify-center gap-1.5"><i data-lucide="user-x" class="w-4 h-4"></i> Keluarkan dari Room</button>` : '';
-        extra = `${kickBtn}<div class="mt-4 text-left"><div class="text-xs font-extrabold">Kirim emote ke ${esc(name)}</div>
+        const permBtn = (canManageRoom() && role !== 'admin') ? `<button onclick="togglePlayPerm('${esc(key)}')" class="mt-4 w-full py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 ${m.ctl ? 'bg-amber-500/20 border-amber-400/40 text-amber-200 hover:bg-amber-500/30' : 'bg-violet-600/20 border-violet-500/30 text-violet-200 hover:bg-violet-600/30'}"><i data-lucide="${m.ctl ? 'lock' : 'circle-play'}" class="w-4 h-4"></i> ${m.ctl ? 'Cabut Izin Play Bareng' : 'Beri Izin Play Bareng'}</button>` : '';
+        extra = `${permBtn}${kickBtn}<div class="mt-4 text-left"><div class="text-xs font-extrabold">Kirim emote ke ${esc(name)}</div>
           <label class="flex items-center gap-2 text-[11px] text-zinc-400 mt-1.5"><input type="checkbox" id="emote-all" /> Kirim ke semua orang di room</label>
           ${emoteGrid()}${sfx}</div>`;
       }
@@ -3281,48 +3341,183 @@
     // =========================================================================
     let voiceOn = false, voiceMuted = false, localStream = null;
     const voiceCalls = {};
-    function boostWebRTCQuality(call) {
+    // ===== Kualitas & ketahanan panggilan =====
+    // Video call memakai mesh P2P: tiap orang mengirim video ke SEMUA peserta lain. Karena itu bitrate per
+    // lawan bicara ditentukan jumlah peserta, lalu turun/naik otomatis mengikuti kondisi jaringan.
+    // Tiap tingkat: [bitrate maks (bps), skala turun, fps maks]
+    const VC_TIERS = [
+      [2500000, 1,   30], // HD 720p
+      [1600000, 1,   30], // HD 720p (hemat)
+      [1000000, 1.5, 30], // ±480p
+      [650000,  1.5, 24],
+      [400000,  2,   24], // ±360p
+      [220000,  3,   15]  // darurat
+    ];
+    const vcBaseTier = n => n <= 2 ? 0 : (n === 3 ? 1 : (n === 4 ? 2 : (n === 5 ? 3 : 4)));
+    const vcPeerTotal = () => Math.max(2, Object.keys(voiceCalls).length + 1);
+    const vcTierOf = call => VC_TIERS[Math.min(VC_TIERS.length - 1, vcBaseTier(vcPeerTotal()) + (call._pen || 0))];
+    function callAlive(c) { const st = c && c.peerConnection && c.peerConnection.connectionState; return !!c && st !== 'closed' && st !== 'failed'; }
+
+    // Bitrate awal dinaikkan supaya gambar langsung tajam (tanpa merambat naik dari ±300 kbps)
+    function vcSdp(sdp) {
+      try {
+        const lines = sdp.split('\r\n');
+        const vpt = new Set(), opus = new Set(), hasFmtp = new Set();
+        let sec = '';
+        lines.forEach(l => {
+          if (l.startsWith('m=')) sec = l.slice(2, l.indexOf(' '));
+          const r = l.match(/^a=rtpmap:(\d+) ([A-Za-z0-9]+)\//);
+          if (r && sec === 'video' && /^(VP8|VP9|H264|AV1)$/i.test(r[2])) vpt.add(r[1]);
+          if (r && sec === 'audio' && /^opus$/i.test(r[2])) opus.add(r[1]);
+          const f = l.match(/^a=fmtp:(\d+) /);
+          if (f) hasFmtp.add(f[1]);
+        });
+        const VK = ['x-google-start-bitrate=1500', 'x-google-min-bitrate=500', 'x-google-max-bitrate=2600'];
+        const AK = ['useinbandfec=1', 'usedtx=0', 'maxaveragebitrate=64000'];
+        const add = (str, kv) => str + kv.filter(x => !new RegExp('(^|[ ;])' + x.split('=')[0] + '=').test(str)).map(x => ';' + x).join('');
+        sec = '';
+        const out = [];
+        lines.forEach(l => {
+          if (l.startsWith('m=')) sec = l.slice(2, l.indexOf(' '));
+          const f = l.match(/^a=fmtp:(\d+) /);
+          if (f && sec === 'video' && vpt.has(f[1])) { out.push(add(l, VK)); return; }
+          if (f && sec === 'audio' && opus.has(f[1])) { out.push(add(l, AK)); return; }
+          out.push(l);
+          const r = l.match(/^a=rtpmap:(\d+) ([A-Za-z0-9]+)\//);
+          if (r && sec === 'video' && vpt.has(r[1]) && !hasFmtp.has(r[1])) out.push('a=fmtp:' + r[1] + ' ' + VK.join(';'));
+        });
+        return out.join('\r\n');
+      } catch (e) { return sdp; }
+    }
+
+    // Terapkan bitrate/resolusi/fps ke pengirim + buffer jitter di penerima
+    function vcApplyTier(call) {
       const pc = call && call.peerConnection;
       if (!pc) return;
-      const apply = () => {
-        (pc.getSenders() || []).forEach(sender => {
-          if (!sender.track) return;
-          const params = sender.getParameters ? sender.getParameters() : {};
+      const tier = vcTierOf(call);
+      (pc.getSenders() || []).forEach(sender => {
+        if (!sender.track || !sender.getParameters) return;
+        try {
+          const params = sender.getParameters();
           if (!params.encodings || !params.encodings.length) params.encodings = [{}];
           if (sender.track.kind === 'video') {
-            params.degradationPreference = 'maintain-resolution';
-            params.encodings.forEach(enc => {
-              enc.maxBitrate = 4500000;
-              enc.maxFramerate = 30;
-              enc.scaleResolutionDownBy = 1.0;
-            });
-          } else if (sender.track.kind === 'audio') {
-            params.encodings.forEach(enc => {
-              enc.maxBitrate = 128000;
-            });
+            try { sender.track.contentHint = 'motion'; } catch (e) {}
+            params.degradationPreference = 'balanced'; // jangan korbankan fps (penyebab patah-patah)
+            params.encodings.forEach(enc => { enc.maxBitrate = tier[0]; enc.scaleResolutionDownBy = tier[1]; enc.maxFramerate = tier[2]; });
+          } else {
+            params.encodings.forEach(enc => { enc.maxBitrate = 64000; });
           }
-          if (sender.setParameters) sender.setParameters(params).catch(() => {});
-        });
-      };
-      apply();
-      pc.addEventListener('iceconnectionstatechange', () => {
-        if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') apply();
+          sender.setParameters(params).catch(() => {});
+        } catch (e) {}
       });
-      setTimeout(apply, 1000);
-      setTimeout(apply, 2500);
+      (pc.getReceivers() || []).forEach(r => {
+        try { if (r.track && r.track.kind === 'video' && 'jitterBufferTarget' in r) r.jitterBufferTarget = 200; } catch (e) {}
+      });
     }
-    function bindVoice(p) { p.on('call', call => { call.answer(localStream || undefined); hookCall(call); }); }
+    function vcTune(call) {
+      vcApplyTier(call);
+      setTimeout(() => vcApplyTier(call), 800);   // encoder baru siap setelah negosiasi selesai
+      setTimeout(() => vcApplyTier(call), 2500);
+      vcMonitor(call);
+    }
+    function vcRetuneAll() { Object.values(voiceCalls).forEach(vcApplyTier); vcQual(); }
+    function vcQual(txt) {
+      const el = document.getElementById('vc-q'); if (!el) return;
+      if (txt) { el.textContent = txt; return; }
+      let lvl = 0;
+      Object.values(voiceCalls).forEach(c => { if (callAlive(c)) lvl = Math.max(lvl, Math.min(VC_TIERS.length - 1, vcBaseTier(vcPeerTotal()) + (c._pen || 0))); });
+      el.textContent = lvl <= 1 ? 'HD 720p' : (lvl <= 3 ? '480p' : '360p');
+    }
+    // Pantau jaringan tiap 3 detik: turunkan kualitas saat jaringan buruk, naikkan lagi saat stabil
+    function vcMonitor(call) {
+      const pc = call.peerConnection;
+      if (!pc || call._mon) return;
+      let calm = 0;
+      call._mon = setInterval(async () => {
+        if (pc.connectionState === 'closed' || voiceCalls[call.peer] !== call) { clearInterval(call._mon); return; }
+        let loss = 0, rtt = 0, why = 'none', sending = false;
+        try {
+          const rep = await pc.getStats();
+          rep.forEach(r => {
+            if (r.type === 'remote-inbound-rtp' && r.kind === 'video') { loss = Math.max(loss, r.fractionLost || 0); rtt = Math.max(rtt, (r.roundTripTime || 0) * 1000); }
+            if (r.type === 'outbound-rtp' && r.kind === 'video') { sending = true; why = r.qualityLimitationReason || 'none'; }
+          });
+        } catch (e) { return; }
+        if (!sending) return;
+        const before = call._pen || 0, last = VC_TIERS.length - 1;
+        const bad = loss > 0.08 || rtt > 450 || why === 'bandwidth';
+        const good = loss < 0.02 && rtt < 250 && why === 'none';
+        if (bad || (why === 'cpu' && before < 2)) { call._pen = Math.min(last, before + 1); calm = 0; }
+        else if (good && before > 0) { if (++calm >= 4) { call._pen = before - 1; calm = 0; } }
+        else calm = 0;
+        if ((call._pen || 0) !== before) { vcApplyTier(call); vcQual(); }
+      }, 3000);
+    }
+    // Koneksi putus lama: telepon ulang otomatis (hanya sisi ber-ID lebih kecil, supaya tidak bentrok)
+    function vcWatchConn(call) {
+      const pc = call.peerConnection;
+      if (!pc || call._watch) return;
+      call._watch = true;
+      let t = null;
+      pc.addEventListener('iceconnectionstatechange', () => {
+        const st = pc.iceConnectionState;
+        if (st === 'connected' || st === 'completed') { clearTimeout(t); t = null; vcQual(); return; }
+        if (st !== 'disconnected' && st !== 'failed') return;
+        vcQual('Menyambung ulang…');
+        clearTimeout(t);
+        t = setTimeout(() => {
+          if (voiceCalls[call.peer] !== call || !localStream) return;
+          const s2 = pc.iceConnectionState;
+          if (s2 === 'connected' || s2 === 'completed') return;
+          if (peer && peer.id < call.peer) { call._replaced = true; clearInterval(call._mon); try { call.close(); } catch (e) {} callPeer(call.peer, true); }
+        }, 7000);
+      });
+    }
+
+    function bindVoice(p) {
+      p.on('call', call => {
+        const ex = voiceCalls[call.peer], up = !!(call.metadata && call.metadata.up);
+        // Dua sisi menelepon bersamaan: pertahankan panggilan dari ID yang lebih kecil
+        if (ex && ex !== call && callAlive(ex) && ex._mine && ex._media && localStream && !up && peer.id < call.peer) { try { call.close(); } catch (e) {} return; }
+        call.answer(localStream || undefined, { sdpTransform: vcSdp });
+        call._media = !!localStream;
+        hookCall(call);
+      });
+    }
     function hookCall(call) {
-      voiceCalls[call.peer] = call;
-      boostWebRTCQuality(call);
-      call.on('stream', s => attachVoice(call.peer, s));
-      call.on('close', () => dropVoice(call.peer));
+      const id = call.peer, old = voiceCalls[id];
+      voiceCalls[id] = call;
+      let first = true;
+      call.on('stream', s => {
+        call._got = true;
+        attachVoice(id, s);
+        if (first) {
+          first = false;
+          // Panggilan lama (yang hanya satu arah) ditutup supaya video tidak dikirim dua kali
+          if (old && old !== call) { old._replaced = true; clearInterval(old._mon); try { old.close(); } catch (e) {} }
+        }
+        vcApplyTier(call);
+      });
+      call.on('close', () => { clearInterval(call._mon); if (voiceCalls[id] === call) dropVoice(id); });
+      call.on('error', e => console.warn('Call error', e));
+      vcTune(call);
+      vcWatchConn(call);
     }
-    function callPeer(id) { if (peer && localStream) hookCall(peer.call(id, localStream)); }
+    function callPeer(id, force) {
+      if (!peer || !localStream || !id || id === peer.id) return;
+      const ex = voiceCalls[id];
+      const upgrade = !!ex && !ex._mine && ex._media === false; // dulu aku menjawab tanpa kamera/mic, sekarang bergabung
+      if (ex && callAlive(ex) && !upgrade && !force) return;    // sudah ada panggilan yang jalan
+      const c = peer.call(id, localStream, { metadata: { up: upgrade || !!force }, sdpTransform: vcSdp });
+      if (!c) return;
+      c._mine = true; c._media = true;
+      hookCall(c);
+    }
     function attachVoice(id, s) {
       let a = document.getElementById('va-' + id);
       if (!a) { a = document.createElement('audio'); a.id = 'va-' + id; a.autoplay = true; a.playsInline = true; document.body.appendChild(a); }
-      a.srcObject = s; watchLevel(id, s);
+      if (a.srcObject !== s) a.srcObject = s;
+      watchLevel(id, s);
       a.play().catch(() => { showToast('Ketuk layar untuk mendengar suara partner'); document.addEventListener('click', () => a.play(), { once: true }); });
     }
     function dropVoice(id) { document.getElementById('va-' + id)?.remove(); delete voiceCalls[id]; delete vsLevels[id]; }
@@ -3346,6 +3541,8 @@
     function stopVoice() {
       localStream?.getTracks().forEach(t => t.stop());
       localStream = null; voiceOn = false;
+      // tutup koneksinya juga (dulu hanya dilepas dari daftar sehingga koneksi lama menggantung)
+      Object.values(voiceCalls).forEach(c => { c._replaced = true; clearInterval(c._mon); try { c.close(); } catch (e) {} });
       Object.keys(voiceCalls).forEach(dropVoice); updateVoiceUI();
     }
 
@@ -3537,6 +3734,9 @@
       if (lbl) lbl.textContent = vcSwapped ? 'Layar: Kamu' : 'Layar: Partner';
     }
     stopVoice = function () {
+      // kabari peserta lain supaya kotak videomu langsung hilang (tanpa menunggu koneksi time-out)
+      try { if (peer && peer.id && (voiceOn || vcOn)) connections.forEach(c => c.open && c.send({ type: 'VC_LEAVE', id: peer.id })); } catch (e) {}
+      vcWakeOff();
       vcPipeStop(true);
       if (vcRaw) vcRaw.getTracks().forEach(t => t.stop());
       vcRaw = null;
@@ -3566,7 +3766,7 @@
         if (lbl && members[id]?.name) lbl.textContent = members[id].name;
       }
       const v = tile.querySelector('video');
-      v.srcObject = s;
+      if (v.srcObject !== s) v.srcObject = s; // jangan di-reset kalau streamnya sama (bikin gambar berkedip/tersendat)
       v.play().catch(() => {});
       vcUpdateGrid();
     }
@@ -3604,6 +3804,7 @@
       else if (total === 3) grid.classList.add('g-3', 'g-4');
       else if (total === 4) grid.classList.add('g-4');
       else if (total >= 5) grid.classList.add('g-6');
+      vcRetuneAll(); // jumlah peserta berubah -> sesuaikan bitrate
     }
     function vcInvite() {
       document.getElementById('vc-hint').textContent = 'Ada video call aktif di room. Tekan gabung untuk menyalakan kamera (maks 6 peserta).';
@@ -3615,9 +3816,20 @@
       if (vcOn) return vcEnd();
       if (!isRoomConnected) return showToast('Gabung room dulu di tab Bareng');
       if (vcRemoteCount() >= VC_MAX_USERS) return showToast('Video call sudah penuh (6/6 peserta)');
-      let s;
-      try { s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1920, min: 1280 }, height: { ideal: 1080, min: 720 }, frameRate: { ideal: 30, max: 60 } }, audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, sampleRate: 48000, channelCount: 1 } }); }
-      catch (e) { return showToast('Izin kamera atau mikrofon ditolak'); }
+      // 720p@30 = HD yang lancar. (1080p/60fps membuat HP kewalahan dan jaringan tersedak; "min" membuat kamera sering ditolak)
+      const AUD = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, sampleRate: 48000, channelCount: 1 };
+      const VIDS = [
+        { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } },
+        { facingMode: 'user', width: { ideal: 960 }, height: { ideal: 540 }, frameRate: { ideal: 30, max: 30 } },
+        { facingMode: 'user' }
+      ];
+      let s = null, denied = false;
+      for (const v of VIDS) {
+        try { s = await navigator.mediaDevices.getUserMedia({ video: v, audio: AUD }); break; }
+        catch (e) { if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) { denied = true; break; } }
+      }
+      if (!s) return showToast(denied ? 'Izin kamera atau mikrofon ditolak' : 'Kamera/mikrofon tidak bisa dipakai (mungkin sedang dipakai aplikasi lain)');
+      try { s.getVideoTracks().forEach(t => { t.contentHint = 'motion'; }); } catch (e) {}
       if (voiceOn) _stopVoice();
       vcRaw = s; localStream = new MediaStream([...s.getAudioTracks(), ...s.getVideoTracks()]); voiceOn = true; voiceMuted = false; vcOn = true;
       const sv = document.getElementById('vc-self'); sv.srcObject = localStream; vcFacing = 'user'; vcMirUI(); vcFxUI(); vcApply();
@@ -3627,7 +3839,15 @@
       appendSystemChat(myDisplayName + ' bergabung ke video call');
       document.getElementById('vc-nav-dot').classList.add('hidden');
       vcStartTimer(); updateVoiceUI(); announceMic(); vcUpdateGrid(); vcLayout(); switchTab('videocall');
+      vcWakeOn(); vcQual();
     }
+    // Layar HP tidak boleh mati saat video call (itu bikin kamera & koneksi putus)
+    let vcWake = null;
+    async function vcWakeOn() {
+      try { if (navigator.wakeLock && !vcWake) { vcWake = await navigator.wakeLock.request('screen'); vcWake.addEventListener('release', () => { vcWake = null; }); } } catch (e) {}
+    }
+    function vcWakeOff() { try { vcWake && vcWake.release(); } catch (e) {} vcWake = null; }
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && vcOn) vcWakeOn(); });
     function vcEnd() { stopVoice(); announceMic(); if (curTab === 'videocall') switchTab(vcPrev); }
     function vcStopAll() {
       if (!canManageRoom()) return showToast('Hanya admin yang bisa menghentikan total video call');
@@ -3768,7 +3988,7 @@
       const next = vcFacing === 'user' ? 'environment' : 'user', old = vcRaw.getVideoTracks()[0], was = old ? old.enabled : true;
       if (old) { old.stop(); vcRaw.removeTrack(old); }
       let ns;
-      try { ns = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: next }, width: { ideal: 1920, min: 1280 }, height: { ideal: 1080, min: 720 }, frameRate: { ideal: 30 } }, audio: false }); }
+      try { ns = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: next }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } }, audio: false }); }
       catch (e) {
         try { ns = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: vcFacing } }, audio: false }); } catch (e2) { return showToast('Kamera tidak bisa diganti'); }
         showToast('Kamera tidak bisa diganti');
@@ -3835,6 +4055,7 @@
     const vcNeed = () => fx.e !== 'none' || fx.b !== 'none' || fx.f !== 'none' || fx.flip;
     function vcApply() { if (!vcRaw) return; if (vcNeed() && !vcPipe) vcPipeStart(); else if (!vcNeed() && vcPipe) vcPipeStop(false); }
     function vcSetTrack(tr) {
+      try { tr.contentHint = 'motion'; } catch (e) {}
       const old = localStream.getVideoTracks()[0]; if (old === tr) return;
       if (old) localStream.removeTrack(old); localStream.addTrack(tr);
       Object.values(voiceCalls).forEach(c => (c.peerConnection?.getSenders() || []).forEach(s => { if (s.track && s.track.kind === 'video') s.replaceTrack(tr).catch(() => {}); }));
@@ -3871,10 +4092,18 @@
       vcPipe = P; vcBgBuild();
       P.track = cv.captureStream(30).getVideoTracks()[0];
       vcSetTrack(P.track);
-      P.timer = setInterval(vcFrame, 33);
+      // Proses frame tepat saat kamera mengirim frame baru (lebih halus dari timer tetap); timer cadangan jika browser tidak mendukung
+      P.last = 0;
+      const tick = () => { P.last = performance.now(); vcFrame(); };
+      if (v.requestVideoFrameCallback) {
+        const loop = () => { if (vcPipe !== P) return; tick(); P.rvfc = v.requestVideoFrameCallback(loop); };
+        P.rvfc = v.requestVideoFrameCallback(loop);
+        P.timer = setInterval(() => { if (performance.now() - P.last > 120) tick(); }, 60);
+      } else P.timer = setInterval(tick, 33);
     }
     function vcPipeStop(final) {
       const P = vcPipe; if (!P) return; vcPipe = null; clearInterval(P.timer);
+      try { if (P.rvfc && P.v.cancelVideoFrameCallback) P.v.cancelVideoFrameCallback(P.rvfc); } catch (e) {}
       if (!final && vcRaw && localStream) vcSetTrack(P.rt);
       P.track.stop(); P.v.srcObject = null; P.v.remove();
     }
@@ -4080,11 +4309,12 @@
     function announceMic() { if (!peer) return; const s = !voiceOn ? 'off' : (voiceMuted ? 'muted' : 'on'); if (canManageRoom()) setMic(peer.id, s); else connections.forEach(c => c.open && c.send({ type: 'MIC', state: s })); }
 
     function watchLevel(id, stream) {
+      if (vsLevels[id] && vsLevels[id].s === stream) return;
       try {
         vsCtx = vsCtx || new (window.AudioContext || window.webkitAudioContext)(); vsCtx.resume();
         const an = vsCtx.createAnalyser(); an.fftSize = 256;
         vsCtx.createMediaStreamSource(stream).connect(an);
-        vsLevels[id] = { an, buf: new Uint8Array(an.fftSize) };
+        vsLevels[id] = { an, buf: new Uint8Array(an.fftSize), s: stream };
       } catch (e) {}
     }
 
@@ -4125,10 +4355,11 @@
           <div class="w-full h-full rounded-full bg-zinc-950/40 overflow-hidden flex items-center justify-center ${c ? 'text-base' : 'text-xl'} font-extrabold text-white">${avatarInner(m.id, m.name)}</div>
           ${i === 0 ? '<span class="absolute -top-2.5 left-1/2 -translate-x-1/2 text-sm">👑</span>' : ''}
           ${canKick ? `<button type="button" onclick="event.stopPropagation();kickUser('${esc(m.id)}')" title="Keluarkan ${esc(m.name)}" class="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-red-600 hover:bg-red-500 text-white border border-zinc-950 shadow-lg flex items-center justify-center transition"><i data-lucide="user-x" class="w-3.5 h-3.5"></i></button>` : ''}
+          ${m.ctl ? '<span title="Boleh play bareng" class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-500 border border-zinc-950 text-[10px] flex items-center justify-center">🎛️</span>' : ''}
           <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-zinc-900 border border-white/20 text-[10px] flex items-center justify-center">${mic}</span>
         </div>
         <div class="text-[11px] font-semibold text-white truncate max-w-[76px]">${esc(m.name)}${m.id === peer?.id ? ' (kamu)' : ''}</div>
-        ${m.role === 'guest' ? '<div class="text-[9px] text-zinc-400 -mt-0.5">tamu</div>' : ''}
+        ${m.role === 'guest' ? `<div class="text-[9px] text-zinc-400 -mt-0.5">tamu${m.ctl ? ' • bisa play' : ''}</div>` : ''}
       </div>`;
     }
     const emptySeatHTML = (i, c) => `<button onclick="moveSeat(${i})" class="flex flex-col items-center gap-1 shrink-0"><div class="${c ? 'w-11 h-11' : 'w-16 h-16'} rounded-full border-2 border-dashed border-white/20 flex items-center justify-center text-xl text-zinc-500">+</div><div class="text-[11px] text-zinc-500">Kursi ${i + 1}</div></button>`;
