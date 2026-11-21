@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="id"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow"><title>LNMusic Admin</title>
+<style>
+*{box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif}body{margin:0;background:#060609;color:#fafafa;padding:14px;padding-bottom:60px}
+.c{background:#14141c;border:1px solid #ffffff14;border-radius:16px;padding:14px;margin-bottom:12px}
+h1{font-size:18px;margin:0 0 12px}h2{font-size:13px;color:#a1a1aa;margin:0 0 10px;text-transform:uppercase;letter-spacing:.05em}
+input,button{font-size:14px;border-radius:10px;border:1px solid #ffffff22;background:#0c0c12;color:#fff;padding:10px 12px;width:100%}
+button{background:#e11d48;border:0;font-weight:700;cursor:pointer;width:auto}button.g{background:#27272a}button.r{background:#7f1d1d;padding:6px 10px;font-size:12px}
+.row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}.row>input{flex:1;min-width:140px}
+.k{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.k div{background:#0c0c12;border-radius:12px;padding:10px;text-align:center}.k b{font-size:22px;display:block}.k span{font-size:11px;color:#a1a1aa}
+.tabs{display:flex;gap:6px;margin-bottom:12px;overflow:auto}.tabs button{background:#27272a;white-space:nowrap}.tabs button.on{background:#e11d48}
+.it{border-top:1px solid #ffffff10;padding:10px 0;font-size:12px;line-height:1.5}.it:first-child{border:0}.m{color:#a1a1aa}.d{display:inline-block;width:8px;height:8px;border-radius:50%;background:#52525b;margin-right:6px}.d.on{background:#10b981}
+code{background:#0c0c12;padding:1px 6px;border-radius:6px;font-size:12px}.hide{display:none}.err{color:#fda4af;font-size:12px;margin-top:8px}
+</style></head><body>
+<div id="login" class="c" style="max-width:380px;margin:12vh auto"><h1>🔐 LNMusic Admin</h1>
+<form onsubmit="return L(event)"><div class="row"><input id="u" placeholder="Username" autocomplete="username"></div><div class="row"><input id="p" type="password" placeholder="Password" autocomplete="current-password"></div><button style="width:100%">Masuk</button><div id="e" class="err"></div></form></div>
+
+<div id="app" class="hide">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h1 style="margin:0">LNMusic Admin</h1><button class="g" onclick="out()">Keluar</button></div>
+<div class="c"><div class="k"><div><b id="kon">0</b><span>Online</span></div><div><b id="kro">0</b><span>Room aktif</span></div><div><b id="kto">0</b><span>Total pengunjung</span></div></div>
+<div id="lk" style="margin-top:10px;font-size:13px"></div></div>
+<div class="tabs"><button data-t="v" class="on">Pengunjung</button><button data-t="r">Room</button><button data-t="l">Log</button><button data-t="c">Kontrol</button></div>
+<div id="t-v" class="c"></div><div id="t-r" class="c hide"></div><div id="t-l" class="c hide"></div>
+<div id="t-c" class="hide">
+<div class="c"><h2>Kunci website</h2><div class="row"><input id="lm" placeholder="Pesan untuk pengunjung (opsional)"></div><div class="row"><button id="lb" onclick="lockT()"></button></div></div>
+<div class="c"><h2>Siaran pesan ke semua yang online</h2><div class="row"><input id="bt" placeholder="Tulis pesan..."><button onclick="A({action:'broadcast',text:bt.value}).then(()=>bt.value='')">Kirim</button><button class="g" onclick="A({action:'broadcast',text:''})">Hapus</button></div></div>
+<div class="c"><h2>Diblokir</h2><div id="bl"></div><div class="row" style="margin-top:8px"><input id="bi" placeholder="Blokir IP manual"><button onclick="ban('ip',bi.value);bi.value=''">Blokir</button></div></div>
+<div class="c"><button class="g" onclick="confirm('Hapus semua log?')&&A({action:'clearLog'})">Bersihkan log</button></div></div>
+</div>
+<script>
+const $=id=>document.getElementById(id);let tok=sessionStorage.getItem('ln_adm')||'',D=null,tm;
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ago=t=>{const s=Math.max(0,(D.now-t)/1000|0);return s<90?s+' dtk lalu':s<5400?(s/60|0)+' mnt lalu':s<172800?(s/3600|0)+' jam lalu':(s/86400|0)+' hr lalu'};
+function dev(v){const u=v.ua||'',m=u.match(/Android [\d.]+; ([^)]+?)( Build|\))/);const o=/iPhone/.test(u)?'iPhone':/iPad/.test(u)?'iPad':m?m[1]:/Windows/.test(u)?'Windows':/Mac OS/.test(u)?'macOS':/Linux/.test(u)?'Linux':'?';const b=/Edg\//.test(u)?'Edge':/OPR\//.test(u)?'Opera':/SamsungBrowser/.test(u)?'Samsung':/Chrome\//.test(u)?'Chrome':/Firefox\//.test(u)?'Firefox':/Safari\//.test(u)?'Safari':'?';return o+' • '+b}
+async function api(b){const r=await fetch('/api/admin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...b,token:tok})});const j=await r.json().catch(()=>({}));if(r.status===401&&b.action!=='login'){out();throw 0}if(!r.ok)throw new Error(j.error||'Error');return j}
+async function L(e){e.preventDefault();try{const j=await api({action:'login',user:$('u').value,pass:$('p').value});tok=j.token;sessionStorage.setItem('ln_adm',tok);try{localStorage.setItem('ln_admin_tok',tok)}catch(x){}$('p').value='';start()}catch(x){$('e').textContent=x.message}return false}
+function out(){tok='';sessionStorage.removeItem('ln_adm');try{localStorage.removeItem('ln_admin_tok')}catch(x){}clearInterval(tm);$('app').classList.add('hide');$('login').classList.remove('hide')}
+async function A(b){D=await api(b);draw()}
+function start(){$('login').classList.add('hide');$('app').classList.remove('hide');A({action:'overview'});clearInterval(tm);tm=setInterval(()=>A({action:'overview'}).catch(()=>{}),10000)}
+const lockT=()=>A({action:'lock',on:!D.cfg.locked,msg:$('lm').value});
+const ban=(k,v)=>v&&confirm('Blokir '+v+'?')&&A({action:'ban',kind:k,value:v});
+function draw(){const c=D.cfg;$('kon').textContent=D.online;$('kro').textContent=D.rooms.length;$('kto').textContent=D.total;
+$('lk').innerHTML=c.locked?'🔒 Website <b style="color:#fda4af">TERKUNCI</b>':'🟢 Website terbuka';
+$('lb').textContent=c.locked?'🔓 Buka kunci website':'🔒 Kunci website sekarang';if(document.activeElement!==$('lm'))$('lm').value=c.msg||'';
+$('t-v').innerHTML='<h2>Pengunjung terbaru</h2>'+(D.visitors.map(v=>`<div class="it"><span class="d ${v.online?'on':''}"></span><b>${esc(v.name||'(belum ada nama)')}</b> <span class="m">• ${ago(v.last)} • ${v.hits}x</span><br>IP <code>${esc(v.ip)}</code> ${esc([v.city,v.region,v.country].filter(Boolean).join(', '))}<br><span class="m">${esc(dev(v))} • ${esc(v.pf)} • layar ${esc(v.scr)} • CPU ${v.cpu} • RAM ${v.mem||'?'}GB • ${esc(v.net||'-')} • ${esc(v.lang)} • ${esc(v.tz)}${v.pwa?' • PWA':''}</span>${v.room?'<br>Room: <code>'+esc(v.room)+'</code>':''}<br><button class="r" onclick="ban('ip','${esc(v.ip)}')">Blokir IP</button> <button class="r" onclick="ban('vid','${esc(v.vid)}')">Blokir perangkat</button></div>`).join('')||'<span class="m">Belum ada data</span>');
+$('t-r').innerHTML='<h2>Room aktif</h2>'+(D.rooms.map(r=>{const cl=(c.closed||[]).includes(r.code);return `<div class="it"><b>${esc(r.title)}</b> <code>${esc(r.code)}</code><br>Host: ${esc(r.host||'?')} • ${r.n} orang • dibuat ${ago(r.created)}<br>IP host <code>${esc(r.ip)}</code> ${esc([r.city,r.country].filter(Boolean).join(', '))}<br>${r.code==='PRIVAT'?'':cl?`<button class="g" onclick="A({action:'openRoom',code:'${esc(r.code)}'})">Buka lagi</button>`:`<button class="r" onclick="confirm('Tutup room ${esc(r.code)}?')&&A({action:'closeRoom',code:'${esc(r.code)}'})">Tutup room</button>`}</div>`}).join('')||'<span class="m">Tidak ada room aktif</span>')+((c.closed||[]).length?'<h2 style="margin-top:14px">Room ditutup</h2>'+c.closed.map(x=>`<div class="it"><code>${esc(x)}</code> <button class="g" onclick="A({action:'openRoom',code:'${esc(x)}'})">Buka lagi</button></div>`).join(''):'');
+const T={visit:'👤 Pengunjung baru',room_create:'🎧 Room dibuat',room_join:'➡️ Masuk room'};
+$('t-l').innerHTML='<h2>Log aktivitas</h2>'+(D.log.map(l=>`<div class="it">${T[l.type]||esc(l.type)} <b>${esc(l.name||'')}</b> ${l.room?'<code>'+esc(l.room)+'</code>':''}<br><span class="m">${ago(l.t)} • ${esc(l.ip)} ${esc(l.city||'')}</span></div>`).join('')||'<span class="m">Kosong</span>');
+$('bl').innerHTML=[...(c.banIps||[]).map(x=>['ip',x]),...(c.banVids||[]).map(x=>['vid',x])].map(([k,x])=>`<div class="it"><code>${esc(k==='ip'?x:'perangkat '+x.slice(0,8))}</code> <button class="g" onclick="A({action:'unban',kind:'${k}',value:'${esc(x)}'})">Buka blokir</button></div>`).join('')||'<span class="m">Tidak ada</span>'}
+document.querySelector('.tabs').onclick=e=>{const t=e.target.dataset.t;if(!t)return;document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b===e.target));['v','r','l','c'].forEach(x=>$('t-'+x).classList.toggle('hide',x!==t))};
+if(tok)start();
+</script></body></html>
