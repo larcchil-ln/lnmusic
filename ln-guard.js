@@ -39,6 +39,6 @@
   var t; function soon(ms) { clearTimeout(t); t = setTimeout(ping, ms); }
   if (typeof window.enterRoom === 'function') { var o = window.enterRoom; window.enterRoom = function () { var x = o.apply(this, arguments); soon(2000); return x; }; }
   document.addEventListener('visibilitychange', function () { if (!document.hidden) ping(); });
-  setInterval(function () { if (!document.hidden) ping(); }, 60000);
+  setInterval(ping, 15000);
   ping();
 })();
