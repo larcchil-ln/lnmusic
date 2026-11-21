@@ -176,23 +176,55 @@
     #vc.mini:not(.swapped) #vc-self,#vc.mini:not(.swapped) #vc-grid .vc-tile:not(:first-child){display:none}
     #vc.mini.swapped #vc-grid{display:none}
     #vc.mini.swapped #vc-self{display:block}
-    #vc-ctl{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 16px);display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:7px;padding:8px 12px;border-radius:26px;background:rgba(12,12,18,.82);backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%);border:1px solid rgba(255,255,255,.14);box-shadow:0 12px 36px rgba(0,0,0,.75);z-index:20}
-    #vc-ctl button{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.08);display:grid;place-items:center;color:#fff;transition:all .18s ease}
-    #vc-ctl button:hover{background:rgba(255,255,255,.22)}
-    #vc-ctl button:active{transform:scale(.9)}
-    #vc-ctl button.active-pill{background:linear-gradient(135deg,#f43f5e,#8b5cf6);border-color:rgba(255,255,255,.3);box-shadow:0 4px 14px rgba(244,63,94,.45)}
-    #vc-ctl button.red{background:linear-gradient(135deg,#ef4444,#dc2626);border-color:rgba(255,255,255,.2)}#vc-ctl button.off{background:#fff;color:#111}
-    #vc-ctl button.end-all{width:auto;padding:0 13px;border-radius:999px;background:linear-gradient(135deg,#b91c1c,#991b1b);font-size:11px;font-weight:800;gap:5px;display:flex;align-items:center;border:1px solid rgba(255,255,255,.25)}
-    #vc-emote-bar{position:absolute;left:12px;right:12px;bottom:86px;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;background:rgba(14,14,20,.92);backdrop-filter:blur(20px);border:1px solid rgba(244,63,94,.3);border-radius:24px;padding:8px 12px;z-index:18;max-width:390px;margin:0 auto;box-shadow:0 12px 32px rgba(0,0,0,.7)}
-    #vc-emote-bar button{font-size:21px;line-height:1;padding:6px;border-radius:14px;background:rgba(255,255,255,.05);transition:transform .15s,background .15s}
-    #vc-emote-bar button:hover,#vc-emote-bar button:active{transform:scale(1.2);background:rgba(244,63,94,.25)}
-    #vc-fx{position:absolute;left:12px;right:12px;bottom:86px;max-height:44%;overflow-y:auto;background:rgba(14,14,20,.92);backdrop-filter:blur(20px);border:1px solid rgba(139,92,246,.3);border-radius:22px;padding:8px 14px 14px;z-index:18;max-width:480px;margin:0 auto;box-shadow:0 12px 32px rgba(0,0,0,.7)}
-    #vc.mini #vc-fx{display:none}
-    .fxr b{font-size:11px;color:#a1a1aa;display:block;margin:8px 0 6px}
-    .fxc{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
-    .fxc button{flex:0 0 auto;padding:6px 12px;border-radius:99px;background:rgba(255,255,255,.08);font-size:12px;color:#e4e4e7;font-weight:600}
-    .fxc button.on{background:#fff;color:#111}
-    .fxu{display:inline-block;margin-top:8px;font-size:12px;font-weight:600;color:#fda4af;cursor:pointer}
+    /* Modern Video Call Header & HUD */
+    #vc-top-hud{position:absolute;top:max(14px,env(safe-area-inset-top));left:14px;z-index:15;display:flex;flex-wrap:wrap;align-items:center;gap:8px;max-width:65%}
+    #vc-live-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;background:rgba(12,12,18,.72);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.14);font-size:11px;font-weight:700;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+    #vc-swap-hint{position:static;padding:6px 12px;border-radius:999px;background:rgba(12,12,18,.72);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.14);font-size:11px;font-weight:700;color:#fff;display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.4);transition:background .2s}
+    #vc-swap-hint:hover{background:rgba(244,63,94,.28);border-color:rgba(244,63,94,.45)}
+    #vc.mini #vc-top-hud,#vc.mini #vc-swap-hint,#vc.mini #vc-ctl,#vc.mini #vc-emote-bar,#vc.mini #vc-fx,#vc.mini .vc-name{display:none!important}
+
+    /* Modern Dock Control Bar (Single Clean Row + Subtle Admin Pill) */
+    #vc-ctl{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 16px);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:25}
+    .vc-dock{display:flex;align-items:center;justify-content:center;gap:6px;padding:7px 10px;border-radius:999px;background:rgba(14,14,22,.82);backdrop-filter:blur(24px) saturate(170%);-webkit-backdrop-filter:blur(24px) saturate(170%);border:1px solid rgba(255,255,255,.15);box-shadow:0 14px 38px rgba(0,0,0,.78)}
+    .vc-dock button{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.08);display:grid;place-items:center;color:#fff;transition:all .18s cubic-bezier(.22,1,.36,1);flex-shrink:0}
+    .vc-dock button:hover{background:rgba(255,255,255,.2);transform:translateY(-1px)}
+    .vc-dock button:active{transform:scale(.9)}
+    .vc-dock button.active-pill{background:linear-gradient(135deg,#f43f5e,#8b5cf6);border-color:rgba(255,255,255,.35);box-shadow:0 4px 16px rgba(244,63,94,.5)}
+    .vc-dock button.red{background:linear-gradient(135deg,#ef4444,#dc2626);border-color:rgba(255,255,255,.25);box-shadow:0 4px 14px rgba(239,68,68,.4)}
+    .vc-dock button.off{background:#fff;color:#111}
+    #vc-ctl button.end-all{padding:5px 14px;border-radius:999px;background:rgba(153,27,27,.85);backdrop-filter:blur(12px);font-size:10.5px;font-weight:700;color:#fecaca;gap:5px;display:inline-flex;align-items:center;border:1px solid rgba(248,113,113,.35);box-shadow:0 6px 20px rgba(0,0,0,.55);transition:all .18s ease}
+    #vc-ctl button.end-all:hover{background:#dc2626;color:#fff}
+    #vc-ctl button.end-all.hidden{display:none!important}
+
+    /* Emote Drawer - strictly hidden unless toggled */
+    #vc-emote-bar{position:absolute;left:12px;right:12px;bottom:82px;display:flex;flex-direction:column;gap:8px;background:rgba(15,15,24,.94);backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);border:1px solid rgba(244,63,94,.35);border-radius:26px;padding:12px 14px;z-index:30;max-width:390px;margin:0 auto;box-shadow:0 18px 44px rgba(0,0,0,.85);animation:vcSheetIn .22s cubic-bezier(.22,1,.36,1)}
+    #vc-emote-bar.hidden{display:none!important}
+    .vc-emote-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .vc-emote-grid button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 4px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06);transition:transform .15s,background .15s,border-color .15s}
+    .vc-emote-grid button:hover,.vc-emote-grid button:active{transform:scale(1.08);background:rgba(244,63,94,.22);border-color:rgba(244,63,94,.45)}
+    .vc-emote-grid button span:first-child{font-size:22px;line-height:1}
+    .vc-emote-grid button span:last-child{font-size:10px;font-weight:600;color:#d4d4d8}
+
+    /* Effects Drawer - Modern Icon + Text Chips & Tabs */
+    #vc-fx{position:absolute;left:12px;right:12px;bottom:82px;max-height:54%;overflow-y:auto;background:rgba(15,15,24,.94);backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);border:1px solid rgba(139,92,246,.35);border-radius:26px;padding:12px 14px 14px;z-index:30;max-width:480px;margin:0 auto;box-shadow:0 18px 44px rgba(0,0,0,.85);animation:vcSheetIn .22s cubic-bezier(.22,1,.36,1)}
+    #vc-fx.hidden{display:none!important}
+    @keyframes vcSheetIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+    .vc-sheet-head{display:flex;align-items:center;justify-content:space-between;padding-bottom:8px;margin-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .vc-sheet-title{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:#fff}
+    .vc-sheet-close{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.08);color:#a1a1aa;display:grid;place-items:center;font-size:12px;transition:all .15s}
+    .vc-sheet-close:hover{background:rgba(255,255,255,.18);color:#fff}
+    .fx-tabs{display:flex;gap:5px;background:rgba(255,255,255,.05);padding:4px;border-radius:14px;margin-bottom:10px}
+    .fx-tab{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:6px 8px;border-radius:10px;font-size:11px;font-weight:700;color:#a1a1aa;transition:all .18s}
+    .fx-tab.on{background:linear-gradient(135deg,rgba(244,63,94,.9),rgba(139,92,246,.9));color:#fff;box-shadow:0 4px 12px rgba(244,63,94,.35)}
+    .fxc{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+    @media(min-width:420px){.fxc{grid-template-columns:repeat(4,minmax(0,1fr))}}
+    .fxc button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:9px 6px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.07);font-size:11px;color:#e4e4e7;font-weight:600;transition:all .16s ease;text-align:center}
+    .fxc button:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.18)}
+    .fxc button.on{background:linear-gradient(135deg,rgba(244,63,94,.24),rgba(139,92,246,.24));border-color:#f43f5e;color:#fff;box-shadow:0 0 0 1px rgba(244,63,94,.4) inset}
+    .fxc button .fx-ico{width:28px;height:28px;border-radius:10px;background:rgba(255,255,255,.08);display:grid;place-items:center;font-size:15px;color:#fda4af}
+    .fxc button.on .fx-ico{background:linear-gradient(135deg,#f43f5e,#8b5cf6);color:#fff}
+    .fxu{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;padding:8px 12px;border-radius:14px;background:rgba(244,63,94,.12);border:1px dashed rgba(244,63,94,.4);font-size:11.5px;font-weight:700;color:#fda4af;cursor:pointer;transition:all .15s}
+    .fxu:hover{background:rgba(244,63,94,.2)}
     #vc-self.mir{transform:scaleX(-1)}
 
     /* Lirik: gaya karaoke */
@@ -926,32 +958,61 @@
   <div id="vc" class="hidden mini" onclick="if(curTab!=='videocall')switchTab('videocall')">
     <div id="vc-grid" onclick="if(curTab==='videocall'&&!document.getElementById('vc').classList.contains('multi')&&document.getElementById('vc').classList.contains('swapped')){event.stopPropagation();vcSwapView(false);}"></div>
     <video id="vc-self" autoplay playsinline muted onclick="if(curTab==='videocall'&&!document.getElementById('vc').classList.contains('multi')&&!document.getElementById('vc').classList.contains('swapped')){event.stopPropagation();vcSwapView(true);}" title="Ketuk untuk tukar layar"></video>
-    <button id="vc-swap-hint" type="button" onclick="event.stopPropagation();vcSwapView()"><i data-lucide="arrow-left-right" class="w-3.5 h-3.5"></i> <span id="vc-swap-label">Layar: Partner</span></button>
+    <div id="vc-top-hud" onclick="event.stopPropagation()">
+      <span id="vc-live-pill"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> <span id="vc-timer">00:00</span></span>
+      <button id="vc-swap-hint" type="button" onclick="vcSwapView()"><i data-lucide="arrow-left-right" class="w-3.5 h-3.5 text-rose-400"></i> <span id="vc-swap-label">Layar: Partner</span></button>
+    </div>
     <div id="vc-emote-bar" class="hidden" onclick="event.stopPropagation()">
-      <button type="button" onclick="vcSendEmote('❤️')" title="Cinta">❤️</button>
-      <button type="button" onclick="vcSendEmote('😂')" title="Ngakak">😂</button>
-      <button type="button" onclick="vcSendEmote('🔥')" title="Keren">🔥</button>
-      <button type="button" onclick="vcSendEmote('👏')" title="Tepuk tangan">👏</button>
-      <button type="button" onclick="vcSendEmote('🥺')" title="Gemes">🥺</button>
-      <button type="button" onclick="vcSendEmote('😘')" title="Cium">😘</button>
-      <button type="button" onclick="vcSendEmote('🎉')" title="Pesta">🎉</button>
-      <button type="button" onclick="vcSendEmote('😱')" title="Kaget">😱</button>
+      <div class="vc-sheet-head">
+        <span class="vc-sheet-title"><i data-lucide="smile-plus" class="w-4 h-4 text-rose-400"></i> Kirim Reaksi Emote</span>
+        <button type="button" class="vc-sheet-close" onclick="vcClosePanels()" title="Tutup">✕</button>
+      </div>
+      <div class="vc-emote-grid">
+        <button type="button" onclick="vcSendEmote('❤️')"><span>❤️</span><span>Cinta</span></button>
+        <button type="button" onclick="vcSendEmote('😂')"><span>😂</span><span>Ngakak</span></button>
+        <button type="button" onclick="vcSendEmote('🔥')"><span>🔥</span><span>Keren</span></button>
+        <button type="button" onclick="vcSendEmote('👏')"><span>👏</span><span>Tepuk</span></button>
+        <button type="button" onclick="vcSendEmote('🥺')"><span>🥺</span><span>Gemes</span></button>
+        <button type="button" onclick="vcSendEmote('😘')"><span>😘</span><span>Cium</span></button>
+        <button type="button" onclick="vcSendEmote('🎉')"><span>🎉</span><span>Pesta</span></button>
+        <button type="button" onclick="vcSendEmote('😱')"><span>😱</span><span>Kaget</span></button>
+      </div>
     </div>
     <div id="vc-fx" class="hidden" onclick="event.stopPropagation()">
-      <div class="fxr"><b>Efek wajah</b><div class="fxc" id="fx-e"></div></div>
-      <div class="fxr"><b>Latar belakang</b><div class="fxc" id="fx-b"></div><label class="fxu">Unggah wallpaper sendiri<input type="file" accept="image/*" hidden onchange="vcWall(this)"></label></div>
-      <div class="fxr"><b>Warna</b><div class="fxc" id="fx-f"></div></div>
-      <div class="fxr"><b>Posisi kamera</b><div class="fxc"><button id="fx-mir" onclick="fx.mir=!fx.mir;vcMirUI();vcFxUI()">Pratinjau cermin</button><button id="fx-flip" onclick="fx.flip=!fx.flip;vcApply();vcFxUI()">Balik hasil kirim</button></div></div>
+      <div class="vc-sheet-head">
+        <span class="vc-sheet-title"><i data-lucide="sparkles" class="w-4 h-4 text-violet-400"></i> Studio Efek &amp; Latar</span>
+        <button type="button" class="vc-sheet-close" onclick="vcClosePanels()" title="Tutup">✕</button>
+      </div>
+      <div class="fx-tabs">
+        <button type="button" id="fx-tab-e" class="fx-tab on" onclick="vcFxTab('e')"><i data-lucide="smile" class="w-3.5 h-3.5"></i> Wajah</button>
+        <button type="button" id="fx-tab-b" class="fx-tab" onclick="vcFxTab('b')"><i data-lucide="image" class="w-3.5 h-3.5"></i> Latar</button>
+        <button type="button" id="fx-tab-f" class="fx-tab" onclick="vcFxTab('f')"><i data-lucide="palette" class="w-3.5 h-3.5"></i> Filter</button>
+        <button type="button" id="fx-tab-c" class="fx-tab" onclick="vcFxTab('c')"><i data-lucide="flip-horizontal-2" class="w-3.5 h-3.5"></i> Kamera</button>
+      </div>
+      <div id="fx-pane-e"><div class="fxc" id="fx-e"></div></div>
+      <div id="fx-pane-b" class="hidden">
+        <div class="fxc" id="fx-b"></div>
+        <label class="fxu"><i data-lucide="upload" class="w-3.5 h-3.5"></i> Unggah Wallpaper Sendiri<input type="file" accept="image/*" hidden onchange="vcWall(this)"></label>
+      </div>
+      <div id="fx-pane-f" class="hidden"><div class="fxc" id="fx-f"></div></div>
+      <div id="fx-pane-c" class="hidden">
+        <div class="fxc">
+          <button id="fx-mir" onclick="fx.mir=!fx.mir;vcMirUI();vcFxUI()"><span class="fx-ico"><i data-lucide="flip-horizontal" class="w-4 h-4"></i></span><span>Cermin Layar</span></button>
+          <button id="fx-flip" onclick="fx.flip=!fx.flip;vcApply();vcFxUI()"><span class="fx-ico"><i data-lucide="repeat-2" class="w-4 h-4"></i></span><span>Balik Kiriman</span></button>
+        </div>
+      </div>
     </div>
     <div id="vc-ctl" onclick="event.stopPropagation()">
-      <button onclick="vcMic()" id="vc-b-mic" title="Mikrofon"><i data-lucide="mic"></i></button>
-      <button onclick="vcCamT()" id="vc-b-cam" title="Kamera"><i data-lucide="video"></i></button>
-      <button onclick="vcSwitchCam()" title="Ganti kamera depan/belakang"><i data-lucide="switch-camera"></i></button>
-      <button onclick="vcEmoteT()" id="vc-b-emote" title="Kirim Emote"><i data-lucide="smile"></i></button>
-      <button onclick="vcFxT()" id="vc-b-fx" title="Efek dan latar"><i data-lucide="sparkles"></i></button>
-      <button onclick="vcMin()" title="Perkecil"><i data-lucide="minimize-2"></i></button>
-      <button onclick="vcEnd()" class="red" title="Keluar Video Call"><i data-lucide="phone-off"></i></button>
-      <button id="vc-b-stop-all" onclick="vcStopAll()" class="end-all hidden" title="Hentikan Video Call untuk semua peserta"><i data-lucide="octagon-x" class="w-4 h-4"></i> Stop Total</button>
+      <button id="vc-b-stop-all" onclick="vcStopAll()" class="end-all hidden" title="Hentikan Video Call untuk semua peserta"><i data-lucide="octagon-x" class="w-3.5 h-3.5"></i> Stop Total Semua</button>
+      <div class="vc-dock">
+        <button onclick="vcMic()" id="vc-b-mic" title="Mikrofon"><i data-lucide="mic"></i></button>
+        <button onclick="vcCamT()" id="vc-b-cam" title="Kamera"><i data-lucide="video"></i></button>
+        <button onclick="vcSwitchCam()" title="Putar Kamera"><i data-lucide="switch-camera"></i></button>
+        <button onclick="vcEmoteT()" id="vc-b-emote" title="Reaksi Emote"><i data-lucide="smile"></i></button>
+        <button onclick="vcFxT()" id="vc-b-fx" title="Efek & Latar"><i data-lucide="sparkles"></i></button>
+        <button onclick="vcMin()" title="Perkecil Layar"><i data-lucide="minimize-2"></i></button>
+        <button onclick="vcEnd()" class="red" title="Akhiri Panggilan"><i data-lucide="phone-off"></i></button>
+      </div>
     </div>
   </div>
   <audio id="html5-audio"></audio>
@@ -2998,7 +3059,7 @@
       if (vcRaw) vcRaw.getTracks().forEach(t => t.stop());
       vcRaw = null;
       document.getElementById('vc-fx')?.classList.add('hidden');
-      document.getElementById('vc-emote-bar')?.classList.add('hidden');
+      clearInterval(vcTimerInt); vcClosePanels();
       _stopVoice();
       vcOn = false; vcSwapped = false;
       const el = document.getElementById('vc');
@@ -3083,7 +3144,7 @@
       targets.forEach(id => callPeer(id));
       appendSystemChat(myDisplayName + ' bergabung ke video call');
       document.getElementById('vc-nav-dot').classList.add('hidden');
-      updateVoiceUI(); announceMic(); vcUpdateGrid(); vcLayout(); switchTab('videocall');
+      vcStartTimer(); updateVoiceUI(); announceMic(); vcUpdateGrid(); vcLayout(); switchTab('videocall');
     }
     function vcEnd() { stopVoice(); announceMic(); if (curTab === 'videocall') switchTab(vcPrev); }
     function vcStopAll() {
@@ -3108,6 +3169,21 @@
       showToast(`Video call dihentikan total oleh ${byName}`);
       if (curTab === 'videocall') switchTab(vcPrev);
     }
+    let vcStartTime = 0, vcTimerInt = null;
+    function vcStartTimer() {
+      vcStartTime = Date.now();
+      clearInterval(vcTimerInt);
+      const upd = () => {
+        const el = document.getElementById('vc-timer');
+        if (!el) return;
+        const sec = Math.floor((Date.now() - vcStartTime) / 1000);
+        const m = String(Math.floor(sec / 60)).padStart(2, '0');
+        const s = String(sec % 60).padStart(2, '0');
+        el.textContent = `${m}:${s}`;
+      };
+      upd();
+      vcTimerInt = setInterval(upd, 1000);
+    }
     function vcEmoteT() {
       document.getElementById('vc-fx')?.classList.add('hidden');
       document.getElementById('vc-b-fx')?.classList.remove('active-pill');
@@ -3115,6 +3191,7 @@
       if (!bar) return;
       const open = bar.classList.toggle('hidden');
       document.getElementById('vc-b-emote')?.classList.toggle('active-pill', !open);
+      if (!open) { try { lucide.createIcons(); } catch (e) {} }
     }
     function vcSendEmote(emoji) {
       spawnFloatingEmoji(emoji);
@@ -3139,10 +3216,7 @@
       el.classList.toggle('full', vcOn && curTab === 'videocall');
       el.classList.toggle('mini', vcOn && curTab !== 'videocall');
       if (!(vcOn && curTab === 'videocall')) {
-        document.getElementById('vc-fx')?.classList.add('hidden');
-        document.getElementById('vc-emote-bar')?.classList.add('hidden');
-        document.getElementById('vc-b-fx')?.classList.remove('active-pill');
-        document.getElementById('vc-b-emote')?.classList.remove('active-pill');
+        vcClosePanels();
       }
       const stopAllBtn = document.getElementById('vc-b-stop-all');
       if (stopAllBtn) stopAllBtn.classList.toggle('hidden', !(vcOn && canManageRoom()));
@@ -3151,32 +3225,50 @@
     }
 
 
-    // Efek wajah, latar, filter (MediaPipe dimuat saat dipilih)
+    // Efek wajah, latar, filter dengan ikon modern + teks
     const FX = {
-      none: 'Tanpa',
-      wide: 'Muka Melebar',
-      chubby: 'Pipi Chubby',
-      bigeyes: 'Mata Belo',
-      slim: 'Tirus V-Shape',
-      alien: 'Kepala Alien',
-      glasses: 'Kacamata',
-      heart: 'Mata Hati',
-      crown: 'Mahkota',
-      flower: 'Bunga',
-      cat: 'Kucing',
-      bear: 'Beruang',
-      rabbit: 'Kelinci',
-      clown: 'Badut',
-      blush: 'Pipi Merah',
-      halo: 'Malaikat',
-      devil: 'Iblis',
-      kiss: 'Cium',
-      sparkle: 'Kilau',
-      hat: 'Topi',
-      neon: 'Neon Aura'
+      none: ['ban', 'Normal'],
+      wide: ['maximize-2', 'Melebar'],
+      chubby: ['smile', 'Chubby'],
+      bigeyes: ['eye', 'Mata Belo'],
+      slim: ['sparkles', 'V-Shape'],
+      alien: ['orbit', 'Alien'],
+      glasses: ['glasses', 'Kacamata'],
+      heart: ['heart', 'Mata Hati'],
+      crown: ['crown', 'Mahkota'],
+      flower: ['flower-2', 'Bunga'],
+      cat: ['cat', 'Kucing'],
+      bear: ['paw-print', 'Beruang'],
+      rabbit: ['rabbit', 'Kelinci'],
+      clown: ['laugh', 'Badut'],
+      blush: ['sun', 'Merona'],
+      halo: ['circle-dot', 'Malaikat'],
+      devil: ['flame', 'Iblis'],
+      kiss: ['heart-handshake', 'Cium'],
+      sparkle: ['wand-2', 'Kilau'],
+      hat: ['graduation-cap', 'Topi'],
+      neon: ['zap', 'Neon Aura']
     };
-    const BGS = { none: 'Asli', blur: 'Blur', sunset: 'Senja', galaxy: 'Galaksi', ocean: 'Laut', pastel: 'Pastel', sakura: 'Sakura', night: 'Malam', mint: 'Mint' };
-    const FLT = { none: 'Normal', warm: 'Hangat', cool: 'Dingin', bw: 'Hitam putih', vintage: 'Vintage', glow: 'Cerah' };
+    const BGS = {
+      none: ['video', 'Asli'],
+      blur: ['droplets', 'Blur'],
+      sunset: ['sunset', 'Senja'],
+      galaxy: ['sparkles', 'Galaksi'],
+      ocean: ['waves', 'Laut'],
+      pastel: ['cloud', 'Pastel'],
+      sakura: ['flower', 'Sakura'],
+      night: ['moon', 'Malam'],
+      mint: ['leaf', 'Mint'],
+      custom: ['image', 'Wallpaperku']
+    };
+    const FLT = {
+      none: ['aperture', 'Normal'],
+      warm: ['flame', 'Hangat'],
+      cool: ['snowflake', 'Dingin'],
+      bw: ['contrast', 'Hitam Putih'],
+      vintage: ['camera', 'Vintage'],
+      glow: ['sun-medium', 'Cerah']
+    };
     const FLTCSS = { none: 'none', warm: 'sepia(.25) saturate(1.3) hue-rotate(-10deg)', cool: 'saturate(1.1) hue-rotate(15deg) brightness(1.05)', bw: 'grayscale(1) contrast(1.1)', vintage: 'sepia(.55) contrast(.95) brightness(1.05)', glow: 'brightness(1.12) contrast(1.05) saturate(1.15)' };
     const BGG = { sunset: ['#ff7e5f', '#feb47b', '#6a3093'], galaxy: ['#0f0c29', '#302b63', '#24243e'], ocean: ['#2193b0', '#6dd5ed', '#b2fefa'], pastel: ['#ffd1ff', '#fad0c4', '#a1c4fd'], sakura: ['#ffdde1', '#ee9ca7', '#ffd1dc'], night: ['#0f2027', '#203a43', '#2c5364'], mint: ['#a8edea', '#fed6e3', '#d4fc79'] };
     let fx = { e: 'none', b: 'none', f: 'none', mir: true, flip: false, img: null }, vcRaw = null, vcPipe = null, vcML = {}, vcFacing = 'user';
@@ -3203,6 +3295,19 @@
       if (vcPipe) { vcPipe.rt = nt; vcPipe.v.srcObject = new MediaStream([nt]); vcPipe.v.play().catch(() => {}); } else vcSetTrack(nt);
       vcMirUI();
     }
+    function vcClosePanels() {
+      document.getElementById('vc-emote-bar')?.classList.add('hidden');
+      document.getElementById('vc-fx')?.classList.add('hidden');
+      document.getElementById('vc-b-emote')?.classList.remove('active-pill');
+      document.getElementById('vc-b-fx')?.classList.remove('active-pill');
+    }
+    function vcFxTab(t) {
+      ['e', 'b', 'f', 'c'].forEach(k => {
+        document.getElementById('fx-pane-' + k)?.classList.toggle('hidden', k !== t);
+        document.getElementById('fx-tab-' + k)?.classList.toggle('on', k === t);
+      });
+      try { lucide.createIcons(); } catch (e) {}
+    }
     const vcFxT = () => {
       document.getElementById('vc-emote-bar')?.classList.add('hidden');
       document.getElementById('vc-b-emote')?.classList.remove('active-pill');
@@ -3210,11 +3315,21 @@
       const box = document.getElementById('vc-fx');
       const closed = box.classList.toggle('hidden');
       document.getElementById('vc-b-fx')?.classList.toggle('active-pill', !closed);
+      if (!closed) { try { lucide.createIcons(); } catch (e) {} }
     };
     function vcFxUI() {
-      const mk = (id, o, k) => { document.getElementById(id).innerHTML = Object.entries(o).map(([v, n]) => `<button class="${fx[k] === v ? 'on' : ''}" onclick="vcSet('${k}','${v}')">${n}</button>`).join(''); };
-      mk('fx-e', FX, 'e'); mk('fx-b', fx.img ? { ...BGS, custom: 'Wallpaperku' } : BGS, 'b'); mk('fx-f', FLT, 'f');
-      document.getElementById('fx-mir').classList.toggle('on', fx.mir); document.getElementById('fx-flip').classList.toggle('on', fx.flip);
+      const mk = (id, entries, k) => {
+        document.getElementById(id).innerHTML = entries.map(([v, [ico, label]]) =>
+          `<button type="button" class="${fx[k] === v ? 'on' : ''}" onclick="vcSet('${k}','${v}')"><span class="fx-ico"><i data-lucide="${ico}" class="w-4 h-4"></i></span><span>${label}</span></button>`
+        ).join('');
+      };
+      mk('fx-e', Object.entries(FX), 'e');
+      const bgEntries = Object.entries(BGS).filter(([v]) => v !== 'custom' || fx.img);
+      mk('fx-b', bgEntries, 'b');
+      mk('fx-f', Object.entries(FLT), 'f');
+      document.getElementById('fx-mir')?.classList.toggle('on', fx.mir);
+      document.getElementById('fx-flip')?.classList.toggle('on', fx.flip);
+      try { lucide.createIcons(); } catch (e) {}
     }
     async function vcLoadML(face, seg) {
       const V = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14', M = 'https://storage.googleapis.com/mediapipe-models/';
