@@ -1003,7 +1003,7 @@
       </div>
     </div>
     <div id="vc-ctl" onclick="event.stopPropagation()">
-      <button id="vc-b-stop-all" onclick="vcStopAll()" class="end-all hidden" title="Hentikan Video Call untuk semua peserta"><i data-lucide="octagon-x" class="w-3.5 h-3.5"></i> Stop Total Semua</button>
+      <button id="vc-b-stop-all" onclick="vcStopAll()" class="end-all hidden" title="Hentikan Video Call untuk semua peserta"><i data-lucide="octagon-x" class="w-3.5 h-3.5"></i> End Session </button>
       <div class="vc-dock">
         <button onclick="vcMic()" id="vc-b-mic" title="Mikrofon"><i data-lucide="mic"></i></button>
         <button onclick="vcCamT()" id="vc-b-cam" title="Kamera"><i data-lucide="video"></i></button>
@@ -1804,7 +1804,7 @@
       let on, txt, pill;
       if (session === 'guest') {
         on = open.length > 0;
-        txt = on ? '🟢 Terhubung ke room' : '⚪ Menunggu Nuki / Nana online...';
+        txt = on ? '🟢 Terhubung ke room' : '⚪ Menunggu Teman / Teman online...';
         pill = on ? 'Terhubung • ' + ROOM_LABEL : 'Menunggu host...';
       } else {
         const pid = USERS[USERS[session].partner].peerId;
