@@ -17,7 +17,7 @@
   <script src="https://unpkg.com/lucide@0.469.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script>window.Peer || document.write('<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"><\/script>')</script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Pacifico&family=Bangers&family=Permanent+Marker&family=Lobster&family=Press+Start+2P&family=Chewy&display=swap" rel="stylesheet" />
 
   <style>
     * {
@@ -163,6 +163,8 @@
     @keyframes rxZoom{from{transform:scale(.85)}to{transform:scale(1.3)}}
     .rxm-wobble{animation:rxWob .45s ease-in-out infinite alternate}
     @keyframes rxWob{from{transform:rotate(-16deg) skewX(-6deg)}to{transform:rotate(16deg) skewX(6deg)}}
+    .rx.rx-txt{left:0;width:100%;box-sizing:border-box;padding:0 7%;text-align:center;line-height:1.15;word-break:break-word;font-weight:400;text-shadow:0 0 18px var(--g),0 3px 0 rgba(0,0,0,.55),0 0 2px rgba(0,0,0,.9);-webkit-text-stroke:1.5px rgba(0,0,0,.55);paint-order:stroke fill}
+    #react-panel .rxf.ring-2,#react-panel .rxc.ring-2{box-shadow:0 0 0 2px #fb7185}
     @media (prefers-reduced-motion:reduce){.rxm-shake,.rxm-spin,.rxm-bounce,.rxm-zoom,.rxm-wobble{animation:none}}
 
     @keyframes emopop {
@@ -1218,7 +1220,7 @@
 
     let onlineTracks = [...starterTracks];
     let offlineTracks = [];
-    let playlists = JSON.parse(localStorage.getItem('lnmusic_playlists') || 'null') || [
+    let playlists = [
       { id: 'pl-nana-1', name: 'Favorit', tracks: [starterTracks[0], starterTracks[1]] }
     ];
     let selectedPlaylistId = playlists[0]?.id || null;
@@ -1870,6 +1872,46 @@
       nuki: { name: 'Nuki', partner: 'nana', hash: '969a8ff0c04cacdbf3b1571fda2369c022cd11b8f20cd75feda6895df99e6043', peerId: 'lnmusic-nuki-' + ID_SUFFIX },
       nana: { name: 'Nana', partner: 'nuki', hash: 'c4314da79256da8fe80faa6e33c7ffb7bb26869ffe46e93e85c4040bf7bd0c77', peerId: 'lnmusic-nana-' + ID_SUFFIX }
     };
+    // ===== Database Upstash via Vercel (/api/store) — pengganti localStorage untuk chat, state room, playlist & profil =====
+    const DBX = {
+      tok: (() => { try { return localStorage.getItem('ln_dbtoken') || ''; } catch (e) { return ''; } })(),
+      ready: false, mem: {}, pend: {}, timers: {}, last: {}, warned: false,
+      async call(body, keep) {
+        try {
+          const r = await fetch('/api/store', { method: 'POST', keepalive: !!keep, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, token: this.tok }) });
+          if (r.status === 401 && body.action !== 'auth' && !this.warned) { this.warned = true; showToast('Sesi database habis, silakan login ulang'); }
+          return r.ok ? await r.json() : null;
+        } catch (e) { return null; }
+      },
+      async auth(u, pw) {
+        const j = await this.call({ action: 'auth', user: u, pass: pw });
+        if (j && j.token) { this.tok = j.token; this.warned = false; try { localStorage.setItem('ln_dbtoken', j.token); } catch (e) {} return true; }
+        showToast('Database tidak terhubung — data tidak akan tersimpan'); return false;
+      },
+      async get(k) { const j = await this.call({ action: 'get', key: k }); return j ? j.value : undefined; },
+      set(k, v, delay = 800) {
+        const sig = JSON.stringify(v); if (this.last[k] === sig) return;
+        this.pend[k] = v; clearTimeout(this.timers[k]);
+        this.timers[k] = setTimeout(() => this.send(k), delay);
+      },
+      send(k, keep) { if (!(k in this.pend)) return; const v = this.pend[k]; delete this.pend[k]; this.last[k] = JSON.stringify(v); return this.call({ action: 'set', key: k, value: v }, keep); },
+      flush() { Object.keys(this.pend).forEach(k => { clearTimeout(this.timers[k]); this.send(k, true); }); },
+      reset() { this.tok = ''; this.ready = false; this.mem = {}; this.pend = {}; this.last = {}; try { localStorage.removeItem('ln_dbtoken'); } catch (e) {} }
+    };
+    document.addEventListener('visibilitychange', () => { if (document.hidden) DBX.flush(); });
+    const dbPrivate = () => (session === 'nuki' || session === 'nana') && !!DBX.tok;
+    async function dbHydrate() {
+      if (!dbPrivate()) return;
+      const t = new Promise(r => setTimeout(() => r(null), 7000));
+      const got = await Promise.race([Promise.all([DBX.get('chat'), DBX.get('state'), DBX.get('profile:' + session), DBX.get('playlists')]), t]);
+      if (!got) return;
+      const [c, st, pr, pl] = got;
+      if (c !== undefined) DBX.ready = true;
+      if (pr) { myProfile = cleanProfile(pr); if (myProfile.name) myDisplayName = myProfile.name; }
+      if (Array.isArray(pl) && pl.length) { playlists = pl; selectedPlaylistId = playlists[0].id; try { renderPlaylists(); } catch (e) {} }
+      if (st) { DBX.mem.state = st; restoreRoomState(); }
+      if (Array.isArray(c)) mergeChat(c);
+    }
     const CHAT_KEY = 'lnmusic_chat_v1', STATE_KEY = 'lnmusic_room_state_v1', SESSION_KEY = 'lnmusic_session';
     let session = null, trackAt = 0, queueAt = 0, stateTimer = null;
 
@@ -1918,6 +1960,7 @@
       loginError('');
       document.getElementById('login-pass').value = '';
       try { localStorage.setItem(SESSION_KEY, u); } catch (err) {}
+      await DBX.auth(u, pw);
       enterRoom(u);
     }
 
@@ -1983,20 +2026,16 @@
     }
 
     const slimTrack = t => ({ id: t.id, title: t.title, artist: t.artist, thumb: t.thumb, type: t.type, isVideo: !!t.isVideo });
-    const slimChat = () => chatLog.filter(m => !m.sys && !m.viewOnce).slice(-300).map(m => ({
-      id: m.id, ts: m.ts, sender: m.sender, text: m.text || '',
-      kind: m.kind || 'text', media: m.media || '', dur: m.dur || 0
+    const slimChat = () => chatLog.filter(m => !m.sys && !m.viewOnce && (m.kind || 'text') === 'text').slice(-200).map(m => ({
+      id: m.id, ts: m.ts, sender: m.sender, text: m.text || '', kind: 'text'
     }));
 
     function saveChat() {
-      if (session === 'guest' || session === 'custom') return;
-      try { localStorage.setItem(CHAT_KEY, JSON.stringify(slimChat())); } catch (e) {}
+      if (!dbPrivate() || !DBX.ready) return;
+      DBX.set('chat', slimChat(), 1500);
     }
 
-    function loadChat() {
-      try { chatLog = (JSON.parse(localStorage.getItem(CHAT_KEY) || '[]')).map(m => ({ ...m, isMe: m.sender === myDisplayName })); }
-      catch (e) { chatLog = []; }
-    }
+    function loadChat() { chatLog = []; }
 
     function mergeChat(list) {
       if (!Array.isArray(list) || session === 'guest' || session === 'custom') return;
@@ -2015,15 +2054,17 @@
       if (added) { chatLog.sort((x, y) => (x.ts || 0) - (y.ts || 0)); saveChat(); renderChat(); }
     }
 
+    let lastStateSig = '', lastStateAt = 0;
     function saveRoomState() {
-      if (!session || session === 'guest') return;
-      try {
-        let old = {};
-        try { old = JSON.parse(localStorage.getItem(STATE_KEY) || '{}') || {}; } catch (e) {}
-        const st = { track: old.track || null, time: old.time || 0, trackAt: old.trackAt || 0, queue: roomQueue, queueAt };
-        if (currentTrack && currentTrack.type === 'youtube') { st.track = slimTrack(currentTrack); st.time = curTime(); st.trackAt = trackAt; }
-        localStorage.setItem(STATE_KEY, JSON.stringify(st));
-      } catch (e) {}
+      if (!dbPrivate() || !DBX.ready) return;
+      const old = DBX.mem.state || {};
+      const st = { track: old.track || null, time: old.time || 0, trackAt: old.trackAt || 0, queue: roomQueue, queueAt };
+      if (currentTrack && currentTrack.type === 'youtube') { st.track = slimTrack(currentTrack); st.time = curTime(); st.trackAt = trackAt; }
+      DBX.mem.state = st;
+      const sig = (st.track ? st.track.id : '') + '|' + st.trackAt + '|' + st.queueAt;
+      if (sig === lastStateSig && Date.now() - lastStateAt < 60000) return; // hemat kuota Upstash
+      lastStateSig = sig; lastStateAt = Date.now();
+      DBX.set('state', st, 1500);
     }
 
     function whenYtReady(fn, tries = 0) {
@@ -2049,13 +2090,11 @@
     }
 
     function restoreRoomState() {
-      try {
-        const st = JSON.parse(localStorage.getItem(STATE_KEY) || 'null');
-        if (!st) return;
-        roomQueue = Array.isArray(st.queue) ? st.queue : []; queueAt = st.queueAt || 0; trackAt = st.trackAt || 0;
-        renderRoomSearch();
-        if (st.track && !currentTrack) applyRemoteTrack(st.track, st.time, false, st.trackAt);
-      } catch (e) {}
+      const st = DBX.mem.state;
+      if (!st) return;
+      roomQueue = Array.isArray(st.queue) ? st.queue : []; queueAt = st.queueAt || 0; trackAt = st.trackAt || 0;
+      renderRoomSearch();
+      if (st.track && !currentTrack) applyRemoteTrack(st.track, st.time, false, st.trackAt);
     }
 
     function buildState() {
@@ -2106,7 +2145,7 @@
       setRoomPill(pill, on);
     }
 
-    function enterRoom(u, guestName) {
+    async function enterRoom(u, guestName) {
       session = u;
       if (u === 'custom' && customRoom) {
         myDisplayName = cleanName(guestName);
@@ -2115,9 +2154,11 @@
         myDisplayName = u === 'guest' ? cleanName(guestName) : USERS[u].name;
         currentRoomCode = ROOM_LABEL;
       }
-      profiles = {}; loadMyProfile();
-      if (u === 'guest' || u === 'custom') { chatLog = []; roomQueue = []; } else { loadChat(); restoreRoomState(); }
+      profiles = {}; myProfile = { name: '', bio: '', avatar: '' };
+      chatLog = []; if (u === 'guest' || u === 'custom') roomQueue = [];
       renderChat();
+      await dbHydrate();
+      if (session !== u) return; // sudah logout selama memuat
       clearInterval(stateTimer); stateTimer = setInterval(saveRoomState, 4000);
       startSession();
     }
@@ -2608,9 +2649,9 @@
     function clearRoomChat() {
       if (!chatLog.length) return showToast('Chat sudah bersih');
       chatLog = [];
-      saveChat();
+      if (dbPrivate()) { delete DBX.pend.chat; DBX.last.chat = '[]'; DBX.call({ action: 'set', key: 'chat', value: [], replace: true }); }
       renderChat();
-      showToast('Tampilan chat dibersihkan');
+      showToast('Chat dibersihkan');
     }
 
     // ===== Reaksi melayang, hujan emoji & stiker gerak (ringan: hanya CSS transform, maks 70 elemen) =====
@@ -2626,7 +2667,29 @@
       el.style.cssText = `left:${o.x ?? (8 + Math.random() * 84)}%;font-size:${Math.round(o.s || (30 + Math.random() * 26))}px;--d:${d.toFixed(2)}s;--dl:${dl}s;--dx:${Math.round((Math.random() - .5) * (o.rain ? 60 : 160))}px;--rot:${Math.round((Math.random() - .5) * (o.rain ? 540 : 70))}deg`;
       L.appendChild(el); setTimeout(() => el.remove(), (d + dl) * 1000 + 300);
     }
+    // ===== Teks melayang dengan font unik =====
+    const RX_FONTS = { pacifico: ['Pacifico', 'Pacifico'], bangers: ['Bangers', 'BANGERS'], marker: ['Permanent Marker', 'Marker'], lobster: ['Lobster', 'Lobster'], pixel: ['Press Start 2P', 'Pixel'], chewy: ['Chewy', 'Chewy'] };
+    const RX_COLORS = ['ff4d6d', 'ffd166', '7df9ff', 'b388ff', 'ffffff'];
+    const RX_PRESETS = ['Sayang 💕', 'WKWKWK', 'Kangen!', 'Ciee 😏', 'Love you', 'Gemes banget'];
+    let rxFontSel = 'pacifico', rxColSel = 'ff4d6d';
+    function rxText(t, font, col) {
+      const f = RX_FONTS[font]; if (!f || !t) return;
+      const L = rxLayer(); while (L.childElementCount > 70) L.firstElementChild.remove();
+      const el = document.createElement('div'), d = 4.4, base = font === 'pixel' ? 20 : 38;
+      el.className = 'rx rx-txt'; el.textContent = t;
+      el.style.cssText = `font-family:'${f[0]}',cursive;color:#${col};--g:#${col};font-size:${Math.max(16, Math.min(base, Math.round(innerWidth * .8 / (t.length * (font === 'pixel' ? 1 : .5)))))}px;--d:${d}s;--dl:0s;--dx:${Math.round((Math.random() - .5) * 70)}px;--rot:${Math.round((Math.random() - .5) * 18)}deg`;
+      L.appendChild(el); setTimeout(() => el.remove(), d * 1000 + 300);
+    }
+    function rxPick(k, v) { if (k === 'f') rxFontSel = v; else rxColSel = v; document.querySelectorAll('[data-rxp="' + k + '"]').forEach(b => b.classList.toggle('ring-2', b.dataset.v === v)); }
+    function rxSendText(t) {
+      const i = document.getElementById('rx-text-input');
+      t = String(t == null ? (i ? i.value : '') : t).trim().slice(0, 28);
+      if (!t) return showToast('Tulis teksnya dulu ✍️');
+      sendReaction(t, 'tx:' + rxFontSel + ':' + rxColSel); rxClose();
+    }
     function spawnFloatingEmoji(emoji, fxm) {
+      const tm = String(fxm || '').match(/^tx:([a-z]+):([0-9a-f]{6})$/);
+      if (tm) return rxText(String(emoji || '').replace(/[\u0000-\u001f]/g, '').slice(0, 28), tm[1], tm[2]);
       emoji = String(emoji || '').slice(0, 8); if (!emoji) return;
       const f = String(fxm || 'float'), st = f.match(/^st:(shake|spin|bounce|zoom|wobble):([A-Z !]{1,16})$/);
       if (f === 'rain') { for (let i = 0; i < 24; i++) rxAdd(emoji, { rain: true, dl: i * 75, d: 2.2 + Math.random() * 1.2 }); return; }
@@ -2655,6 +2718,11 @@
       const btn = (inner, js, cls) => `<button type="button" onclick="${js}" class="${cls}">${inner}</button>`;
       const h = t => `<div class="text-[10px] font-bold text-zinc-400 mb-1">${t}</div>`;
       p.innerHTML = `<div class="flex items-center justify-between mb-2"><b class="text-xs text-white">Reaksi lucu 😆</b><button type="button" onclick="document.getElementById('react-panel').remove()" class="text-zinc-400 text-xs px-2">Tutup</button></div>`
+        + h('Teks melayang ✍️ (font unik, muncul di layar kalian berdua)')
+        + `<div class="flex gap-1.5 mb-2"><input id="rx-text-input" maxlength="28" placeholder="Tulis teks..." class="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-full px-3.5 py-2 text-xs text-white focus:border-rose-500 focus:outline-none" onkeydown="if(event.key==='Enter'){event.preventDefault();rxSendText()}" /><button type="button" onclick="rxSendText()" class="shrink-0 px-3.5 rounded-full bg-rose-600 text-white text-xs font-bold active:scale-95 transition">Kirim</button></div>`
+        + '<div class="grid grid-cols-3 gap-1.5 mb-2">' + Object.entries(RX_FONTS).map(([k, f]) => `<button type="button" data-rxp="f" data-v="${k}" onclick="rxPick('f','${k}')" class="rxf py-1.5 rounded-xl bg-white/[0.06] text-white text-base leading-tight ${k === rxFontSel ? 'ring-2' : ''}" style="font-family:'${f[0]}',cursive">${f[1]}</button>`).join('') + '</div>'
+        + '<div class="flex items-center gap-2 mb-2">' + RX_COLORS.map(c => `<button type="button" data-rxp="c" data-v="${c}" onclick="rxPick('c','${c}')" class="rxc w-7 h-7 rounded-full border border-white/30 ${c === rxColSel ? 'ring-2' : ''}" style="background:#${c}"></button>`).join('') + '</div>'
+        + '<div class="flex flex-wrap gap-1.5 mb-3">' + RX_PRESETS.map(t => `<button type="button" onclick="rxSendText('${t}')" class="px-2.5 py-1 rounded-full bg-white/[0.06] text-[11px] font-bold text-zinc-200 active:scale-95 transition">${t}</button>`).join('') + '</div>'
         + h('Stiker gerak (muncul besar di layar kalian berdua)') + '<div class="grid grid-cols-4 gap-1.5 mb-3">'
         + RX_STICKERS.map(([e, a, t]) => btn(`<span class="text-2xl">${e}</span><span class="text-[9px] font-bold text-zinc-300 leading-tight text-center">${t}</span>`, `sendReaction('${e}','st:${a}:${t}');rxClose()`, 'flex flex-col items-center gap-0.5 p-2 rounded-2xl bg-white/[0.06] active:scale-95 transition')).join('') + '</div>'
         + h('Hujan emoji') + '<div class="grid grid-cols-2 gap-1.5 mb-3">'
@@ -2691,6 +2759,7 @@
       saveRoomState(); saveChat();
       session = null; customRoom = null; clearInterval(stateTimer);
       try { localStorage.removeItem(SESSION_KEY); localStorage.removeItem('lnmusic_custom_room'); } catch (e) {}
+      DBX.flush(); DBX.reset();
       isRoomConnected = false; isHost = false;
       teardownPeer(); stopVoice();
       try { htmlAudio.pause(); if (ytReady && ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo(); setPlayingUI(false); } catch (e) {}
@@ -2721,12 +2790,12 @@
     let profileViewId = null, profileEditing = false, editBio = '', editAvatar = '';
     const profKey = () => 'lnmusic_profile_' + (session || 'x');
     function loadMyProfile() {
-      try { myProfile = cleanProfile(JSON.parse(localStorage.getItem(profKey()) || '{}')); } catch (e) { myProfile = { name: '', bio: '', avatar: '' }; }
+      myProfile = cleanProfile(DBX.mem[profKey()] || {});
       if (myProfile.name && session && session !== 'guest') {
         myDisplayName = myProfile.name;
       }
     }
-    function saveMyProfile() { try { localStorage.setItem(profKey(), JSON.stringify(myProfile)); } catch (e) {} }
+    function saveMyProfile() { if (dbPrivate()) DBX.set('profile:' + session, myProfile, 300); }
 
     function sendMyProfile() {
       if (peer && peer.id) profiles[peer.id] = myProfile;
@@ -4582,7 +4651,7 @@
         ...pl,
         tracks: pl.tracks.map(({ blob, ...rest }) => rest)
       }));
-      localStorage.setItem('lnmusic_playlists', JSON.stringify(clean));
+      if (dbPrivate()) DBX.set('playlists', clean, 600);
       renderPlaylists();
     }
 
@@ -4976,7 +5045,7 @@
       fs.addEventListener('touchcancel', finishSwipe, { passive: true });
     })();
 
-    window.addEventListener('pagehide', () => { saveRoomState(); saveChat(); });
+    window.addEventListener('pagehide', () => { saveRoomState(); saveChat(); DBX.flush(); });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         saveRoomState();
