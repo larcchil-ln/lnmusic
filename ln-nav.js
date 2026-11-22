@@ -3,10 +3,54 @@
   var $ = function (id) { return document.getElementById(id); };
   var hidden = function (id) { var e = $(id); return !e || e.classList.contains('hidden'); };
 
-  // ---- Tab Hub sudah dihapus: arahkan panggilan lama ke Beranda ----
+  // ---- Pindah tab halus + penanda tab aktif ----
+  var navStyle = document.createElement('style');
+  navStyle.textContent =
+    '.mnav{position:relative;-webkit-tap-highlight-color:transparent;transition:color .25s}' +
+    '.mnav svg{transition:transform .35s cubic-bezier(.34,1.56,.64,1),background .25s}' +
+    '.mnav.on svg{transform:translateY(-2px) scale(1.12)}' +
+    '.mnav:active svg{transform:scale(.88)}' +
+    '#ln-ind{position:absolute;top:0;left:0;height:3px;width:30px;border-radius:0 0 6px 6px;background:linear-gradient(90deg,#f43f5e,#8b5cf6);box-shadow:0 2px 14px rgba(244,63,94,.75);transition:transform .38s cubic-bezier(.22,1,.36,1);opacity:0;pointer-events:none}' +
+    '.nav-btn{transition:background .25s,color .25s,box-shadow .25s}' +
+    '.nav-btn.text-rose-400{box-shadow:inset 3px 0 0 #f43f5e}' +
+    '@keyframes lnTabIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}' +
+    '.ln-tab-in{animation:lnTabIn .38s cubic-bezier(.22,1,.36,1)}' +
+    '@media (prefers-reduced-motion:reduce){.ln-tab-in{animation:none}#ln-ind,.mnav svg{transition:none}}';
+  document.head.appendChild(navStyle);
+
+  var indEl = null;
+  function moveInd() {
+    var cur = null; try { cur = curTab; } catch (e) {}
+    var btn = $('mob-nav-' + (cur || 'online'));
+    if (!btn) return;
+    var nav = btn.parentElement, nr = nav.getBoundingClientRect();
+    if (!nr.width) return; // nav bawah disembunyikan di layar lebar
+    if (!indEl || !indEl.isConnected) {
+      indEl = document.createElement('div'); indEl.id = 'ln-ind'; nav.appendChild(indEl);
+    }
+    var br = btn.getBoundingClientRect();
+    indEl.style.opacity = '1';
+    indEl.style.transform = 'translateX(' + Math.round(br.left - nr.left + br.width / 2 - 15) + 'px)';
+  }
+  window.addEventListener('resize', moveInd);
+  window.addEventListener('load', function () { setTimeout(moveInd, 200); });
+  setTimeout(moveInd, 400);
+
+  // Tab Hub sudah dihapus: panggilan lama diarahkan ke Beranda
   if (typeof window.switchTab === 'function') {
     var origSwitchTab = window.switchTab;
-    window.switchTab = function (t) { return origSwitchTab.call(this, t === 'hub' ? 'online' : t); };
+    window.switchTab = function (t) {
+      if (t === 'hub') t = 'online';
+      var prev = null; try { prev = curTab; } catch (e) {}
+      var res = origSwitchTab.call(this, t);
+      if (t !== prev) {
+        var el = $('tab-' + t);
+        if (el && t !== 'videocall') { el.classList.remove('ln-tab-in'); void el.offsetWidth; el.classList.add('ln-tab-in'); }
+        try { navigator.vibrate && navigator.vibrate(8); } catch (e) {}
+      }
+      moveInd();
+      return res;
+    };
   }
 
   // ---- Rotasi otomatis saat fullscreen video (bukan fullscreen halaman) ----
