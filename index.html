@@ -68,16 +68,33 @@
       }
     }
 
-    /* Desktop: area video/cover/lirik lebih besar, mengikuti tinggi layar */
+    /* Desktop: video & panel kanan rata (tinggi, tepi, jarak sama) dan ukurannya mengikuti layar */
     @media (min-width: 1024px) {
-      #fs-stage-wrap { max-width: 1900px !important; padding-left: 2rem !important; padding-right: 2rem !important; gap: 1.5rem !important; grid-template-columns: minmax(0, 1fr) 390px !important; }
+      #fs-stage-wrap {
+        --pw: 400px; --gap: 1.5rem;
+        --vw: min(calc(100vw - var(--pw) - var(--gap) - 5rem), calc((100vh - 240px) * 1.7778));
+        max-width: none !important; width: 100% !important; padding: 0 2.5rem !important; gap: var(--gap) !important;
+        grid-template-columns: minmax(0, var(--vw)) var(--pw) !important;
+        justify-content: center !important; align-items: stretch !important; align-content: center !important;
+      }
       #fs-stage-wrap > * { grid-column: auto !important; }
-      #fs-video-container { width: min(100%, calc((100vh - 210px) * 1.7778)) !important; max-width: none !important; }
-      #fs-cover-container { width: min(36rem, calc(100vh - 260px)) !important; height: min(36rem, calc(100vh - 260px)) !important; }
-      #fs-lyrics-container { max-width: min(100%, 60rem) !important; max-height: calc(100vh - 230px); overflow-y: auto; }
-    }
-    @media (min-width: 1536px) {
-      #fs-stage-wrap { grid-template-columns: minmax(0, 1fr) 430px !important; }
+      #fs-stage-wrap > :first-child { justify-content: flex-start !important; align-items: center !important; }
+      #fs-video-container, #fs-cover-container, #fs-lyrics-container {
+        border-radius: 1.5rem !important; border: 1px solid rgba(255,255,255,.12) !important;
+      }
+      #fs-video-container { width: var(--vw) !important; max-width: none !important; }
+      #fs-cover-container { width: calc(var(--vw) / 1.7778) !important; height: calc(var(--vw) / 1.7778) !important; }
+      #fs-lyrics-container { width: var(--vw) !important; max-width: none !important; height: calc(var(--vw) / 1.7778) !important; overflow-y: auto; }
+      /* panel kanan: tinggi mengikuti kolom video, isi dibagi rapi, daftar bisa digulir */
+      #fs-stage-wrap > :nth-child(2) {
+        contain: size; overflow-y: auto; display: flex !important; flex-direction: column;
+        border-radius: 1.5rem !important; border-color: rgba(255,255,255,.12) !important;
+      }
+      #fs-subtabs { flex: 1; min-height: 190px; display: flex; flex-direction: column; }
+      #fs-subtabs > div:not(:first-child) { flex: 1; min-height: 0; overflow-y: auto; }
+      #fsp-chat:not(.hidden) { display: flex; flex-direction: column; }
+      #fs-chat-messages { flex: 1; height: auto !important; min-height: 5rem; }
+      #fs-queue-list { max-height: none !important; }
     }
 
     /* Custom Scrollbar */
@@ -914,7 +931,7 @@
         <div id="voice-seats-fs" class="flex gap-3 overflow-x-auto pb-1 no-scrollbar"></div>
 
         <!-- Sub-tabs: Queue / Search / Chat -->
-        <div class="space-y-2">
+        <div id="fs-subtabs" class="space-y-2">
           <div class="flex flex-wrap gap-1.5 text-[11px] font-bold">
             <button id="fst-queue" onclick="setFsTab('queue')">Antrean</button>
             <button id="fst-search" onclick="setFsTab('search')">Cari Lagu</button>
