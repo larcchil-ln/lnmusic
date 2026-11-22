@@ -4113,10 +4113,10 @@
       const seen = new Set(); return rs.flat().filter(t => t && t.id && !seen.has(t.id) && seen.add(t.id)).slice(0, 50);
     }
     async function loadTop50() {
-      try { const c = JSON.parse(localStorage.getItem('lnmusic_top50v2') || 'null'); if (c && Date.now() - c.t < 30 * 60e3 && c.d.id.length) { top50 = c.d; return renderShelves(); } } catch (e) {}
+      try { const c = JSON.parse(localStorage.getItem('lnmusic_top50v3') || 'null'); if (c && Date.now() - c.t < 30 * 60e3 && c.d.id.length) { top50 = c.d; return renderShelves(); } } catch (e) {}
       const [a, b] = await Promise.all([fetchChart('ID', 'lagu trending indonesia'), fetchChart('US', 'global trending songs')]);
       top50 = { id: a, west: b }; renderShelves();
-      if (a.length) { try { localStorage.setItem('lnmusic_top50v2', JSON.stringify({ t: Date.now(), d: top50 })); } catch (e) {} }
+      if (a.length) { try { localStorage.setItem('lnmusic_top50v3', JSON.stringify({ t: Date.now(), d: top50 })); } catch (e) {} }
     }
     // Rak horizontal: tombol panah kiri/kanan + tarik dengan mouse (khusus desktop)
     function enhanceHScroll(root) {
@@ -5532,6 +5532,7 @@
   <script src="./ln-rooms.js"></script>
   <script src="./ln-game.js"></script>
   <script src="./ln-desktop.js"></script>
+  <script src="./ln-trending.js"></script>
   <script src="./ln-native.js"></script>
 <script>
 /* Hapus tombol emoji 📷 / 🎤 lama di bar chat (disuntik skrip eksternal) supaya kolom teks lebih lega */
