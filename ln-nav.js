@@ -29,6 +29,7 @@
   function closeTop() {
     if (document.fullscreenElement || document.webkitFullscreenElement) { try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) {} return true; }
     if (!hidden('photo-viewer-modal')) { try { closePhotoViewer(); } catch (e) { $('photo-viewer-modal').classList.add('hidden'); } return true; }
+    if ($('ln-paste-preview')) { $('ln-paste-preview').remove(); return true; }
     if ($('ln-config-modal') && !hidden('ln-config-modal')) { try { LNExtras.closeConfigModal(); } catch (e) { $('ln-config-modal').classList.add('hidden'); } return true; }
     if (!hidden('profile-modal')) { try { closeProfile(); } catch (e) { $('profile-modal').classList.add('hidden'); } return true; }
     if (!hidden('modal-settings') || !hidden('modal-create-playlist') || !hidden('modal-add-to-playlist')) { try { closeModals(); } catch (e) {} return true; }
