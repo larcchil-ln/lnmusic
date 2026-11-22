@@ -5,8 +5,8 @@
 
   // ---- Tab Hub sudah dihapus: arahkan panggilan lama ke Beranda ----
   if (typeof window.switchTab === 'function') {
-    var st = window.switchTab;
-    window.switchTab = function (t) { return st.call(this, t === 'hub' ? 'online' : t); };
+    var origSwitchTab = window.switchTab;
+    window.switchTab = function (t) { return origSwitchTab.call(this, t === 'hub' ? 'online' : t); };
   }
 
   // ---- Rotasi otomatis saat fullscreen video (bukan fullscreen halaman) ----
@@ -24,9 +24,9 @@
 
 
   // ---- Video call: tampilkan seluruh badan (tidak terpotong/zoom) saat rasio video & layar beda jauh ----
-  var st = document.createElement('style');
-  st.textContent = '.ln-contain{object-fit:contain!important;background:#0b0b10}';
-  document.head.appendChild(st);
+  var fitStyle = document.createElement('style');
+  fitStyle.textContent = '.ln-contain{object-fit:contain!important;background:#0b0b10}';
+  document.head.appendChild(fitStyle);
   function fit() {
     document.querySelectorAll('#vc video, #vc-self').forEach(function (v) {
       var w = v.videoWidth, h = v.videoHeight, r = v.getBoundingClientRect();
