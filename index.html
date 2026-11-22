@@ -294,7 +294,7 @@
     .hcard .pl{opacity:0;transform:translateY(6px);transition:.25s}.hcard:hover .pl,.hcard:active .pl{opacity:1;transform:none}
     #vc{position:fixed;z-index:45;background:#07070b;overflow:hidden;transition:all .3s cubic-bezier(.22,1,.36,1)}
     #vc.full{top:0;right:0;bottom:calc(126px + env(safe-area-inset-bottom));left:0}
-    @media(min-width:768px){#vc.full{top:84px;left:20px;right:20px;bottom:100px;border-radius:24px;border:1px solid rgba(255,255,255,.1);box-shadow:0 24px 70px -20px rgba(0,0,0,.9)}}
+    @media(min-width:768px){#vc.full{top:84px!important;left:20px!important;right:20px!important;bottom:100px!important;border-radius:24px;border:1px solid rgba(255,255,255,.1);box-shadow:0 24px 70px -20px rgba(0,0,0,.9)}}
     #vc.mini{right:12px;bottom:142px;width:108px;height:152px;border-radius:22px;border:1.5px solid rgba(244,63,94,.45);box-shadow:0 14px 34px rgba(0,0,0,.75)}
     #vc-grid{display:grid;grid-template-columns:1fr;grid-auto-rows:1fr;gap:6px;width:100%;height:100%;transition:all .25s ease;background:#07070b;padding:0}
     #vc-grid[class*="g-"]{padding:8px}
@@ -3626,8 +3626,8 @@
           if (f) hasFmtp.add(f[1]);
         });
         const duo = vcPeerTotal() <= 2;
-        const VK = duo ? ['x-google-start-bitrate=2500', 'x-google-min-bitrate=600', 'x-google-max-bitrate=6000'] : ['x-google-start-bitrate=1500', 'x-google-min-bitrate=400', 'x-google-max-bitrate=4000'];
-        const AK = ['useinbandfec=1', 'usedtx=0', 'maxaveragebitrate=128000', 'maxplaybackrate=48000', 'minptime=10'];
+        const VK = duo ? ['x-google-start-bitrate=2500', 'x-google-min-bitrate=300', 'x-google-max-bitrate=6000'] : ['x-google-start-bitrate=1500', 'x-google-min-bitrate=400', 'x-google-max-bitrate=4000'];
+        const AK = ['useinbandfec=1', 'usedtx=0', 'cbr=1', 'maxaveragebitrate=48000', 'maxplaybackrate=48000', 'ptime=20', 'minptime=20'];
         const add = (str, kv) => str + kv.filter(x => !new RegExp('(^|[ ;])' + x.split('=')[0] + '=').test(str)).map(x => ';' + x).join('');
         sec = '';
         const out = [];
@@ -3675,15 +3675,15 @@
           if (sender.track.kind === 'video') {
             try { sender.track.contentHint = 'motion'; } catch (e) {}
             params.degradationPreference = 'balanced'; // jangan korbankan fps (penyebab patah-patah)
-            params.encodings.forEach(enc => { enc.maxBitrate = tier[0]; enc.scaleResolutionDownBy = tier[1]; enc.maxFramerate = tier[2]; });
+            params.encodings.forEach(enc => { enc.maxBitrate = tier[0]; enc.scaleResolutionDownBy = tier[1]; enc.maxFramerate = tier[2]; enc.priority = 'medium'; enc.networkPriority = 'medium'; });
           } else {
-            params.encodings.forEach(enc => { enc.maxBitrate = 128000; enc.priority = 'high'; enc.networkPriority = 'high'; });
+            params.encodings.forEach(enc => { enc.maxBitrate = 64000; enc.priority = 'high'; enc.networkPriority = 'high'; });
           }
           sender.setParameters(params).catch(() => {});
         } catch (e) {}
       });
       (pc.getReceivers() || []).forEach(r => {
-        try { if (r.track && r.track.kind === 'video' && 'jitterBufferTarget' in r) r.jitterBufferTarget = vcPeerTotal() <= 2 ? 250 : 300; } catch (e) {}
+        try { if (r.track && 'jitterBufferTarget' in r) r.jitterBufferTarget = r.track.kind === 'audio' ? 200 : (vcPeerTotal() <= 2 ? 250 : 300); } catch (e) {}
       });
     }
     function vcTune(call) {
