@@ -3554,7 +3554,7 @@
         return vcPreferVp8(out.join('\r\n'));
       } catch (e) { return sdp; }
     }
-    // Pakai VP8 saja: encoder H264/VP9 hardware di Mac & Android sering menghasilkan gambar kotak-kotak (mozaik) saat paket hilang
+    // Utamakan VP8: encoder H264/VP9 hardware di Mac & Android sering menghasilkan gambar kotak-kotak (mozaik) saat paket hilang
     function vcPreferVp8(sdp) {
       try {
         const lines = sdp.split('\r\n'); let sec = '', mi = -1; const codec = {}, apt = {};
@@ -3567,7 +3567,8 @@
         if (mi < 0 || !Object.values(codec).includes('VP8')) return sdp;
         const keep = pt => codec[pt] === 'VP8' || (codec[pt] === 'RTX' && codec[apt[pt]] === 'VP8');
         const parts = lines[mi].split(' ');
-        lines[mi] = parts.slice(0, 3).concat(parts.slice(3).filter(keep)).join(' ');
+        const pts = parts.slice(3); // VP8 diutamakan, codec lain tetap sebagai cadangan agar semua perangkat bisa tersambung
+        lines[mi] = parts.slice(0, 3).concat(pts.filter(keep), pts.filter(p => !keep(p))).join(' ');
         return lines.join('\r\n');
       } catch (e) { return sdp; }
     }
@@ -4036,7 +4037,7 @@
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && vcOn) vcWakeOn(); });
     function vcEnd() { stopVoice(); announceMic(); if (curTab === 'videocall') switchTab(vcPrev); }
     function vcStopAll() {
-      if (!canManageRoom()) return showToast('Hanya admin yang bisa menghentikan total video call');
+      if (!canManageRoom() && !myPlayPerm()) return showToast('Hanya admin atau tamu berizin yang bisa menghentikan total video call');
       connections.forEach(c => { if (c.open) c.send({ type: 'VC_STOP_ALL', by: myDisplayName }); });
       vcForceResetAll(myDisplayName);
     }
@@ -4108,7 +4109,7 @@
         vcClosePanels();
       }
       const stopAllBtn = document.getElementById('vc-b-stop-all');
-      if (stopAllBtn) stopAllBtn.classList.toggle('hidden', !(vcOn && canManageRoom()));
+      if (stopAllBtn) stopAllBtn.classList.toggle('hidden', !(vcOn && (canManageRoom() || myPlayPerm())));
       const b = document.getElementById('vc-start-btn'); if (b && vcOn) b.textContent = 'Akhiri video call';
       if (b && !vcOn && !b.textContent.startsWith('Gabung')) b.textContent = 'Mulai video call';
     }
@@ -5155,6 +5156,7 @@
   <script src="./ln-fix.js"></script>
   <script src="./ln-nav.js"></script>
   <script src="./ln-paste.js"></script>
+  <script src="./ln-rooms.js"></script>
   <script src="./ln-native.js"></script>
 <script>
 /* Hapus tombol emoji 📷 / 🎤 lama di bar chat (disuntik skrip eksternal) supaya kolom teks lebih lega */
