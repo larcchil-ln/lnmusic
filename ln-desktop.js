@@ -4,7 +4,17 @@
   if (!bar) return;
 
   // Tooltip untuk tombol ikon
-  bar.querySelectorAll('nav .nav-btn').forEach(function (b) { b.title = b.textContent.replace(/\s+/g, ' ').trim(); });
+  // Label menu dipendekkan supaya muat rapi (nama lengkap tetap muncul sebagai tooltip)
+  var short = { online: 'Jelajah', offline: 'Offline', playlists: 'Playlist', together: 'Bareng', game: 'Game', videocall: 'Call' };
+  bar.querySelectorAll('nav .nav-btn').forEach(function (b) {
+    var sp = b.querySelector('span'), m = (b.getAttribute('onclick') || '').match(/switchTab\('(\w+)'\)/);
+    b.title = b.textContent.replace(/\s+/g, ' ').trim();
+    if (!sp || !m || !short[m[1]]) return;
+    for (var i = sp.childNodes.length - 1; i >= 0; i--) {
+      var n = sp.childNodes[i];
+      if (n.nodeType === 3 && n.textContent.trim()) { n.textContent = ' ' + short[m[1]]; break; }
+    }
+  });
   var right = bar.lastElementChild;
   if (right) right.querySelectorAll('button').forEach(function (b) { if (!b.title) b.title = b.textContent.replace(/\s+/g, ' ').trim(); });
 
