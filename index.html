@@ -352,6 +352,9 @@
           <span class="flex items-center gap-3"><i data-lucide="video" class="w-4 h-4 text-violet-400"></i> Video Call</span>
           <span id="vc-nav-dot" class="hidden w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
         </button>
+        <button onclick="switchTab('game')" id="nav-game" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition">
+          <span class="flex items-center gap-3"><i data-lucide="gamepad-2" class="w-4 h-4 text-violet-400"></i> Game</span>
+        </button>
       </nav>
 
       <!-- Quick Playlists -->
@@ -752,6 +755,8 @@
 
 
       <!-- TAB: VIDEO CALL -->
+      <section id="tab-game" class="hidden space-y-4"><div id="lg-root"></div></section>
+
       <section id="tab-videocall" class="hidden space-y-5">
         <div class="glass rounded-3xl p-7 text-center space-y-4 border border-white/10">
           <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-rose-500/30 to-violet-500/30 grid place-items-center"><i data-lucide="video" class="w-8 h-8 text-rose-300"></i></div>
@@ -1010,7 +1015,7 @@
   <!-- ===================================================================== -->
   <!-- MOBILE BOTTOM NAVIGATION                                              -->
   <!-- ===================================================================== -->
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-white/10 grid grid-cols-5 py-2 z-40" style="padding-bottom:max(8px,env(safe-area-inset-bottom))">
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-white/10 grid grid-cols-6 py-2 z-40" style="padding-bottom:max(8px,env(safe-area-inset-bottom))">
     <button onclick="switchTab('online')" id="mob-nav-online" class="mnav flex flex-col items-center gap-1 text-rose-400 text-[10px] font-semibold">
       <i data-lucide="compass" class="w-4 h-4"></i> Jelajah
     </button>
@@ -1025,6 +1030,9 @@
     </button>
     <button onclick="switchTab('videocall')" id="mob-nav-videocall" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium">
       <i data-lucide="video"></i> Call
+    </button>
+    <button onclick="switchTab('game')" id="mob-nav-game" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium">
+      <i data-lucide="gamepad-2"></i> Game
     </button>
   </nav>
 
@@ -2440,6 +2448,8 @@
         setSeat(senderConn.peer, data.seat);
       } else if (canManageRoom() && data.type === 'MIC' && senderConn) {
         setMic(senderConn.peer, data.state);
+      } else if (data.type === 'GAME') {
+        if (window.lnGameRecv) window.lnGameRecv(data, senderConn);
       } else if (data.type === 'LYR_OFFSET') {
         lyrApplyRemote(data.id, +data.offset);
       } else if (data.type === 'MEMBERS') {
@@ -4873,7 +4883,7 @@
     function switchTab(tab) {
       if (tab === 'videocall' && curTab !== 'videocall') vcPrev = curTab;
       curTab = tab;
-      ['online', 'offline', 'playlists', 'together', 'videocall'].forEach(t => {
+      ['online', 'offline', 'playlists', 'together', 'game', 'videocall'].forEach(t => {
         document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
         const deskBtn = document.getElementById('nav-' + t);
         const mobBtn = document.getElementById('mob-nav-' + t);
@@ -5157,6 +5167,7 @@
   <script src="./ln-nav.js"></script>
   <script src="./ln-paste.js"></script>
   <script src="./ln-rooms.js"></script>
+  <script src="./ln-game.js"></script>
   <script src="./ln-native.js"></script>
 <script>
 /* Hapus tombol emoji 📷 / 🎤 lama di bar chat (disuntik skrip eksternal) supaya kolom teks lebih lega */
