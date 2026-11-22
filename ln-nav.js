@@ -123,7 +123,11 @@
       if (dragMoved) { try { sessionStorage.setItem('ln_vc_pos', parseFloat(vcEl.style.left) + '|' + parseFloat(vcEl.style.top)); } catch (x) {} }
     };
     vcEl.addEventListener('pointerup', dragEnd); vcEl.addEventListener('pointercancel', dragEnd);
-    vcEl.addEventListener('click', function (e) { if (dragMoved) { e.stopPropagation(); e.preventDefault(); dragMoved = false; } }, true);
+    vcEl.addEventListener('click', function (e) {
+      if (dragMoved) { e.stopPropagation(); e.preventDefault(); dragMoved = false; return; }
+      // diketuk saat nonton bareng (layar penuh terbuka): tutup pemutar dulu agar layar video call terlihat
+      if (vcEl.classList.contains('mini') && fsEl && !fsEl.classList.contains('translate-y-full')) { try { closeFullscreenPlayer(); } catch (x) {} }
+    }, true);
     // keluar dari mode mini -> bersihkan posisi geser; masuk mode mini -> pulihkan posisi tersimpan
     new MutationObserver(function () {
       if (!vcEl.classList.contains('mini')) { if (vcEl.classList.contains('ln-drag')) { vcEl.classList.remove('ln-drag'); vcEl.style.left = ''; vcEl.style.top = ''; } return; }
