@@ -490,6 +490,37 @@
   @keyframes lnEq{0%,100%{height:4px}50%{height:16px}}
   .ln-qe{padding:40px 16px;text-align:center;color:#a1a1aa;font-size:15px;line-height:1.5}
   @media (max-width:767px){.ln-qd-panel{width:100vw;border-left:0}}
+    /* ===== Tab Bareng (desktop): lebar penuh, huruf besar, panel cara mulai ===== */
+  #ln-bh{display:none}
+  @media (min-width:768px){
+    html body #room-setup-area{max-width:none!important}
+    #tab-together > .glass > div:first-child h3{font-size:clamp(1.7rem,2.4vw,2.2rem)!important;letter-spacing:-.02em}
+    #tab-together > .glass > div:first-child p{font-size:15px!important}
+    #room-status-pill{font-size:14px!important;padding:.6rem 1.05rem!important}
+    #room-setup-area:not(.hidden){grid-template-columns:1fr 1fr!important;gap:20px!important;align-items:stretch}
+    #room-setup-area > div:not(#ln-bh){padding:1.75rem!important;border-radius:22px!important}
+    #room-setup-area h4{font-size:1.4rem!important;line-height:1.2}
+    #room-setup-area p{font-size:14.5px!important;line-height:1.5}
+    #room-setup-area p.text-\[10px\]{font-size:13px!important}
+    #room-setup-area span.rounded-full{font-size:12px!important;padding:.3rem .8rem!important}
+    #room-setup-area .text-\[11px\]{font-size:13px!important}
+    #room-setup-area input{font-size:16px!important;padding:.95rem 1.1rem!important;border-radius:14px!important}
+    #room-setup-area button{font-size:15.5px!important;font-weight:700!important;padding-top:.9rem!important;padding-bottom:.9rem!important;border-radius:14px!important}
+    #croom-tab-create,#croom-tab-join{padding-top:.65rem!important;padding-bottom:.65rem!important;border-radius:11px!important}
+    #room-setup-area form{gap:12px}
+  }
+  @media (min-width:1100px){
+    #room-setup-area:not(.hidden){grid-template-columns:minmax(300px,.8fr) minmax(0,1fr) minmax(0,1fr)!important}
+    #ln-bh{display:flex;flex-direction:column;justify-content:center;gap:24px;padding:6px 14px 6px 4px}
+    #room-setup-area #ln-bh h4{font-size:2.1rem!important;font-weight:800;line-height:1.15;letter-spacing:-.02em;color:#fff}
+    .ln-bh-sub{font-size:16px;color:#a1a1aa;margin-top:10px;font-weight:500}
+    .ln-st{display:flex;gap:14px;align-items:flex-start}
+    .ln-st i{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#f43f5e,#8b5cf6);color:#fff;font-style:normal;font-weight:800;font-size:16px;box-shadow:0 8px 20px -8px rgba(244,63,94,.7)}
+    .ln-st b{display:block;font-size:17px;color:#fff;line-height:1.35}
+    .ln-st span{display:block;font-size:14.5px;color:#a1a1aa;line-height:1.5;margin-top:2px}
+    .ln-bh-tags{display:flex;flex-wrap:wrap;gap:8px}
+    .ln-bh-tags span{padding:.4rem .9rem;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);font-size:13.5px;font-weight:600;color:#e4e4e7}
+  }
   </style>
 
 </head>
@@ -759,6 +790,15 @@
 
           <!-- Login / Custom Room / Guest Setup -->
           <div id="room-setup-area" class="max-w-3xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Panel cara mulai (khusus desktop lebar) -->
+            <div id="ln-bh" aria-hidden="false">
+              <div><h4>Dengerin &amp; nonton bareng, serasa satu ruangan</h4><div class="ln-bh-sub">Mulai dalam 3 langkah, tanpa ribet.</div></div>
+              <div class="ln-st"><i>1</i><div><b>Buat atau masuk room</b><span>Pakai akun Room Kita, atau buat room baru lalu gabung dengan kode.</span></div></div>
+              <div class="ln-st"><i>2</i><div><b>Bagikan kodenya</b><span>Teman cukup memasukkan kode room, tanpa perlu login.</span></div></div>
+              <div class="ln-st"><i>3</i><div><b>Putar bareng</b><span>Lagu dan film sinkron otomatis, lengkap dengan chat dan antrean bersama.</span></div></div>
+              <div class="ln-bh-tags"><span>Sinkron real-time</span><span>Video call</span><span>Voice room</span><span>Chat &amp; antrean</span></div>
+            </div>
+
             <!-- Card 1: Buat Room Baru / Gabung Room Bebas (Siapapun Bisa) -->
             <div class="p-5 md:p-6 rounded-2xl bg-gradient-to-br from-rose-500/[0.08] via-zinc-950/60 to-violet-500/[0.08] border border-rose-500/25 flex flex-col justify-between space-y-4">
               <div class="space-y-3">
