@@ -3509,7 +3509,7 @@
     // lawan bicara ditentukan jumlah peserta, lalu turun/naik otomatis mengikuti kondisi jaringan.
     // Tiap tingkat: [bitrate maks (bps), skala turun, fps maks]
     const VC_TIERS = [
-      [12000000, 1,   30], // ULTRA: tanpa batas praktis, hanya berdua & jaringan kedua sisi sangat bagus
+      [3500000,  1,   30], // ULTRA: 720p tajam & stabil (bitrate terlalu tinggi justru bikin gambar pecah)
       [2500000,  1,   30], // HD 720p
       [1600000,  1,   30], // HD 720p (hemat)
       [1000000,  1.5, 30], // ±480p
@@ -3537,7 +3537,7 @@
           if (f) hasFmtp.add(f[1]);
         });
         const duo = vcPeerTotal() <= 2;
-        const VK = duo ? ['x-google-start-bitrate=4000', 'x-google-min-bitrate=800', 'x-google-max-bitrate=14000'] : ['x-google-start-bitrate=1500', 'x-google-min-bitrate=500', 'x-google-max-bitrate=2600'];
+        const VK = duo ? ['x-google-start-bitrate=1500', 'x-google-min-bitrate=300', 'x-google-max-bitrate=3500'] : ['x-google-start-bitrate=800', 'x-google-min-bitrate=200', 'x-google-max-bitrate=2000'];
         const AK = ['useinbandfec=1', 'usedtx=0', 'maxaveragebitrate=64000'];
         const add = (str, kv) => str + kv.filter(x => !new RegExp('(^|[ ;])' + x.split('=')[0] + '=').test(str)).map(x => ';' + x).join('');
         sec = '';
@@ -3551,7 +3551,24 @@
           const r = l.match(/^a=rtpmap:(\d+) ([A-Za-z0-9]+)\//);
           if (r && sec === 'video' && vpt.has(r[1]) && !hasFmtp.has(r[1])) out.push('a=fmtp:' + r[1] + ' ' + VK.join(';'));
         });
-        return out.join('\r\n');
+        return vcPreferVp8(out.join('\r\n'));
+      } catch (e) { return sdp; }
+    }
+    // Pakai VP8 saja: encoder H264/VP9 hardware di Mac & Android sering menghasilkan gambar kotak-kotak (mozaik) saat paket hilang
+    function vcPreferVp8(sdp) {
+      try {
+        const lines = sdp.split('\r\n'); let sec = '', mi = -1; const codec = {}, apt = {};
+        lines.forEach((l, i) => {
+          if (l.startsWith('m=')) { sec = l.slice(2, l.indexOf(' ')); if (sec === 'video') mi = i; }
+          if (sec !== 'video') return;
+          let r = l.match(/^a=rtpmap:(\d+) ([A-Za-z0-9-]+)\//); if (r) codec[r[1]] = r[2].toUpperCase();
+          r = l.match(/^a=fmtp:(\d+) .*apt=(\d+)/); if (r) apt[r[1]] = r[2];
+        });
+        if (mi < 0 || !Object.values(codec).includes('VP8')) return sdp;
+        const keep = pt => codec[pt] === 'VP8' || (codec[pt] === 'RTX' && codec[apt[pt]] === 'VP8');
+        const parts = lines[mi].split(' ');
+        lines[mi] = parts.slice(0, 3).concat(parts.slice(3).filter(keep)).join(' ');
+        return lines.join('\r\n');
       } catch (e) { return sdp; }
     }
 
@@ -3576,7 +3593,7 @@
         } catch (e) {}
       });
       (pc.getReceivers() || []).forEach(r => {
-        try { if (r.track && r.track.kind === 'video' && 'jitterBufferTarget' in r) r.jitterBufferTarget = vcPeerTotal() <= 2 ? 150 : 200; } catch (e) {}
+        try { if (r.track && r.track.kind === 'video' && 'jitterBufferTarget' in r) r.jitterBufferTarget = vcPeerTotal() <= 2 ? 250 : 300; } catch (e) {}
       });
     }
     function vcTune(call) {
@@ -3611,10 +3628,10 @@
         } catch (e) { return; }
         if (!sending) return;
         const before = call._pen || 0, last = VC_TIERS.length - 1;
-        const bad = loss > 0.08 || rtt > 450 || why === 'bandwidth';
-        let good = loss < 0.02 && rtt < 250 && why === 'none';
+        const bad = loss > 0.03 || rtt > 350 || why === 'bandwidth';
+        let good = loss < 0.01 && rtt < 200 && why === 'none';
         // naik ke Ultra hanya kalau kedua sisi benar-benar bagus (hindari bolak-balik naik-turun)
-        if (before === 1 && vcBaseTier(vcPeerTotal()) === 0 && !(loss < 0.01 && rtt < 150 && bw > 7e6)) good = false;
+        if (before === 1 && vcBaseTier(vcPeerTotal()) === 0 && !(loss < 0.01 && rtt < 150 && bw > 5e6)) good = false;
         if (bad || (why === 'cpu' && before < 3)) { call._pen = Math.min(last, before + 1); calm = 0; }
         else if (good && before > 0) { if (++calm >= 4) { call._pen = before - 1; calm = 0; } }
         else calm = 0;
@@ -3988,7 +4005,6 @@
       const AUD = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, sampleRate: 48000, channelCount: 1 };
       const duoCall = vcRemoteCount() <= 1; // berdua: minta kamera sampai 1080p, tanpa batas bitrate rendah
       const VIDS = [
-        ...(duoCall ? [{ facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 } }] : []),
         { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } },
         { facingMode: 'user', width: { ideal: 960 }, height: { ideal: 540 }, frameRate: { ideal: 30, max: 30 } },
         { facingMode: 'user' }

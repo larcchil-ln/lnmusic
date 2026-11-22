@@ -22,6 +22,26 @@
   document.addEventListener('fullscreenchange', onFs);
   document.addEventListener('webkitfullscreenchange', onFs);
 
+
+  // ---- Video call: tampilkan seluruh badan (tidak terpotong/zoom) saat rasio video & layar beda jauh ----
+  var st = document.createElement('style');
+  st.textContent = '.ln-contain{object-fit:contain!important;background:#0b0b10}';
+  document.head.appendChild(st);
+  function fit() {
+    document.querySelectorAll('#vc video, #vc-self').forEach(function (v) {
+      var w = v.videoWidth, h = v.videoHeight, r = v.getBoundingClientRect();
+      if (!w || !h || !r.width || !r.height) return;
+      var mode = v.dataset.fit, auto = Math.abs((w / h) / (r.width / r.height) - 1) > 0.1;
+      v.classList.toggle('ln-contain', mode === 'fit' ? true : mode === 'fill' ? false : auto);
+    });
+  }
+  setInterval(fit, 1000); window.addEventListener('resize', fit);
+  document.addEventListener('dblclick', function (e) { // ketuk 2x pada video = ganti Penuh / Utuh
+    var v = e.target && e.target.closest && e.target.closest('#vc video, #vc-self'); if (!v) return;
+    v.dataset.fit = v.classList.contains('ln-contain') ? 'fill' : 'fit'; fit();
+    toast(v.dataset.fit === 'fit' ? 'Tampilan utuh' : 'Tampilan penuh');
+  });
+
   // ---- Tombol Back: tutup lapisan teratas -> kembali ke Beranda -> baru keluar ----
   var armed = 0;
   function trap() { try { history.pushState({ ln: 1 }, ''); } catch (e) {} }

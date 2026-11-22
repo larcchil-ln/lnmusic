@@ -25,6 +25,7 @@ code{background:#0c0c12;padding:1px 6px;border-radius:6px;font-size:12px}.hide{d
 <div id="t-v" class="c"></div><div id="t-r" class="c hide"></div><div id="t-l" class="c hide"></div>
 <div id="t-c" class="hide">
 <div class="c"><h2>Kunci website</h2><div class="row"><input id="lm" placeholder="Pesan untuk pengunjung (opsional)"></div><div class="row"><button id="lb" onclick="lockT()"></button></div></div>
+<div class="c"><h2>Perangkat ini</h2><div class="m" style="font-size:12px;margin-bottom:8px">Default: kunci berlaku juga untuk perangkat ini, jadi kamu bisa mengetes. Aktifkan hanya kalau ingin memakai web saat terkunci.</div><button class="g" id="bp" onclick="bypass()"></button></div>
 <div class="c"><h2>Siaran pesan ke semua yang online</h2><div class="row"><input id="bt" placeholder="Tulis pesan..."><button onclick="A({action:'broadcast',text:bt.value}).then(()=>bt.value='')">Kirim</button><button class="g" onclick="A({action:'broadcast',text:''})">Hapus</button></div></div>
 <div class="c"><h2>Diblokir</h2><div id="bl"></div><div class="row" style="margin-top:8px"><input id="bi" placeholder="Blokir IP manual"><button onclick="ban('ip',bi.value);bi.value=''">Blokir</button></div></div>
 <div class="c"><button class="g" onclick="confirm('Hapus semua log?')&&A({action:'clearLog'})">Bersihkan log</button></div></div>
@@ -35,13 +36,15 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const ago=t=>{const s=Math.max(0,(D.now-t)/1000|0);return s<90?s+' dtk lalu':s<5400?(s/60|0)+' mnt lalu':s<172800?(s/3600|0)+' jam lalu':(s/86400|0)+' hr lalu'};
 function dev(v){const u=v.ua||'',m=u.match(/Android [\d.]+; ([^)]+?)( Build|\))/);const o=/iPhone/.test(u)?'iPhone':/iPad/.test(u)?'iPad':m?m[1]:/Windows/.test(u)?'Windows':/Mac OS/.test(u)?'macOS':/Linux/.test(u)?'Linux':'?';const b=/Edg\//.test(u)?'Edge':/OPR\//.test(u)?'Opera':/SamsungBrowser/.test(u)?'Samsung':/Chrome\//.test(u)?'Chrome':/Firefox\//.test(u)?'Firefox':/Safari\//.test(u)?'Safari':'?';return o+' • '+b}
 async function api(b){const r=await fetch('/api/admin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...b,token:tok})});const j=await r.json().catch(()=>({}));if(r.status===401&&b.action!=='login'){out();throw 0}if(!r.ok)throw new Error(j.error||'Error');return j}
-async function L(e){e.preventDefault();try{const j=await api({action:'login',user:$('u').value,pass:$('p').value});tok=j.token;sessionStorage.setItem('ln_adm',tok);try{localStorage.setItem('ln_admin_tok',tok)}catch(x){}$('p').value='';start()}catch(x){$('e').textContent=x.message}return false}
+async function L(e){e.preventDefault();try{const j=await api({action:'login',user:$('u').value,pass:$('p').value});tok=j.token;sessionStorage.setItem('ln_adm',tok);$('p').value='';start()}catch(x){$('e').textContent=x.message}return false}
 function out(){tok='';sessionStorage.removeItem('ln_adm');try{localStorage.removeItem('ln_admin_tok')}catch(x){}clearInterval(tm);$('app').classList.add('hide');$('login').classList.remove('hide')}
 async function A(b){D=await api(b);draw()}
 function start(){$('login').classList.add('hide');$('app').classList.remove('hide');A({action:'overview'});clearInterval(tm);tm=setInterval(()=>A({action:'overview'}).catch(()=>{}),10000)}
+function bypass(){try{if(localStorage.getItem('ln_admin_tok'))localStorage.removeItem('ln_admin_tok');else localStorage.setItem('ln_admin_tok',tok)}catch(x){}bpUI()}
+function bpUI(){try{$('bp').textContent=localStorage.getItem('ln_admin_tok')?'✅ Lolos kunci: AKTIF (ketuk untuk matikan)':'⛔ Lolos kunci: MATI (ketuk untuk aktifkan)'}catch(x){}}
 const lockT=()=>A({action:'lock',on:!D.cfg.locked,msg:$('lm').value});
 const ban=(k,v)=>v&&confirm('Blokir '+v+'?')&&A({action:'ban',kind:k,value:v});
-function draw(){const c=D.cfg;$('kon').textContent=D.online;$('kro').textContent=D.rooms.length;$('kto').textContent=D.total;
+function draw(){bpUI();const c=D.cfg;$('kon').textContent=D.online;$('kro').textContent=D.rooms.length;$('kto').textContent=D.total;
 $('lk').innerHTML=c.locked?'🔒 Website <b style="color:#fda4af">TERKUNCI</b>':'🟢 Website terbuka';
 $('lb').textContent=c.locked?'🔓 Buka kunci website':'🔒 Kunci website sekarang';if(document.activeElement!==$('lm'))$('lm').value=c.msg||'';
 $('t-v').innerHTML='<h2>Pengunjung terbaru</h2>'+(D.visitors.map(v=>`<div class="it"><span class="d ${v.online?'on':''}"></span><b>${esc(v.name||'(belum ada nama)')}</b> <span class="m">• ${ago(v.last)} • ${v.hits}x</span><br>IP <code>${esc(v.ip)}</code> ${esc([v.city,v.region,v.country].filter(Boolean).join(', '))}<br><span class="m">${esc(dev(v))} • ${esc(v.pf)} • layar ${esc(v.scr)} • CPU ${v.cpu} • RAM ${v.mem||'?'}GB • ${esc(v.net||'-')} • ${esc(v.lang)} • ${esc(v.tz)}${v.pwa?' • PWA':''}</span>${v.room?'<br>Room: <code>'+esc(v.room)+'</code>':''}<br><button class="r" onclick="ban('ip','${esc(v.ip)}')">Blokir IP</button> <button class="r" onclick="ban('vid','${esc(v.vid)}')">Blokir perangkat</button></div>`).join('')||'<span class="m">Belum ada data</span>');
@@ -50,5 +53,6 @@ const T={visit:'👤 Pengunjung baru',room_create:'🎧 Room dibuat',room_join:'
 $('t-l').innerHTML='<h2>Log aktivitas</h2>'+(D.log.map(l=>`<div class="it">${T[l.type]||esc(l.type)} <b>${esc(l.name||'')}</b> ${l.room?'<code>'+esc(l.room)+'</code>':''}<br><span class="m">${ago(l.t)} • ${esc(l.ip)} ${esc(l.city||'')}</span></div>`).join('')||'<span class="m">Kosong</span>');
 $('bl').innerHTML=[...(c.banIps||[]).map(x=>['ip',x]),...(c.banVids||[]).map(x=>['vid',x])].map(([k,x])=>`<div class="it"><code>${esc(k==='ip'?x:'perangkat '+x.slice(0,8))}</code> <button class="g" onclick="A({action:'unban',kind:'${k}',value:'${esc(x)}'})">Buka blokir</button></div>`).join('')||'<span class="m">Tidak ada</span>'}
 document.querySelector('.tabs').onclick=e=>{const t=e.target.dataset.t;if(!t)return;document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b===e.target));['v','r','l','c'].forEach(x=>$('t-'+x).classList.toggle('hide',x!==t))};
+try{localStorage.removeItem('ln_admin_tok')}catch(x){}
 if(tok)start();
 </script></body></html>
