@@ -160,6 +160,70 @@
       #ln-top nav .nav-btn { gap: .5rem; }
     }
 
+    /* ===== Tab Bareng: modern, lega, dinamis ===== */
+    #tab-together > .glass { padding: 1.25rem; }
+    #tab-together h3 { font-size: 1.6rem; line-height: 1.15; letter-spacing: -.01em; }
+    #tab-together h3 + p { font-size: .9rem; }
+    #active-room-code { font-size: 1.7rem !important; }
+    #room-active-area > div:first-child { padding: 1.1rem 1.25rem; border-radius: 1.5rem; }
+    #room-active-area > div:first-child button { font-size: .85rem; padding: .65rem 1.05rem; border-radius: 999px; }
+    #tab-together .tg-card { position: relative; overflow: hidden; border-radius: 1.75rem; border: 1px solid rgba(255,255,255,.1); padding: 1.25rem;
+      background: radial-gradient(120% 90% at 0% 0%, rgba(244,63,94,.18), transparent 55%), radial-gradient(110% 100% at 100% 100%, rgba(139,92,246,.2), transparent 55%), #0b0910; }
+    .tg-voice-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1.25rem; }
+    .tg-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -.01em; }
+    .tg-sub { font-size: .85rem; color: #a1a1aa; margin-top: .2rem; line-height: 1.45; }
+    .tg-count { padding: .4rem .95rem; border-radius: 999px; background: rgba(255,255,255,.1); font-size: .9rem; font-weight: 700; white-space: nowrap; }
+    .tg-voice-body { display: grid; gap: 1.25rem; }
+    .tg-seats { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.4rem; }
+    #voice-seats-main .seat .truncate { font-size: .82rem; max-width: 92px; }
+    .tg-mic { text-align: center; }
+    .tg-mic-btn { padding: 1rem 2.4rem; border-radius: 999px; font-size: 1rem; font-weight: 800; color: #fff; background: linear-gradient(135deg, #e11d48, #7c3aed); box-shadow: 0 16px 36px -14px rgba(225,29,72,.85); transition: transform .15s, box-shadow .2s; }
+    .tg-mic-btn:hover { box-shadow: 0 18px 44px -12px rgba(225,29,72,.95); }
+    .tg-mic-btn:active { transform: scale(.96); }
+    .tg-hint { font-size: .78rem; color: #71717a; margin-top: .75rem; }
+    .tg-chat { display: flex; flex-direction: column; min-height: 22rem; max-height: 30rem; border-radius: 1.4rem; padding: 1rem; background: rgba(5,5,8,.62); border: 1px solid rgba(255,255,255,.08); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+    .tg-chat #room-chat-messages { flex: 1; min-height: 8rem; font-size: .92rem; }
+    .tg-chat #room-chat-messages .text-xs { font-size: .9rem; line-height: 1.45; }
+    .tg-chat #room-chat-input { font-size: .9rem; padding: .65rem 1rem; }
+    .tg-chat .ln-rx-chip { font-size: 1.15rem; }
+    .tg-section-title { font-size: 1.25rem; font-weight: 800; letter-spacing: -.01em; margin: .5rem .25rem -.25rem; }
+    #room-search-main > div { border-radius: 1.75rem; padding: 1.1rem; background: #0b0910; border: 1px solid rgba(255,255,255,.1); }
+    #room-search-main .rs-input { font-size: .95rem; padding: .8rem 1.1rem; border-radius: 999px; }
+    #room-search-main .rs-mode { font-size: .85rem; padding: 0 1rem; border-radius: 999px; }
+    #room-search-main .rs-status { font-size: .8rem; }
+    #room-search-main img { width: 3.1rem; height: 3.1rem; border-radius: .7rem; }
+    #room-search-main .text-\[11px\] { font-size: .92rem; }
+    #room-search-main .text-\[10px\] { font-size: .78rem; }
+    #room-search-main button.px-2 { font-size: .78rem; padding: .45rem .8rem; border-radius: .7rem; }
+    #room-search-main .rs-results > div, #room-search-main .rs-queue > div { padding: .55rem .7rem; border-radius: 1rem; }
+    #room-search-main .rs-results { max-height: 22rem; }
+    #room-search-main .rs-queue { max-height: 16rem; }
+    .tg-link { display: flex; flex-direction: column; gap: 1rem; }
+    .tg-link-title { font-size: 1.1rem; font-weight: 800; }
+    .tg-link-row { display: flex; gap: .6rem; }
+    .tg-link-row input { flex: 1; min-width: 0; height: 3rem; padding: 0 1.1rem; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); color: #fff; font-size: .92rem; outline: none; }
+    .tg-link-row input:focus { border-color: rgba(244,63,94,.6); box-shadow: 0 0 0 3px rgba(244,63,94,.15); }
+    .tg-link-row button { height: 3rem; padding: 0 1.4rem; border-radius: 999px; border: 0; font-weight: 800; font-size: .9rem; color: #fff; white-space: nowrap; background: linear-gradient(135deg, #e11d48, #7c3aed); }
+    @media (min-width: 1024px) {
+      #tab-together > .glass { padding: 2rem; }
+      #tab-together .tg-card { padding: 1.9rem; }
+      .tg-voice-body { grid-template-columns: minmax(330px, 36%) 1fr; gap: 1.9rem; }
+      .tg-chat { min-height: 33rem; max-height: 42rem; padding: 1.25rem; }
+      #voice-seats-main { gap: 1.7rem 1.25rem; }
+      #voice-seats-main .seat .ring { width: 5rem; height: 5rem; }
+      #voice-seats-main .seat .truncate { font-size: .88rem; max-width: 104px; }
+      #room-search-main > div { display: grid; grid-template-columns: 1.5fr 1fr; column-gap: 1.5rem; row-gap: .6rem; padding: 1.5rem; align-content: start; }
+      #room-search-main > div > :nth-child(1), #room-search-main > div > :nth-child(2) { grid-column: 1 / -1; }
+      #room-search-main > div > :nth-child(3) { grid-column: 1; grid-row: 3 / 5; }
+      #room-search-main > div > :nth-child(4) { grid-column: 2; grid-row: 3; font-size: .85rem; }
+      #room-search-main > div > :nth-child(5) { grid-column: 2; grid-row: 4; }
+      #room-search-main .rs-results { max-height: 28rem; }
+      #room-search-main .rs-queue { max-height: 24rem; }
+      .tg-link { flex-direction: row; align-items: center; justify-content: space-between; gap: 2rem; }
+      .tg-link-text { flex: 0 1 38%; }
+      .tg-link-row { flex: 1; }
+    }
+
     /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -891,29 +955,28 @@
               </div>
             </div>
 
-            <!-- Voice Room Seats -->
-            <div class="rounded-3xl p-4 border border-white/10 relative overflow-hidden" style="background:radial-gradient(circle at 15% 0%,rgba(244,63,94,.28),transparent 55%),radial-gradient(circle at 95% 100%,rgba(139,92,246,.28),transparent 55%),#0c0a12">
-              <div class="flex items-center justify-between mb-4">
+            <!-- Voice Room + Chat & Reaksi (digabung) -->
+            <div id="tg-voice" class="tg-card">
+              <div class="tg-voice-head">
                 <div>
-                  <div class="text-sm font-extrabold">🎙️ Voice Room</div>
-                  <div class="text-[11px] text-zinc-400">Ngobrol sambil dengerin bareng. Ketuk kursi kosong untuk pindah.</div>
+                  <div class="tg-title">Voice Room</div>
+                  <div class="tg-sub">Ngobrol sambil dengerin bareng. Ketuk kursi kosong untuk pindah.</div>
                 </div>
-                <span id="voice-count" class="px-2.5 py-1 rounded-full bg-white/10 text-[11px] font-semibold">1/6</span>
+                <span id="voice-count" class="tg-count">1/6</span>
               </div>
-              <div id="voice-seats-main" class="grid grid-cols-3 gap-x-3 gap-y-5 justify-items-center"></div>
-              <div class="flex items-center justify-center gap-2.5 mt-5">
-                <button onclick="toggleVoice()" class="voice-btn px-6 py-3 rounded-full bg-gradient-to-r from-rose-600 to-violet-600 text-sm font-bold text-white shadow-lg shadow-rose-600/30">🎙️ Voice: Mati</button>
-              </div>
-              <p class="text-center text-[10px] text-zinc-500 mt-2.5">Pakai earphone supaya suara lagu tidak bocor ke mic.</p>
-            </div>
-
-            <!-- Live Chat & Quick Watch Link -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div class="lg:col-span-2 rounded-2xl bg-zinc-950/80 border border-white/10 p-4 flex flex-col h-80">
-                <div class="pb-2.5 mb-2 border-b border-white/10 space-y-2">
+              <div class="tg-voice-body">
+                <div class="tg-seats">
+                  <div id="voice-seats-main" class="grid grid-cols-3 gap-x-3 gap-y-6 justify-items-center w-full"></div>
+                  <div class="tg-mic">
+                    <button onclick="toggleVoice()" class="voice-btn tg-mic-btn">Voice: Mati</button>
+                    <p class="tg-hint">Pakai earphone supaya suara lagu tidak bocor ke mic.</p>
+                  </div>
+                </div>
+                <div class="tg-chat">
+                  <div class="pb-2.5 mb-2 border-b border-white/10 space-y-2">
                   <div class="flex items-center justify-between gap-2">
                     <span class="text-xs font-bold text-zinc-300 flex items-center gap-1.5 min-w-0">
-                      <i data-lucide="message-circle-heart" class="w-4 h-4 text-rose-400 shrink-0"></i> <span class="truncate">Live Chat &amp; Reaksi</span>
+                      <i data-lucide="message-circle-heart" class="w-4 h-4 text-rose-400 shrink-0"></i> <span class="truncate">Chat &amp; Reaksi</span>
                     </span>
                     <button type="button" onclick="clearRoomChat()" title="Bersihkan Chat" class="ln-clean-btn">
                       <i data-lucide="eraser" class="w-3.5 h-3.5"></i><span>Clean</span>
@@ -954,25 +1017,26 @@
                     </button>
                   </form>
                 </div>
-              </div>
-
-              <div class="rounded-2xl bg-zinc-950/80 border border-white/10 p-4 flex flex-col justify-between space-y-3">
-                <div>
-                  <h4 class="text-xs font-bold text-white mb-1">Putar Film / Lagu di Room Ini</h4>
-                  <p class="text-[11px] text-zinc-400 leading-relaxed">Tempel link YouTube (lagu, podcast, atau film) untuk langsung diputar bersama di layar masing-masing.</p>
+              
                 </div>
-                <div class="space-y-2">
-                  <input type="text" id="party-yt-url" placeholder="https://youtu.be/..." class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-none" />
-                  <button onclick="playPartyLink()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-violet-600 text-xs font-bold text-white">
-                    Putar Bareng di Layar Penuh
-                  </button>
-                </div>
-                <p class="text-[10px] text-zinc-500">Tips: Gunakan mode Full-Screen Player di bawah untuk tampilan bioskop &amp; Spotify mode.</p>
               </div>
             </div>
 
-            <!-- Room Search & Queue -->
+            <!-- Cari lagu & antrean (di bawah Voice Room) -->
+            <div class="tg-section-title">Cari Lagu &amp; Antrean</div>
             <div id="room-search-main"></div>
+
+            <!-- Putar lewat link -->
+            <div class="tg-card tg-link">
+              <div class="tg-link-text">
+                <div class="tg-link-title">Putar Film / Lagu lewat Link</div>
+                <div class="tg-sub">Tempel link YouTube (lagu, podcast, atau film) untuk diputar bersama di layar masing-masing.</div>
+              </div>
+              <div class="tg-link-row">
+                <input type="text" id="party-yt-url" placeholder="https://youtu.be/..." />
+                <button onclick="playPartyLink()">Putar Bareng</button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -3977,7 +4041,8 @@
 
     (function initSplash() {
       const standalone = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone;
-      if (standalone) return document.getElementById('splash').remove();
+      const desktop = innerWidth >= 1024 && matchMedia('(pointer: fine)').matches; // mode layar penuh hanya untuk HP/tablet
+      if (standalone || desktop) return document.getElementById('splash').remove();
       if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) {
         document.getElementById('splash-hint').textContent = 'iPhone: untuk layar penuh, ketuk Bagikan lalu "Tambah ke Layar Utama", dan buka dari ikon itu.';
       }
