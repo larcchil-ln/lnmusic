@@ -404,9 +404,9 @@
   #ln-mnav{background:rgba(14,14,18,.9)!important;-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);border-top:1px solid rgba(255,255,255,.08)!important;border-radius:22px 22px 0 0;padding:4px 8px max(4px,env(safe-area-inset-bottom))!important;gap:2px}
   #ln-ind{display:none!important}
   .mnav{display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:5px 0 4px;border-radius:16px;font-size:11px!important;font-weight:600!important;color:#8e8e99;transition:background .2s,color .2s}
-  .mnav .ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block}
+  #ln-mnav .mnav .ic{padding:0!important;border-radius:0!important;background:none!important;flex:none;width:23px!important;height:23px!important;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block}
   .mnav.on,.mnav.text-rose-400{color:#fff!important;font-weight:700!important;background:linear-gradient(135deg,rgba(244,63,94,.3),rgba(139,92,246,.3));box-shadow:inset 0 0 0 1px rgba(244,63,94,.38)}
-  .mnav.on .ic,.mnav.text-rose-400 .ic{stroke:#fda4af}
+  #ln-mnav .mnav.on .ic,#ln-mnav .mnav.text-rose-400 .ic{stroke:#fda4af}
   @media (min-width:768px){
     html body #ln-top nav .nav-btn{font-size:16px!important;font-weight:700!important;padding:.6rem 1.15rem!important;color:#a1a1aa}
     html body #ln-top nav .nav-btn.text-rose-400,html body #ln-top nav .nav-btn:hover{color:#fff!important}
