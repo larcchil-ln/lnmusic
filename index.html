@@ -294,8 +294,7 @@
     .hcard .pl{opacity:0;transform:translateY(6px);transition:.25s}.hcard:hover .pl,.hcard:active .pl{opacity:1;transform:none}
     #vc{position:fixed;z-index:45;background:#07070b;overflow:hidden;transition:all .3s cubic-bezier(.22,1,.36,1)}
     #vc.full{top:0;right:0;bottom:calc(126px + env(safe-area-inset-bottom));left:0}
-    @media(min-width:768px){#vc.full{left:16rem;bottom:84px}}
-    @media(min-width:1024px){#vc.full{left:18rem}}
+    @media(min-width:768px){#vc.full{top:84px;left:20px;right:20px;bottom:100px;border-radius:24px;border:1px solid rgba(255,255,255,.1);box-shadow:0 24px 70px -20px rgba(0,0,0,.9)}}
     #vc.mini{right:12px;bottom:142px;width:108px;height:152px;border-radius:22px;border:1.5px solid rgba(244,63,94,.45);box-shadow:0 14px 34px rgba(0,0,0,.75)}
     #vc-grid{display:grid;grid-template-columns:1fr;grid-auto-rows:1fr;gap:6px;width:100%;height:100%;transition:all .25s ease;background:#07070b;padding:0}
     #vc-grid[class*="g-"]{padding:8px}
@@ -3599,15 +3598,15 @@
     // lawan bicara ditentukan jumlah peserta, lalu turun/naik otomatis mengikuti kondisi jaringan.
     // Tiap tingkat: [bitrate maks (bps), skala turun, fps maks]
     const VC_TIERS = [
-      [3500000,  1,   30], // ULTRA: 720p tajam & stabil (bitrate terlalu tinggi justru bikin gambar pecah)
-      [2500000,  1,   30], // HD 720p
-      [1600000,  1,   30], // HD 720p (hemat)
-      [1000000,  1.5, 30], // ±480p
-      [650000,   1.5, 24],
-      [400000,   2,   24], // ±360p
-      [220000,   3,   15]  // darurat
+      [6000000, 1,   30], // FULL HD 1080p (berdua, jaringan bagus)
+      [4000000, 1,   30], // FULL HD 1080p
+      [2500000, 1.5, 30], // HD 720p
+      [1500000, 1.5, 30], // HD 720p (hemat)
+      [900000,  2,   30], // 540p
+      [500000,  3,   24], // 360p
+      [250000,  3,   15]  // darurat
     ];
-    const vcBaseTier = n => n <= 2 ? 0 : (n === 3 ? 2 : (n === 4 ? 3 : (n === 5 ? 4 : 5)));
+    const vcBaseTier = n => n <= 2 ? 0 : (n === 3 ? 1 : (n === 4 ? 2 : (n === 5 ? 3 : 4)));
     const vcPeerTotal = () => Math.max(2, Object.keys(voiceCalls).length + 1);
     const vcTierOf = call => VC_TIERS[Math.min(VC_TIERS.length - 1, vcBaseTier(vcPeerTotal()) + (call._pen || 0))];
     function callAlive(c) { const st = c && c.peerConnection && c.peerConnection.connectionState; return !!c && st !== 'closed' && st !== 'failed'; }
@@ -3627,8 +3626,8 @@
           if (f) hasFmtp.add(f[1]);
         });
         const duo = vcPeerTotal() <= 2;
-        const VK = duo ? ['x-google-start-bitrate=1500', 'x-google-min-bitrate=300', 'x-google-max-bitrate=3500'] : ['x-google-start-bitrate=800', 'x-google-min-bitrate=200', 'x-google-max-bitrate=2000'];
-        const AK = ['useinbandfec=1', 'usedtx=0', 'maxaveragebitrate=64000'];
+        const VK = duo ? ['x-google-start-bitrate=2500', 'x-google-min-bitrate=600', 'x-google-max-bitrate=6000'] : ['x-google-start-bitrate=1500', 'x-google-min-bitrate=400', 'x-google-max-bitrate=4000'];
+        const AK = ['useinbandfec=1', 'usedtx=0', 'maxaveragebitrate=128000', 'maxplaybackrate=48000', 'minptime=10'];
         const add = (str, kv) => str + kv.filter(x => !new RegExp('(^|[ ;])' + x.split('=')[0] + '=').test(str)).map(x => ';' + x).join('');
         sec = '';
         const out = [];
@@ -3678,7 +3677,7 @@
             params.degradationPreference = 'balanced'; // jangan korbankan fps (penyebab patah-patah)
             params.encodings.forEach(enc => { enc.maxBitrate = tier[0]; enc.scaleResolutionDownBy = tier[1]; enc.maxFramerate = tier[2]; });
           } else {
-            params.encodings.forEach(enc => { enc.maxBitrate = 64000; });
+            params.encodings.forEach(enc => { enc.maxBitrate = 128000; enc.priority = 'high'; enc.networkPriority = 'high'; });
           }
           sender.setParameters(params).catch(() => {});
         } catch (e) {}
@@ -3699,7 +3698,7 @@
       if (txt) { el.textContent = txt; return; }
       let lvl = 0;
       Object.values(voiceCalls).forEach(c => { if (callAlive(c)) lvl = Math.max(lvl, Math.min(VC_TIERS.length - 1, vcBaseTier(vcPeerTotal()) + (c._pen || 0))); });
-      el.textContent = lvl === 0 ? 'Ultra HD' : (lvl <= 2 ? 'HD 720p' : (lvl <= 4 ? '480p' : '360p'));
+      el.textContent = lvl <= 1 ? 'Full HD 1080p' : (lvl <= 3 ? 'HD 720p' : (lvl === 4 ? '540p' : '360p'));
     }
     // Pantau jaringan tiap 3 detik: turunkan kualitas saat jaringan buruk, naikkan lagi saat stabil
     function vcMonitor(call) {
@@ -3722,7 +3721,7 @@
         const bad = loss > 0.03 || rtt > 350 || why === 'bandwidth';
         let good = loss < 0.01 && rtt < 200 && why === 'none';
         // naik ke Ultra hanya kalau kedua sisi benar-benar bagus (hindari bolak-balik naik-turun)
-        if (before === 1 && vcBaseTier(vcPeerTotal()) === 0 && !(loss < 0.01 && rtt < 150 && bw > 5e6)) good = false;
+        if (before === 1 && vcBaseTier(vcPeerTotal()) === 0 && !(loss < 0.01 && rtt < 150 && bw > 8e6)) good = false;
         if (bad || (why === 'cpu' && before < 3)) { call._pen = Math.min(last, before + 1); calm = 0; }
         else if (good && before > 0) { if (++calm >= 4) { call._pen = before - 1; calm = 0; } }
         else calm = 0;
@@ -4092,10 +4091,11 @@
       if (vcOn) return vcEnd();
       if (!isRoomConnected) return showToast('Gabung room dulu di tab Bareng');
       if (vcRemoteCount() >= VC_MAX_USERS) return showToast('Video call sudah penuh (6/6 peserta)');
-      // 720p@30 = HD yang lancar. (1080p/60fps membuat HP kewalahan dan jaringan tersedak; "min" membuat kamera sering ditolak)
-      const AUD = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, sampleRate: 48000, channelCount: 1 };
+      // Full HD 1080p@30 diminta lebih dulu; kalau kamera/perangkat tidak mampu otomatis turun ke 720p lalu 540p. Pengiriman ikut turun otomatis bila jaringan tidak kuat.
+      const AUD = { echoCancellation: true, noiseSuppression: true, autoGainControl: true, sampleRate: 48000, sampleSize: 16, channelCount: 1 };
       const duoCall = vcRemoteCount() <= 1; // berdua: minta kamera sampai 1080p, tanpa batas bitrate rendah
       const VIDS = [
+        { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 30 } },
         { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } },
         { facingMode: 'user', width: { ideal: 960 }, height: { ideal: 540 }, frameRate: { ideal: 30, max: 30 } },
         { facingMode: 'user' }
