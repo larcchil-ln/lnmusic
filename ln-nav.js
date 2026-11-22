@@ -86,6 +86,55 @@
     toast(v.dataset.fit === 'fit' ? 'Tampilan utuh' : 'Tampilan penuh');
   });
 
+
+  // ---- Video call mini: tampil di atas pemutar layar penuh, bisa digeser, posisinya diingat ----
+  var miniStyle = document.createElement('style');
+  miniStyle.textContent =
+    '#vc.mini{z-index:60!important;touch-action:none;cursor:grab}' +
+    '#vc.mini.ln-drag{right:auto!important;bottom:auto!important;transition:none!important;cursor:grabbing}' +
+    'body.ln-fsopen #vc.mini:not(.ln-drag){bottom:24px!important}';
+  document.head.appendChild(miniStyle);
+
+  var vcEl = $('vc'), fsEl = $('fullscreen-player');
+  function fsSync() { document.body.classList.toggle('ln-fsopen', !!fsEl && !fsEl.classList.contains('translate-y-full')); }
+  if (fsEl) { new MutationObserver(fsSync).observe(fsEl, { attributes: true, attributeFilter: ['class'] }); fsSync(); }
+
+  if (vcEl) {
+    var dragOn = false, dragMoved = false, dsx = 0, dsy = 0, dox = 0, doy = 0;
+    var clampXY = function (x, y) {
+      var r = vcEl.getBoundingClientRect();
+      return [Math.min(Math.max(8, x), Math.max(8, innerWidth - r.width - 8)), Math.min(Math.max(8, y), Math.max(8, innerHeight - r.height - 8))];
+    };
+    var putPos = function (x, y) { var p = clampXY(x, y); vcEl.classList.add('ln-drag'); vcEl.style.left = p[0] + 'px'; vcEl.style.top = p[1] + 'px'; };
+    vcEl.addEventListener('pointerdown', function (e) {
+      if (!vcEl.classList.contains('mini') || e.button > 0) return;
+      var r = vcEl.getBoundingClientRect();
+      dsx = e.clientX; dsy = e.clientY; dox = r.left; doy = r.top; dragOn = true; dragMoved = false;
+      try { vcEl.setPointerCapture(e.pointerId); } catch (x) {}
+    });
+    vcEl.addEventListener('pointermove', function (e) {
+      if (!dragOn) return;
+      var dx = e.clientX - dsx, dy = e.clientY - dsy;
+      if (!dragMoved && Math.hypot(dx, dy) < 6) return;
+      dragMoved = true; putPos(dox + dx, doy + dy);
+    });
+    var dragEnd = function () {
+      if (!dragOn) return; dragOn = false;
+      if (dragMoved) { try { sessionStorage.setItem('ln_vc_pos', parseFloat(vcEl.style.left) + '|' + parseFloat(vcEl.style.top)); } catch (x) {} }
+    };
+    vcEl.addEventListener('pointerup', dragEnd); vcEl.addEventListener('pointercancel', dragEnd);
+    vcEl.addEventListener('click', function (e) { if (dragMoved) { e.stopPropagation(); e.preventDefault(); dragMoved = false; } }, true);
+    // keluar dari mode mini -> bersihkan posisi geser; masuk mode mini -> pulihkan posisi tersimpan
+    new MutationObserver(function () {
+      if (!vcEl.classList.contains('mini')) { if (vcEl.classList.contains('ln-drag')) { vcEl.classList.remove('ln-drag'); vcEl.style.left = ''; vcEl.style.top = ''; } return; }
+      if (!vcEl.classList.contains('ln-drag')) {
+        var sv = null; try { sv = sessionStorage.getItem('ln_vc_pos'); } catch (x) {}
+        if (sv) { var a = sv.split('|'); if (isFinite(+a[0]) && isFinite(+a[1])) putPos(+a[0], +a[1]); }
+      }
+    }).observe(vcEl, { attributes: true, attributeFilter: ['class'] });
+    window.addEventListener('resize', function () { if (vcEl.classList.contains('ln-drag')) putPos(parseFloat(vcEl.style.left) || 8, parseFloat(vcEl.style.top) || 8); });
+  }
+
   // ---- Tombol Back: tutup lapisan teratas -> kembali ke Beranda -> baru keluar ----
   var armed = 0;
   function trap() { try { history.pushState({ ln: 1 }, ''); } catch (e) {} }
