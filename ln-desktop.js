@@ -5,7 +5,7 @@
 
   // Tooltip untuk tombol ikon
   // Label menu dipendekkan supaya muat rapi (nama lengkap tetap muncul sebagai tooltip)
-  var short = { online: 'Jelajah', offline: 'Offline', playlists: 'Playlist', together: 'Bareng', game: 'Game', videocall: 'Call' };
+  var short = { online: 'Beranda', offline: 'Offline', playlists: 'Playlist', together: 'Bareng', game: 'Game', videocall: 'Call' };
   bar.querySelectorAll('nav .nav-btn').forEach(function (b) {
     var sp = b.querySelector('span'), m = (b.getAttribute('onclick') || '').match(/switchTab\('(\w+)'\)/);
     b.title = b.textContent.replace(/\s+/g, ' ').trim();
