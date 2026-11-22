@@ -68,6 +68,18 @@
       }
     }
 
+    /* Desktop: area video/cover/lirik lebih besar, mengikuti tinggi layar */
+    @media (min-width: 1024px) {
+      #fs-stage-wrap { max-width: 1900px !important; padding-left: 2rem !important; padding-right: 2rem !important; gap: 1.5rem !important; grid-template-columns: minmax(0, 1fr) 390px !important; }
+      #fs-stage-wrap > * { grid-column: auto !important; }
+      #fs-video-container { width: min(100%, calc((100vh - 210px) * 1.7778)) !important; max-width: none !important; }
+      #fs-cover-container { width: min(36rem, calc(100vh - 260px)) !important; height: min(36rem, calc(100vh - 260px)) !important; }
+      #fs-lyrics-container { max-width: min(100%, 60rem) !important; max-height: calc(100vh - 230px); overflow-y: auto; }
+    }
+    @media (min-width: 1536px) {
+      #fs-stage-wrap { grid-template-columns: minmax(0, 1fr) 430px !important; }
+    }
+
     /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
