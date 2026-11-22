@@ -148,6 +148,18 @@
       #ln-top { padding: 0 16px !important; gap: 12px; }
     }
 
+    /* ===== Video call: tombol perkecil + ukuran lebih besar di desktop ===== */
+    #vc-min-top { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: rgba(12,12,18,.72); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,.14); color: #fff; transition: background .18s, border-color .18s, transform .18s; }
+    #vc-min-top:hover { background: rgba(244,63,94,.28); border-color: rgba(244,63,94,.45); transform: translate(1px,1px); }
+    #vc-min-top svg { width: 16px; height: 16px; }
+    @media (min-width: 768px) {
+      #vc { --sw: clamp(240px, 21vw, 380px); --mw: clamp(320px, 25vw, 440px); }
+      #vc:not(.swapped):not(.mini) #vc-self { width: var(--sw) !important; max-width: none !important; height: calc(var(--sw) * .5625) !important; right: 24px !important; top: 24px !important; border-radius: 16px !important; }
+      #vc.swapped:not(.mini) #vc-grid { width: var(--sw) !important; max-width: none !important; height: calc(var(--sw) * .5625) !important; right: 24px !important; top: 24px !important; }
+      #vc.mini { width: var(--mw) !important; height: calc(var(--mw) * .5625) !important; right: 24px !important; bottom: 108px !important; border-radius: 18px !important; }
+      #ln-top nav .nav-btn { gap: .5rem; }
+    }
+
     /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -1213,6 +1225,7 @@
     <div id="vc-grid" onclick="if(curTab==='videocall'&&!document.getElementById('vc').classList.contains('multi')&&document.getElementById('vc').classList.contains('swapped')){event.stopPropagation();vcSwapView(false);}"></div>
     <video id="vc-self" autoplay playsinline muted onclick="if(curTab==='videocall'&&!document.getElementById('vc').classList.contains('multi')&&!document.getElementById('vc').classList.contains('swapped')){event.stopPropagation();vcSwapView(true);}" title="Ketuk untuk tukar layar"></video>
     <div id="vc-top-hud" onclick="event.stopPropagation()">
+      <button id="vc-min-top" type="button" onclick="vcMin()" title="Perkecil layar (kembali ke halaman)" aria-label="Perkecil layar"><i data-lucide="arrow-down-right"></i></button>
       <span id="vc-live-pill"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> <span id="vc-timer">00:00</span> <span id="vc-q" class="px-1.5 py-0.5 rounded bg-rose-500/30 text-rose-200 text-[9px] font-extrabold tracking-wider">HD 720p</span></span>
       <button id="vc-swap-hint" type="button" onclick="vcSwapView()"><i data-lucide="arrow-left-right" class="w-3.5 h-3.5 text-rose-400"></i> <span id="vc-swap-label">Layar: Partner</span></button>
     </div>

@@ -69,7 +69,7 @@
 
   // ---- Video call: tampilkan seluruh badan (tidak terpotong/zoom) saat rasio video & layar beda jauh ----
   var fitStyle = document.createElement('style');
-  fitStyle.textContent = '.ln-contain{object-fit:contain!important;background:#0b0b10}';
+  fitStyle.textContent = '.ln-contain{object-fit:contain!important;background:transparent}';
   document.head.appendChild(fitStyle);
   function fit() {
     document.querySelectorAll('#vc video, #vc-self').forEach(function (v) {
