@@ -1,10 +1,34 @@
-// /api/trending?region=ID  -> lagu trending dari YouTube Music (chart), tanpa memakai akun YouTube pribadi.
-// Sumber 1: tangga lagu YT Music (FEmusic_charts). Sumber 2 (cadangan): YouTube Data API, chart=mostPopular kategori Musik.
+// /api/trending?region=ID  -> lagu trending per negara.
+// Sumber 1: tangga lagu Apple Music (feed RSS resmi, tanpa kunci, diperbarui terus per negara).
+// Sumber 2: tangga lagu YT Music (FEmusic_charts).
+// Sumber 3 (cadangan): YouTube Data API, chart=mostPopular kategori Musik.
+// Lagu dari Apple belum punya ID YouTube: ditandai lazy:true, dan dicarikan YouTube-nya saat diputar (lihat ln-trending.js).
+
 const walk = (o, out) => {
   if (!o || typeof o !== 'object') return;
   if (o.musicResponsiveListItemRenderer) out.push(o.musicResponsiveListItemRenderer);
   for (const k in o) walk(o[k], out);
 };
+
+async function fromApple(region) {
+  const cc = region.toLowerCase();
+  const r = await fetch(`https://rss.applemarketingtools.com/api/v2/${cc}/music/most-played/50/songs.json`, { headers: { accept: 'application/json' } });
+  if (!r.ok) throw new Error('apple ' + r.status);
+  const d = await r.json();
+  const seen = new Set(), items = [];
+  for (const s of (d.feed && d.feed.results) || []) {
+    if (!s || !s.id || !s.name || seen.has(s.id)) continue;
+    seen.add(s.id);
+    items.push({
+      id: 'am:' + s.id, appleId: String(s.id), lazy: true,
+      title: s.name, artist: s.artistName || 'Apple Music',
+      thumb: String(s.artworkUrl100 || '').replace(/\/\d+x\d+(bb)?\.(jpg|png)$/i, '/400x400bb.$2'),
+      type: 'youtube', isVideo: false
+    });
+  }
+  if (!items.length) throw new Error('apple kosong');
+  return items;
+}
 
 function parseYTM(json) {
   const rs = []; walk(json, rs);
@@ -59,7 +83,7 @@ module.exports = async function handler(req, res) {
   const q = String((req.query && req.query.region) || 'ID').toUpperCase();
   const region = /^[A-Z]{2}$/.test(q) ? q : 'ID';
   res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
-  for (const [source, fn] of [['ytmusic', fromYTMusic], ['youtube-music-category', fromDataApi]]) {
+  for (const [source, fn] of [['apple-music', fromApple], ['ytmusic', fromYTMusic], ['youtube-music-category', fromDataApi]]) {
     try { return res.status(200).json({ source, region, items: await fn(region) }); } catch (e) {}
   }
   res.status(502).json({ items: [] });
