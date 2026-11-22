@@ -224,6 +224,36 @@
       .tg-link-row { flex: 1; }
     }
 
+    /* ===== Tab Bareng: perbaikan tampilan HP ===== */
+    @media (max-width: 1023px) {
+      /* hilangkan kartu pembungkus (kartu di dalam kartu bikin sempit) */
+      #tab-together > .glass { padding: 0 !important; background: transparent !important; border: 0 !important; box-shadow: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; border-radius: 0 !important; }
+      #tab-together h3 { font-size: 1.3rem; }
+      #tab-together h3 + p { font-size: .8rem; }
+      #tab-together .tg-card { padding: 1rem; border-radius: 1.5rem; }
+      #active-room-code { font-size: 1.4rem !important; }
+      #room-active-area > div:first-child { padding: 1rem; border-radius: 1.4rem; }
+      #room-active-area > div:first-child > div:last-child { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; width: 100%; }
+      #room-active-area > div:first-child > div:last-child > :first-child { grid-column: 1 / -1; }
+      #room-active-area > div:first-child button { font-size: .8rem; padding: .65rem .5rem; justify-content: center; }
+      .tg-voice-head { margin-bottom: 1rem; }
+      .tg-title { font-size: 1.2rem; }
+      .tg-sub { font-size: .8rem; }
+      .tg-seats { gap: 1.1rem; }
+      .tg-mic-btn { width: 100%; padding: .95rem 1rem; }
+      .tg-chat { padding: .8rem; border-radius: 1.2rem; min-height: 20rem; max-height: 26rem; }
+      /* kolom ketik di baris sendiri supaya tidak terjepit tombol */
+      .tg-chat form { flex-wrap: wrap; row-gap: .5rem; }
+      .tg-chat form #room-chat-input { order: -1; flex: 1 0 100%; }
+      .tg-chat form button[type="submit"] { margin-left: auto; }
+      .tg-section-title { font-size: 1.1rem; margin-top: .75rem; }
+      #room-search-main > div { padding: .85rem; border-radius: 1.5rem; }
+      #room-search-main img { width: 2.8rem; height: 2.8rem; }
+      .tg-link-title { font-size: 1rem; }
+      .tg-link-row { flex-direction: column; }
+      .tg-link-row button { width: 100%; }
+    }
+
     /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
