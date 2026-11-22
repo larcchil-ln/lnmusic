@@ -462,6 +462,34 @@
     .yt-rail.cards .yt-row b{font-size:15px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
     .yt-rail.cards .yt-row small{font-size:13.5px}
   }
+    .ln-qd{position:fixed;inset:0;z-index:95;pointer-events:none}
+  .ln-qd-ov{position:absolute;inset:0;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);opacity:0;transition:opacity .3s}
+  .ln-qd-panel{position:absolute;top:0;right:0;bottom:0;width:min(460px,100vw);display:flex;flex-direction:column;background:rgba(14,14,18,.97);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);border-left:1px solid rgba(255,255,255,.09);box-shadow:-24px 0 60px -20px rgba(0,0,0,.85);transform:translateX(100%);transition:transform .38s cubic-bezier(.22,1,.36,1);padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+  .ln-qd.open{pointer-events:auto}.ln-qd.open .ln-qd-ov{opacity:1}.ln-qd.open .ln-qd-panel{transform:none}
+  .ln-qd-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:22px 20px 12px}
+  .ln-qd-head h2{font-size:1.75rem;font-weight:800;letter-spacing:-.02em;color:#fff;line-height:1.1}
+  .ln-qd-head p{font-size:14px;color:#a1a1aa;margin-top:4px;font-weight:500}
+  .ln-qd-x{width:42px;height:42px;border-radius:999px;background:rgba(255,255,255,.08);color:#fff;display:grid;place-items:center;flex:none}
+  .ln-qd-x:hover{background:rgba(255,255,255,.16)}
+  #ln-qd-body{flex:1;overflow-y:auto;padding:0 12px 28px;overscroll-behavior:contain}
+  .ln-qh{font-size:12.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#a1a1aa;padding:16px 8px 6px}
+  .ln-qr{display:flex;align-items:center;gap:12px;padding:8px;border-radius:12px;cursor:pointer;transition:background .15s}
+  .ln-qr:hover{background:rgba(255,255,255,.08)}
+  .ln-qr.cur{background:linear-gradient(135deg,rgba(244,63,94,.22),rgba(139,92,246,.2));box-shadow:inset 0 0 0 1px rgba(244,63,94,.35)}
+  .ln-qr img{width:52px;height:52px;border-radius:8px;object-fit:cover;background:#18181b;flex:none}
+  .ln-qm{min-width:0;flex:1}
+  .ln-qm b,.ln-qm small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ln-qm b{font-size:16px;font-weight:700;color:#fff;line-height:1.35}
+  .ln-qm small{font-size:14px;color:#a1a1aa;font-weight:500}
+  .ln-qr.cur .ln-qm b{color:#fda4af}
+  .ln-qx{width:36px;height:36px;border-radius:999px;color:#a1a1aa;display:grid;place-items:center;flex:none}
+  .ln-qx:hover{background:rgba(255,255,255,.12);color:#fff}
+  .ln-eq{display:inline-flex;align-items:flex-end;gap:2px;height:16px;flex:none}
+  .ln-eq u{display:block;width:3px;background:#fb7185;border-radius:2px;animation:lnEq 1s ease-in-out infinite}
+  .ln-eq u:nth-child(2){animation-delay:.2s}.ln-eq u:nth-child(3){animation-delay:.4s}
+  @keyframes lnEq{0%,100%{height:4px}50%{height:16px}}
+  .ln-qe{padding:40px 16px;text-align:center;color:#a1a1aa;font-size:15px;line-height:1.5}
+  @media (max-width:767px){.ln-qd-panel{width:100vw;border-left:0}}
   </style>
 
 </head>
@@ -1157,6 +1185,7 @@
 
       <!-- Fullscreen & Volume -->
       <div class="flex items-center justify-end gap-2.5 md:w-1/3">
+        <button onclick="lnQueueToggle()" id="btn-queue" class="relative w-10 h-10 rounded-xl bg-white/10 hover:bg-rose-500/20 text-white flex items-center justify-center transition active:scale-95" title="Antrean" aria-label="Antrean"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6.5h12M4 11.5h8M4 16.5h6"/><path d="M15.5 14.2v6.2l5-3.1z" fill="currentColor"/></svg><span id="ln-qd-badge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-[10px] font-extrabold leading-[18px] text-white text-center"></span></button>
         <button onclick="openFullscreenPlayer()" class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-rose-500/20 text-xs font-semibold text-white flex items-center gap-1.5 transition" title="Tampilan Penuh">
           <i data-lucide="maximize-2" class="w-3.5 h-3.5 text-rose-400"></i> <span class="hidden sm:inline">Full Player</span>
         </button>
@@ -1171,6 +1200,15 @@
   <!-- ===================================================================== -->
   <!-- MOBILE BOTTOM NAVIGATION                                              -->
   <!-- ===================================================================== -->
+  <!-- Drawer Antrean (geser dari kanan) -->
+  <div id="ln-qd" class="ln-qd" aria-hidden="true">
+    <div class="ln-qd-ov" onclick="lnQueueClose()"></div>
+    <aside class="ln-qd-panel" role="dialog" aria-label="Antrean">
+      <header class="ln-qd-head"><div><h2>Antrean</h2><p id="ln-qd-sub">Belum ada lagu</p></div><button onclick="lnQueueClose()" aria-label="Tutup" class="ln-qd-x"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></header>
+      <div id="ln-qd-body"></div>
+    </aside>
+  </div>
+
   <nav id="ln-mnav" class="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-white/10 grid grid-cols-5 py-2 z-40" style="padding-bottom:max(8px,env(safe-area-inset-bottom))">
         <button onclick="switchTab('online')" id="mob-nav-online" class="mnav flex flex-col items-center gap-1 text-rose-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 3.8l8.5 7.2"/><path d="M5.5 9.7V20h13V9.7"/><path d="M10 20v-5.5h4V20"/></svg><span>Beranda</span></button>
         <button onclick="switchTab('together')" id="mob-nav-together" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.2" r="3.2"/><path d="M3.3 19.5c.6-3.3 2.9-5.2 5.7-5.2s5.1 1.9 5.7 5.2"/><circle cx="17.2" cy="9" r="2.4"/><path d="M16.6 14.4c2.3.2 3.8 1.7 4.2 4.4"/></svg><span>Bareng</span></button>
@@ -1365,13 +1403,13 @@
     let onlineTracks = [...starterTracks];
     let offlineTracks = [];
     let playlists = [
-      { id: 'pl-nana-1', name: 'Favorit', tracks: [starterTracks[0], starterTracks[1]] }
+      { id: 'pl-nana-1', name: 'Favorit', tracks: [] }
     ];
     let selectedPlaylistId = playlists[0]?.id || null;
     let trackToAdd = null;
     let searchMode = 'music';
 
-    let queue = [...starterTracks];
+    let queue = [];
     let currentIndex = -1;
     let currentTrack = null;
     let isPlaying = false;
@@ -4813,6 +4851,59 @@
       try { localStorage.setItem('lnmusic_romantic', JSON.stringify({ t: Date.now(), d: out.slice(0, 15) })); } catch (e) {}
     }
 
+    // ===== Drawer Antrean =====
+    function lnQueueOpen() { const d = document.getElementById('ln-qd'); if (!d) return; lnRenderQD(); d.classList.add('open'); d.setAttribute('aria-hidden', 'false'); document.documentElement.style.overflow = 'hidden'; }
+    function lnQueueClose() { const d = document.getElementById('ln-qd'); if (!d) return; d.classList.remove('open'); d.setAttribute('aria-hidden', 'true'); document.documentElement.style.overflow = ''; }
+    function lnQueueToggle() { const d = document.getElementById('ln-qd'); d && d.classList.contains('open') ? lnQueueClose() : lnQueueOpen(); }
+    function lnRenderQD() {
+      const body = document.getElementById('ln-qd-body'); if (!body) return;
+      let rq = []; try { rq = roomQueue || []; } catch (e) {}
+      const cur = currentTrack, ci = cur ? queue.findIndex(x => x.id === cur.id) : -1;
+      const after = ci >= 0 ? queue.slice(ci + 1) : queue.filter(x => !cur || x.id !== cur.id);
+      const base = ci >= 0 ? ci + 1 : 0;
+      const xi = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+      const row = (t, click, isCur, rm) => `<div class="ln-qr ${isCur ? 'cur' : ''}" onclick="${click}"><img src="${esc(t.thumb || DEFAULT_LOGO)}" loading="lazy" alt="" /><div class="ln-qm"><b>${esc(t.title)}</b><small>${esc(t.artist)}</small></div>${isCur && isPlaying ? '<i class="ln-eq"><u></u><u></u><u></u></i>' : ''}${rm ? `<button class="ln-qx" onclick="event.stopPropagation();queueRemove('${esc(rm)}')" aria-label="Hapus dari antrean">${xi}</button>` : ''}</div>`;
+      let h = '';
+      if (cur) h += '<p class="ln-qh">Sedang diputar</p>' + row(cur, 'lnQueueClose();openFullscreenPlayer()', true);
+      if (rq.length) h += '<p class="ln-qh">Antrean pilihan kita</p>' + rq.map(t => row(t, `rsQueuePlay('${esc(t.qid)}')`, false, t.qid)).join('');
+      if (after.length) h += `<p class="ln-qh">${lnQLabel === 'Antrean' ? 'Berikutnya' : lnQLabel}</p>` + after.map((t, i) => row(t, `playTrackFromList(queue, ${base + i}, false)`, false)).join('');
+      body.innerHTML = h || '<div class="ln-qe">Antrean masih kosong.<br>Putar satu lagu, rekomendasinya muncul di sini, atau tekan "+ Antre" pada lagu pilihanmu.</div>';
+      const n = rq.length + after.length;
+      const sub = document.getElementById('ln-qd-sub'); if (sub) sub.textContent = n ? n + ' lagu berikutnya' : 'Belum ada lagu berikutnya';
+      const bd = document.getElementById('ln-qd-badge'); if (bd) { bd.textContent = rq.length > 99 ? '99+' : rq.length; bd.classList.toggle('hidden', !rq.length); }
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') lnQueueClose(); });
+    (function () {
+      const p = document.querySelector('.ln-qd-panel'); if (!p) return; let x0 = null, y0 = 0;
+      p.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+      p.addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0, dy = Math.abs(e.changedTouches[0].clientY - y0); x0 = null; if (dx > 80 && dy < 60) lnQueueClose(); }, { passive: true });
+    })();
+    // ===== Antrean: pilihan kita (+ Antre) lebih dulu, lalu rekomendasi otomatis dari lagu yang diputar =====
+    function lnEnsureQueue(t) {
+      if (!t || !t.id) return;
+      if (queue.length > 1 && queue.some(x => x.id === t.id)) { renderFullscreenQueue(); return; }
+      queue = [t]; currentIndex = 0; lnQLabel = 'Rekomendasi untuk kamu'; renderFullscreenQueue();
+      if ((t.type && t.type !== 'youtube') || t.isVideo || !t.artist) return;
+      lnFetchRecs(t);
+    }
+    async function lnFetchRecs(t) {
+      let items = [];
+      try { items = await fetchSearchResults(String(t.artist).replace(/ - Topic$/, '') + ' lagu terbaik', 'music', false, 20); } catch (e) {}
+      if (!(queue.length === 1 && queue[0].id === t.id)) return; // pengguna sudah pindah / memilih daftar lain
+      const seen = new Set([t.id]);
+      const recs = (items || []).filter(x => x && x.id && !seen.has(x.id) && seen.add(x.id)).slice(0, 15);
+      if (!recs.length) return;
+      queue = [t, ...recs]; currentIndex = 0; renderFullscreenQueue();
+    }
+    (function () {
+      const _ptl = playTrackFromList;
+      playTrackFromList = function () { lnQLabel = 'Antrean'; return _ptl.apply(this, arguments); };
+      const _pt = playTrack;
+      playTrack = function (track) { const r = _pt.apply(this, arguments); try { lnEnsureQueue(track); } catch (e) {} return r; };
+      const _rrs = renderRoomSearch;
+      renderRoomSearch = function () { const r = _rrs.apply(this, arguments); try { renderFullscreenQueue(); } catch (e) {} return r; };
+    })();
+    renderFullscreenQueue();
     loadShelves(); loadTop50(); loadRomantic(); updateVoiceUI(); renderSeats();
 
     // =========================================================================
@@ -4991,20 +5082,17 @@
       lucide.createIcons();
     }
 
+    let lnQLabel = 'Antrean';
     function renderFullscreenQueue() {
-      const qList = document.getElementById('fs-queue-list');
-      qList.innerHTML = queue.map((t, idx) => {
-        const isCur = currentTrack?.id === t.id;
-        return `
-          <div onclick="playTrackFromList(queue, ${idx}, false)" class="flex items-center gap-2.5 p-2 rounded-xl cursor-pointer transition ${isCur ? 'bg-rose-500/20 border border-rose-500/30' : 'hover:bg-white/10'}">
-            <img src="${esc(t.thumb || DEFAULT_LOGO)}" class="w-8 h-8 rounded-lg object-cover shrink-0" />
-            <div class="min-w-0 flex-1">
-              <p class="text-xs font-bold truncate ${isCur ? 'text-rose-300' : 'text-white'}">${esc(t.title)}</p>
-              <p class="text-[10px] text-zinc-400 truncate">${esc(t.artist)}</p>
-            </div>
-          </div>
-        `;
-      }).join('');
+      try { lnRenderQD(); } catch (e) {}
+      const qList = document.getElementById('fs-queue-list'); if (!qList) return;
+      const hd = t => `<p class="text-xs font-extrabold uppercase tracking-wider text-zinc-400 px-1 pt-2 pb-0.5">${t}</p>`;
+      const row = (t, click, cur) => `<div onclick="${click}" class="flex items-center gap-3 p-2 rounded-xl cursor-pointer transition ${cur ? 'bg-rose-500/20 border border-rose-500/30' : 'hover:bg-white/10'}"><img src="${esc(t.thumb || DEFAULT_LOGO)}" class="w-11 h-11 rounded-lg object-cover shrink-0" /><div class="min-w-0 flex-1"><p class="text-sm font-bold truncate ${cur ? 'text-rose-300' : 'text-white'}">${esc(t.title)}</p><p class="text-xs text-zinc-400 truncate">${esc(t.artist)}</p></div></div>`;
+      let rq = []; try { rq = roomQueue || []; } catch (e) {}
+      let h = '';
+      if (rq.length) h += hd('Antrean pilihan kita') + rq.map(t => row(t, `rsQueuePlay('${esc(t.qid)}')`, false)).join('');
+      if (queue.length) h += hd(lnQLabel) + queue.map((t, i) => row(t, `playTrackFromList(queue, ${i}, false)`, currentTrack?.id === t.id)).join('');
+      qList.innerHTML = h || '<p class="text-sm text-zinc-500 p-2">Belum ada lagu. Putar satu lagu, rekomendasinya muncul di sini.</p>';
     }
 
     // =========================================================================

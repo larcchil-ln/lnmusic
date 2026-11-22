@@ -144,6 +144,7 @@
   function trap() { try { history.pushState({ ln: 1 }, ''); } catch (e) {} }
   function toast(m) { try { showToast(m); } catch (e) {} }
   function closeTop() {
+    if ($('ln-qd') && $('ln-qd').classList.contains('open')) { try { lnQueueClose(); } catch (e) { $('ln-qd').classList.remove('open'); } return true; }
     if (document.fullscreenElement || document.webkitFullscreenElement) { try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) {} return true; }
     if (!hidden('photo-viewer-modal')) { try { closePhotoViewer(); } catch (e) { $('photo-viewer-modal').classList.add('hidden'); } return true; }
     if ($('ln-paste-preview')) { $('ln-paste-preview').remove(); return true; }
