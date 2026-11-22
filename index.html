@@ -1234,6 +1234,14 @@
               <span class="text-[11px] font-semibold text-zinc-400">Obrolan Room</span>
               <button type="button" onclick="clearRoomChat()" title="Bersihkan Chat" class="ln-clean-btn"><i data-lucide="eraser" class="w-3.5 h-3.5"></i><span>Clean</span></button>
             </div>
+            <div class="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+              <button type="button" onclick="sendReaction('❤️')" class="ln-rx-chip">❤️</button>
+              <button type="button" onclick="sendReaction('🔥')" class="ln-rx-chip">🔥</button>
+              <button type="button" onclick="sendReaction('😂')" class="ln-rx-chip">😂</button>
+              <button type="button" onclick="sendReaction('🥺')" class="ln-rx-chip">🥺</button>
+              <button type="button" onclick="sendReaction('🍿')" class="ln-rx-chip">🍿</button>
+              <button type="button" data-rxbtn onclick="rxPanel()" title="Reaksi lucu & stiker gerak" class="ml-auto shrink-0 h-8 px-3 rounded-full bg-rose-500/20 border border-rose-400/30 text-[11px] font-bold text-rose-200 active:scale-95 transition whitespace-nowrap">😆 Lucu</button>
+            </div>
             <div id="fs-chat-messages" class="h-40 overflow-y-auto space-y-2 pr-1 text-xs"></div>
             <div id="fs-chat-rec-bar" class="hidden items-center justify-between px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-[11px] text-rose-200">
               <span class="inline-flex items-center gap-2 font-semibold"><span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> Merekam... <span id="fs-chat-rec-sec">0:00</span></span>
