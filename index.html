@@ -497,12 +497,6 @@
         <button onclick="switchTab('online')" id="nav-online" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/20 transition">
           <span class="flex items-center gap-3">Beranda</span>
         </button>
-        <button onclick="switchTab('offline')" id="nav-offline" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition">
-          <span class="flex items-center gap-3">Offline</span>
-        </button>
-        <button onclick="switchTab('playlists')" id="nav-playlists" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition">
-          <span class="flex items-center gap-3"><i data-lucide="list-music" class="w-4 h-4"></i> Playlist</span>
-        </button>
         <button onclick="switchTab('together')" id="nav-together" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition">
           <span class="flex items-center gap-3">Bareng</span>
           <span id="sidebar-room-dot" class="hidden w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
@@ -511,8 +505,11 @@
           <span class="flex items-center gap-3"><i data-lucide="video" class="w-4 h-4 text-violet-400"></i> Video Call</span>
           <span id="vc-nav-dot" class="hidden w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
         </button>
-        <button onclick="switchTab('game')" id="nav-game" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition">
-          <span class="flex items-center gap-3"><i data-lucide="gamepad-2" class="w-4 h-4 text-violet-400"></i> Game</span>
+        <button onclick="switchTab('playlists')" id="nav-playlists" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition">
+          <span class="flex items-center gap-3"><i data-lucide="list-music" class="w-4 h-4"></i> Playlist</span>
+        </button>
+        <button onclick="switchTab('offline')" id="nav-offline" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition">
+          <span class="flex items-center gap-3">Offline</span>
         </button>
       </nav>
 
@@ -1174,14 +1171,13 @@
   <!-- ===================================================================== -->
   <!-- MOBILE BOTTOM NAVIGATION                                              -->
   <!-- ===================================================================== -->
-  <nav id="ln-mnav" class="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-white/10 grid grid-cols-6 py-2 z-40" style="padding-bottom:max(8px,env(safe-area-inset-bottom))">
-    <button onclick="switchTab('online')" id="mob-nav-online" class="mnav flex flex-col items-center gap-1 text-rose-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 3.8l8.5 7.2"/><path d="M5.5 9.7V20h13V9.7"/><path d="M10 20v-5.5h4V20"/></svg><span>Beranda</span></button>
-    <button onclick="switchTab('offline')" id="mob-nav-offline" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4.5 20h15"/></svg><span>Offline</span></button>
-    <button onclick="switchTab('playlists')" id="mob-nav-playlists" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h11M4 11.5h11M4 16.5h6"/><circle cx="17.5" cy="17" r="2.6"/><path d="M20.1 17V7.8l-3-1"/></svg><span>Playlist</span></button>
-    <button onclick="switchTab('together')" id="mob-nav-together" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.2" r="3.2"/><path d="M3.3 19.5c.6-3.3 2.9-5.2 5.7-5.2s5.1 1.9 5.7 5.2"/><circle cx="17.2" cy="9" r="2.4"/><path d="M16.6 14.4c2.3.2 3.8 1.7 4.2 4.4"/></svg><span>Bareng</span></button>
-    <button onclick="switchTab('videocall')" id="mob-nav-videocall" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6.5" width="12" height="11" rx="3.2"/><path d="m15 10.6 5.5-3.1v9L15 13.4"/></svg><span>Call</span></button>
-    <button onclick="switchTab('game')" id="mob-nav-game" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7.5" width="19" height="10" rx="5"/><path d="M8 10.6v3.8M6.1 12.5h3.8"/><circle cx="15.6" cy="11.8" r=".9" fill="currentColor"/><circle cx="18" cy="13.8" r=".9" fill="currentColor"/></svg><span>Game</span></button>
-  </nav>
+  <nav id="ln-mnav" class="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-white/10 grid grid-cols-5 py-2 z-40" style="padding-bottom:max(8px,env(safe-area-inset-bottom))">
+        <button onclick="switchTab('online')" id="mob-nav-online" class="mnav flex flex-col items-center gap-1 text-rose-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 3.8l8.5 7.2"/><path d="M5.5 9.7V20h13V9.7"/><path d="M10 20v-5.5h4V20"/></svg><span>Beranda</span></button>
+        <button onclick="switchTab('together')" id="mob-nav-together" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.2" r="3.2"/><path d="M3.3 19.5c.6-3.3 2.9-5.2 5.7-5.2s5.1 1.9 5.7 5.2"/><circle cx="17.2" cy="9" r="2.4"/><path d="M16.6 14.4c2.3.2 3.8 1.7 4.2 4.4"/></svg><span>Bareng</span></button>
+        <button onclick="switchTab('videocall')" id="mob-nav-videocall" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6.5" width="12" height="11" rx="3.2"/><path d="m15 10.6 5.5-3.1v9L15 13.4"/></svg><span>Call</span></button>
+        <button onclick="switchTab('playlists')" id="mob-nav-playlists" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h11M4 11.5h11M4 16.5h6"/><circle cx="17.5" cy="17" r="2.6"/><path d="M20.1 17V7.8l-3-1"/></svg><span>Playlist</span></button>
+        <button onclick="switchTab('offline')" id="mob-nav-offline" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4.5 20h15"/></svg><span>Offline</span></button>
+      </nav>
 
   <!-- ===================================================================== -->
   <!-- MODALS & SPLASH                                               -->
