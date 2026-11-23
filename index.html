@@ -148,21 +148,10 @@
       #ln-top { padding: 0 16px !important; gap: 12px; }
     }
 
-    /* ===== Video call: tombol perkecil + responsif HP & desktop ===== */
-    #vc-min-top { height: 36px; padding: 0 12px; border-radius: 999px; display: inline-flex; align-items: center; gap: 5px; background: rgba(12,12,18,.78); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,.18); color: #fff; font-size: 11px; font-weight: 700; transition: background .18s, border-color .18s, transform .18s; cursor: pointer; touch-action: manipulation; }
-    #vc-min-top:hover, #vc-min-top:active { background: rgba(244,63,94,.32); border-color: rgba(244,63,94,.55); transform: scale(.96); }
-    #vc-min-top svg { width: 15px; height: 15px; flex-shrink: 0; }
-    #vc-mini-expand { display: none; }
-    #vc.mini { cursor: pointer; touch-action: manipulation; }
-    #vc.mini #vc-grid, #vc.mini #vc-self { pointer-events: none !important; }
-    #vc.mini #vc-mini-expand { display: inline-flex; align-items: center; gap: 4px; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 6; padding: 4px 10px; border-radius: 999px; background: rgba(244,63,94,.88); border: 1px solid rgba(255,255,255,.3); color: #fff; font-size: 10px; font-weight: 800; pointer-events: auto; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,.6); }
-    @media (max-width: 767px) {
-      #vc-top-hud { top: max(20px, calc(env(safe-area-inset-top) + 10px)) !important; left: 12px !important; max-width: calc(100% - 124px) !important; gap: 6px !important; }
-      #vc:not(.swapped):not(.mini) #vc-self, #vc.swapped:not(.mini) #vc-grid { top: max(20px, calc(env(safe-area-inset-top) + 10px)) !important; right: 12px !important; width: 96px !important; height: 132px !important; }
-      .vc-dock { gap: 4px !important; padding: 6px 8px !important; }
-      .vc-dock button { width: 36px !important; height: 36px !important; }
-      .vc-dock button svg { width: 17px; height: 17px; }
-    }
+    /* ===== Video call: tombol perkecil + ukuran lebih besar di desktop ===== */
+    #vc-min-top { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: rgba(12,12,18,.72); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,.14); color: #fff; transition: background .18s, border-color .18s, transform .18s; }
+    #vc-min-top:hover { background: rgba(244,63,94,.28); border-color: rgba(244,63,94,.45); transform: translate(1px,1px); }
+    #vc-min-top svg { width: 16px; height: 16px; }
     @media (min-width: 768px) {
       #vc { --sw: clamp(240px, 21vw, 380px); --mw: clamp(320px, 25vw, 440px); }
       #vc:not(.swapped):not(.mini) #vc-self { width: var(--sw) !important; max-width: none !important; height: calc(var(--sw) * .5625) !important; right: 24px !important; top: 24px !important; border-radius: 16px !important; }
@@ -1472,12 +1461,11 @@
     <p id="splash-hint" class="text-[11px] text-zinc-500 max-w-xs"></p>
   </div>
 
-  <div id="vc" class="hidden mini" onclick="if(vcMinimized||curTab!=='videocall')vcExpand()">
-    <div id="vc-grid" onclick="if(!vcMinimized&&curTab==='videocall'&&!document.getElementById('vc').classList.contains('multi')&&document.getElementById('vc').classList.contains('swapped')){event.stopPropagation();vcSwapView(false);}"></div>
-    <video id="vc-self" autoplay playsinline muted onclick="if(!vcMinimized&&curTab==='videocall'&&!document.getElementById('vc').classList.contains('multi')&&!document.getElementById('vc').classList.contains('swapped')){event.stopPropagation();vcSwapView(true);}" title="Ketuk untuk tukar layar"></video>
-    <span id="vc-mini-expand"><i data-lucide="maximize-2" class="w-3 h-3 text-rose-400"></i> Perbesar</span>
+  <div id="vc" class="hidden mini" onclick="if(curTab!=='videocall')switchTab('videocall')">
+    <div id="vc-grid" onclick="if(curTab==='videocall'&&!document.getElementById('vc').classList.contains('multi')&&document.getElementById('vc').classList.contains('swapped')){event.stopPropagation();vcSwapView(false);}"></div>
+    <video id="vc-self" autoplay playsinline muted onclick="if(curTab==='videocall'&&!document.getElementById('vc').classList.contains('multi')&&!document.getElementById('vc').classList.contains('swapped')){event.stopPropagation();vcSwapView(true);}" title="Ketuk untuk tukar layar"></video>
     <div id="vc-top-hud" onclick="event.stopPropagation()">
-      <button id="vc-min-top" type="button" onclick="event.stopPropagation();vcMin()" title="Perkecil layar (PiP)" aria-label="Perkecil layar"><i data-lucide="chevron-down"></i><span>Perkecil</span></button>
+      <button id="vc-min-top" type="button" onclick="vcMin()" title="Perkecil layar (kembali ke halaman)" aria-label="Perkecil layar"><i data-lucide="arrow-down-right"></i></button>
       <span id="vc-live-pill"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> <span id="vc-timer">00:00</span> <span id="vc-q" class="px-1.5 py-0.5 rounded bg-rose-500/30 text-rose-200 text-[9px] font-extrabold tracking-wider">HD 720p</span></span>
       <button id="vc-swap-hint" type="button" onclick="vcSwapView()"><i data-lucide="arrow-left-right" class="w-3.5 h-3.5 text-rose-400"></i> <span id="vc-swap-label">Layar: Partner</span></button>
     </div>
@@ -1529,7 +1517,7 @@
         <button onclick="vcSwitchCam()" title="Putar Kamera"><i data-lucide="switch-camera"></i></button>
         <button onclick="vcEmoteT()" id="vc-b-emote" title="Reaksi Emote"><i data-lucide="smile"></i></button>
         <button onclick="vcFxT()" id="vc-b-fx" title="Efek & Latar"><i data-lucide="sparkles"></i></button>
-        <button type="button" onclick="event.stopPropagation();vcMin()" title="Perkecil Layar"><i data-lucide="minimize-2"></i></button>
+        <button onclick="vcMin()" title="Perkecil Layar"><i data-lucide="minimize-2"></i></button>
         <button onclick="vcEnd()" class="red" title="Akhiri Panggilan"><i data-lucide="phone-off"></i></button>
       </div>
     </div>
@@ -2151,7 +2139,7 @@
     ];
     let iceCache = null, iceInfo = { src: 'belum', msg: '' };
     async function fetchTurn() {
-      const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 2500);
+      const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 7000);
       try {
         const r = await fetch('/api/turn', { signal: ctrl.signal, cache: 'no-store' });
         const j = await r.json().catch(() => null);
@@ -2163,19 +2151,14 @@
     async function getIceServers() {
       if (iceCache && Date.now() < iceCache.exp) return iceCache.list;
       let list = BASE_ICE.slice(), ok = false;
-      try {
-        const j = await fetchTurn();
-        list = j.concat(BASE_ICE);
-        ok = true;
-        iceInfo = { src: 'cloudflare', msg: j.length + ' entri' };
-      } catch (e) {
-        iceInfo = { src: 'cadangan', msg: e.message || String(e) };
-        console.warn('Gagal ambil TURN', e);
+      for (let i = 0; i < 2 && !ok; i++) {
+        try { const j = await fetchTurn(); list = j.concat(BASE_ICE); ok = true; iceInfo = { src: 'cloudflare', msg: j.length + ' entri' }; }
+        catch (e) { iceInfo = { src: 'cadangan', msg: e.message || String(e) }; console.warn('Gagal ambil TURN', e); }
       }
-      iceCache = { list, exp: Date.now() + (ok ? 20 * 60e3 : 15e3) };
+      // kegagalan tidak disimpan lama supaya dicoba lagi di sesi berikutnya
+      iceCache = { list, exp: Date.now() + (ok ? 20 * 60e3 : 30e3) };
       return list;
     }
-    setTimeout(() => { getIceServers().catch(() => {}); }, 300);
 
     async function newPeer(id) {
       const opts = { debug: 1, config: { iceServers: await getIceServers(), iceCandidatePoolSize: 4 } };
@@ -2544,55 +2527,17 @@
       profiles = {}; myProfile = { name: '', bio: '', avatar: '' };
       chatLog = []; if (u === 'guest' || u === 'custom') roomQueue = [];
       renderChat();
-
-      isRoomConnected = true;
-      activateRoomUI(currentRoomCode);
-      setRoomPill('Menghubungkan ke room...', false);
+      await dbHydrate();
+      if (session !== u) return; // sudah logout selama memuat
+      clearInterval(stateTimer); stateTimer = setInterval(saveRoomState, 4000);
       startSession();
-
-      dbHydrate().then(() => {
-        if (session !== u) return;
-        if (myProfile.name && peer && peer.id && members[peer.id]) {
-          members[peer.id].name = myDisplayName;
-          if (canManageRoom()) broadcastMembers();
-        }
-        clearInterval(stateTimer);
-        stateTimer = setInterval(saveRoomState, 4000);
-      }).catch(() => {});
     }
 
-    const isMyRoleAdmin = () => !!(peer && members[peer.id] && members[peer.id].role === 'admin');
-    const canManageRoom = () => isHost || isMyRoleAdmin() || (session === 'nana' && !connections.some(c => c.open && c.peer === USERS.nuki.peerId));
+    const canManageRoom = () => isHost || (session === 'nana' && !connections.some(c => c.open && c.peer === USERS.nuki.peerId));
 
-    // ===== Izin "play bareng" & Role Admin untuk tamu =====
-    // Admin (Host / Nuki / Nana / Tamu yang diangkat Admin) selalu boleh. Tamu biasa hanya boleh setelah Admin memberi izin (members[id].ctl).
-    function isGuestSession() {
-      if (isMyRoleAdmin()) return false;
-      return session === 'guest' || (session === 'custom' && !isHost);
-    }
-
-    function toggleAdminRole(id) {
-      if (!canManageRoom()) return showToast('Hanya Admin yang bisa mengubah status admin');
-      if (!id || id === peer?.id || isAdminPeer(id)) return;
-      const m = members[id];
-      if (!m) return;
-      const makeAdmin = m.role !== 'admin';
-      m.role = makeAdmin ? 'admin' : 'guest';
-      if (makeAdmin) m.ctl = true;
-      if (isHost) {
-        broadcastMembers();
-      } else {
-        connections.forEach(c => c.open && c.send({ type: 'SET_ROLE', targetId: id, role: m.role, by: myDisplayName }));
-        renderSeats();
-      }
-      const txt = makeAdmin
-        ? `👑 ${m.name} dijadikan Admin oleh ${myDisplayName}.`
-        : `👤 Status Admin ${m.name} dicabut oleh ${myDisplayName}.`;
-      connections.forEach(c => c.open && c.send({ type: 'NOTICE', text: txt }));
-      appendSystemChat(txt);
-      showToast(makeAdmin ? `${m.name} sekarang menjadi Admin` : `Status Admin ${m.name} dicabut`);
-      if (!document.getElementById('profile-modal').classList.contains('hidden')) renderProfileModal();
-    }
+    // ===== Izin "play bareng" untuk tamu =====
+    // Admin (Host / Nuki / Nana) selalu boleh. Tamu hanya boleh setelah Admin memberi izin (members[id].ctl).
+    function isGuestSession() { return session === 'guest' || (session === 'custom' && !isHost); }
     function myPlayPerm() { return !!(peer && members[peer.id] && members[peer.id].ctl); }
     function canPlayControl() { return !isRoomConnected || !isGuestSession() || myPlayPerm() || !partnerOnline(); }
     function guardPlayCtl() {
@@ -2688,7 +2633,7 @@
         if (peer !== p || p.destroyed || !session) return clearInterval(connectLoopTimer);
         if (partnerOnline()) return;
         if (p.disconnected) { try { p.reconnect(); } catch (e) {} return; }
-        if (pendingConn && !pendingConn.open && Date.now() - pendingAt < 3500) return;
+        if (pendingConn && !pendingConn.open && Date.now() - pendingAt < 6000) return;
         try { pendingConn && pendingConn.close(); } catch (e) {}
         const targetId = targets[idx % targets.length];
         idx++;
@@ -2697,7 +2642,7 @@
         setupPeerConnection(pendingConn);
       };
       tick();
-      connectLoopTimer = setInterval(tick, 1200);
+      connectLoopTimer = setInterval(tick, 3000);
     }
 
     function setupPeerConnection(conn) {
@@ -2735,29 +2680,16 @@
 
     function handleIncomingSyncData(data, senderConn) {
       if (!data || typeof data !== 'object') return;
-      const senderIsAdmin = !!(senderConn && (isAdminPeer(senderConn.peer) || members[senderConn.peer]?.role === 'admin'));
-      const fromGuest = isHost && senderConn && !senderIsAdmin && (session === 'custom' || !isAdminPeer(senderConn.peer));
+      const fromGuest = isHost && senderConn && (session === 'custom' || !isAdminPeer(senderConn.peer));
       if (fromGuest) {
         const ctl = !!(members[senderConn.peer] && members[senderConn.peer].ctl);
-        const blocked = ctl ? /^(STATE|HISTORY|QUEUE_SET|LYR_|KICK|VC_STOP_ALL|SET_ROLE)/ : /^(SYNC_|STATE|HISTORY|QUEUE_SET|QUEUE_DEL|QUEUE_MOVE|LYR_|KICK|VC_STOP_ALL|SET_ROLE)/;
+        const blocked = ctl ? /^(STATE|HISTORY|QUEUE_SET|LYR_|KICK|VC_STOP_ALL)/ : /^(SYNC_|STATE|HISTORY|QUEUE_SET|QUEUE_DEL|QUEUE_MOVE|LYR_|KICK|VC_STOP_ALL)/;
         if (blocked.test(String(data.type))) return;
         // tamu berizin: hanya terima perintah putar yang bentuknya valid
         if (data.type === 'SYNC_TRACK' && !(data.track && data.track.type === 'youtube' && /^[\w-]{11}$/.test(String(data.track.id)))) return;
         if (data.type === 'SYNC_STATE' && !(['PLAY', 'PAUSE', 'SEEK'].includes(data.action) && Number.isFinite(+data.time))) return;
       }
-      if (isHost && senderIsAdmin && senderConn) {
-        if (data.type === 'SET_ROLE' && data.targetId && members[data.targetId] && !isAdminPeer(data.targetId)) {
-          members[data.targetId].role = data.role === 'admin' ? 'admin' : 'guest';
-          if (members[data.targetId].role === 'admin') members[data.targetId].ctl = true;
-          broadcastMembers();
-          return;
-        }
-        if (data.type === 'KICK' && data.targetId && !isAdminPeer(data.targetId)) {
-          kickUser(data.targetId);
-          return;
-        }
-      }
-      if (isHost && !/^(QUEUE_|SEAT|MIC|MEMBERS|HELLO|STATE|HISTORY|PROFILE|EMOTE|NOTICE|KICK|VC_STOP_ALL|SET_ROLE)/.test(String(data.type))) {
+      if (isHost && !/^(QUEUE_|SEAT|MIC|MEMBERS|HELLO|STATE|HISTORY|PROFILE|EMOTE|NOTICE|KICK|VC_STOP_ALL)/.test(String(data.type))) {
         connections.forEach(c => { if (c !== senderConn && c.open) c.send(data); });
       }
       if (data.type === 'KICK') {
@@ -2897,16 +2829,9 @@
         lyrApplyRemote(data.id, +data.offset);
       } else if (data.type === 'MEMBERS') {
         const hadPerm = myPlayPerm();
-        const hadAdmin = isMyRoleAdmin();
         members = data.members || {};
-        const nowAdmin = isMyRoleAdmin();
-        if (nowAdmin !== hadAdmin) {
-          showToast(nowAdmin ? '👑 Kamu dijadikan Admin oleh Host!' : 'Status Admin kamu dicabut');
-        } else if (isGuestSession() && myPlayPerm() !== hadPerm) {
-          showToast(hadPerm ? 'Izin play bareng kamu dicabut oleh Admin' : '🎛️ Admin memberi kamu izin play bareng!');
-        }
+        if (isGuestSession() && myPlayPerm() !== hadPerm) showToast(hadPerm ? 'Izin play bareng kamu dicabut oleh Admin' : '🎛️ Admin memberi kamu izin play bareng!');
         renderSeats();
-        vcLayout();
         if (voiceOn) Object.keys(members).filter(id => id !== peer.id && !voiceCalls[id]).forEach(callPeer);
       }
     }
@@ -3410,18 +3335,9 @@
       if (own) {
         extra = `<button onclick="startProfileEdit()" class="mt-4 w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white">✏️ Edit Nama, Foto &amp; Bio</button>${sfx}`;
       } else {
-        const isTargetMainAdmin = isAdminPeer(key);
-        const isTargetAdmin = role === 'admin';
-        const adminBtn = (canManageRoom() && !isTargetMainAdmin)
-          ? `<button onclick="toggleAdminRole('${esc(key)}')" class="mt-4 w-full py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 ${isTargetAdmin ? 'bg-amber-500/20 border-amber-400/40 text-amber-200 hover:bg-amber-500/30' : 'bg-rose-500/20 border-rose-500/40 text-rose-200 hover:bg-rose-500/30'}"><i data-lucide="crown" class="w-4 h-4"></i> ${isTargetAdmin ? 'Cabut Status Admin' : 'Jadikan Admin'}</button>`
-          : '';
-        const kickBtn = (canManageRoom() && !isTargetMainAdmin)
-          ? `<button onclick="kickUser('${esc(key)}')" class="mt-2.5 w-full py-2.5 rounded-xl bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-xs font-bold text-red-300 flex items-center justify-center gap-1.5"><i data-lucide="user-x" class="w-4 h-4"></i> Keluarkan dari Room</button>`
-          : '';
-        const permBtn = (canManageRoom() && !isTargetAdmin)
-          ? `<button onclick="togglePlayPerm('${esc(key)}')" class="mt-2.5 w-full py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 ${m.ctl ? 'bg-amber-500/20 border-amber-400/40 text-amber-200 hover:bg-amber-500/30' : 'bg-violet-600/20 border-violet-500/30 text-violet-200 hover:bg-violet-600/30'}"><i data-lucide="${m.ctl ? 'lock' : 'circle-play'}" class="w-4 h-4"></i> ${m.ctl ? 'Cabut Izin Play Bareng' : 'Beri Izin Play Bareng'}</button>`
-          : '';
-        extra = `${adminBtn}${permBtn}${kickBtn}<div class="mt-4 text-left"><div class="text-xs font-extrabold">Kirim emote ke ${esc(name)}</div>
+        const kickBtn = canManageRoom() ? `<button onclick="kickUser('${esc(key)}')" class="mt-3 w-full py-2.5 rounded-xl bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-xs font-bold text-red-300 flex items-center justify-center gap-1.5"><i data-lucide="user-x" class="w-4 h-4"></i> Keluarkan dari Room</button>` : '';
+        const permBtn = (canManageRoom() && role !== 'admin') ? `<button onclick="togglePlayPerm('${esc(key)}')" class="mt-4 w-full py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 ${m.ctl ? 'bg-amber-500/20 border-amber-400/40 text-amber-200 hover:bg-amber-500/30' : 'bg-violet-600/20 border-violet-500/30 text-violet-200 hover:bg-violet-600/30'}"><i data-lucide="${m.ctl ? 'lock' : 'circle-play'}" class="w-4 h-4"></i> ${m.ctl ? 'Cabut Izin Play Bareng' : 'Beri Izin Play Bareng'}</button>` : '';
+        extra = `${permBtn}${kickBtn}<div class="mt-4 text-left"><div class="text-xs font-extrabold">Kirim emote ke ${esc(name)}</div>
           <label class="flex items-center gap-2 text-[11px] text-zinc-400 mt-1.5"><input type="checkbox" id="emote-all" /> Kirim ke semua orang di room</label>
           ${emoteGrid()}${sfx}</div>`;
       }
@@ -4407,7 +4323,7 @@
       document.getElementById('vc-fx')?.classList.add('hidden');
       clearInterval(vcTimerInt); vcClosePanels();
       _stopVoice();
-      vcOn = false; vcSwapped = false; vcMinimized = false;
+      vcOn = false; vcSwapped = false;
       const el = document.getElementById('vc');
       if (el) el.classList.remove('swapped', 'multi');
       const grid = document.getElementById('vc-grid');
@@ -4504,7 +4420,7 @@
       targets.forEach(id => callPeer(id));
       appendSystemChat(myDisplayName + ' bergabung ke video call');
       document.getElementById('vc-nav-dot').classList.add('hidden');
-      vcMinimized = false; vcStartTimer(); updateVoiceUI(); announceMic(); vcUpdateGrid(); vcLayout(); switchTab('videocall');
+      vcStartTimer(); updateVoiceUI(); announceMic(); vcUpdateGrid(); vcLayout(); switchTab('videocall');
       vcWakeOn(); vcQual();
     }
     // Layar HP tidak boleh mati saat video call (itu bikin kamera & koneksi putus)
@@ -4575,34 +4491,16 @@
         else c.send({ type: 'REACTION', emoji });
       });
     }
-    let vcMinimized = false;
-    function vcMin() {
-      if (!vcOn) return;
-      vcMinimized = true;
-      vcClosePanels();
-      const targetTab = (vcPrev && vcPrev !== 'videocall') ? vcPrev : 'together';
-      if (curTab === 'videocall') switchTab(targetTab);
-      else vcLayout();
-    }
-    function vcExpand() {
-      if (!vcOn) return;
-      vcMinimized = false;
-      const el = document.getElementById('vc');
-      if (el) { el.style.left = ''; el.style.top = ''; el.style.right = ''; el.style.bottom = ''; }
-      if (curTab !== 'videocall') switchTab('videocall');
-      else vcLayout();
-    }
+    function vcMin() { switchTab(vcPrev === 'videocall' ? 'together' : vcPrev); }
     function vcMic() { if (!localStream) return; voiceMuted = !voiceMuted; localStream.getAudioTracks().forEach(t => t.enabled = !voiceMuted); vcBtn('vc-b-mic', voiceMuted, 'mic-off', 'mic'); updateVoiceUI(); announceMic(); }
     function vcCamT() { if (!localStream) return; const t = localStream.getVideoTracks()[0]; if (!t) return; const on = !t.enabled; t.enabled = on; vcRaw?.getVideoTracks().forEach(x => x.enabled = on); vcBtn('vc-b-cam', !on, 'video-off', 'video'); }
     function vcBtn(id, off, a, b) { const el = document.getElementById(id); el.classList.toggle('off', off); el.innerHTML = '<i data-lucide="' + (off ? a : b) + '"></i>'; lucide.createIcons(); }
     function vcLayout() {
       const el = document.getElementById('vc'); if (!el) return;
-      const isFull = vcOn && curTab === 'videocall' && !vcMinimized;
-      const isMini = vcOn && !isFull;
       el.classList.toggle('hidden', !vcOn);
-      el.classList.toggle('full', isFull);
-      el.classList.toggle('mini', isMini);
-      if (!isFull) {
+      el.classList.toggle('full', vcOn && curTab === 'videocall');
+      el.classList.toggle('mini', vcOn && curTab !== 'videocall');
+      if (!(vcOn && curTab === 'videocall')) {
         vcClosePanels();
       }
       const stopAllBtn = document.getElementById('vc-b-stop-all');
@@ -4610,70 +4508,6 @@
       const b = document.getElementById('vc-start-btn'); if (b && vcOn) b.textContent = 'Akhiri video call';
       if (b && !vcOn && !b.textContent.startsWith('Gabung')) b.textContent = 'Mulai video call';
     }
-    (function initVcMobileGestures() {
-      const vcEl = document.getElementById('vc');
-      if (!vcEl) return;
-      let sy = 0, sx = 0, dy = 0, dx = 0, mode = '', moved = false;
-      let startRight = 12, startBottom = 142;
-      vcEl.addEventListener('touchstart', (e) => {
-        if (!vcOn || e.touches.length !== 1) return;
-        if (e.target.closest('button, input, label, #vc-emote-bar, #vc-fx')) return;
-        sy = e.touches[0].clientY;
-        sx = e.touches[0].clientX;
-        dy = 0; dx = 0; moved = false;
-        if (vcEl.classList.contains('mini')) {
-          mode = 'drag-mini';
-          const rect = vcEl.getBoundingClientRect();
-          startRight = Math.max(8, window.innerWidth - rect.right);
-          startBottom = Math.max(72, window.innerHeight - rect.bottom);
-        } else if (vcEl.classList.contains('full')) {
-          mode = 'swipe-min';
-        }
-      }, { passive: true });
-      vcEl.addEventListener('touchmove', (e) => {
-        if (!mode || e.touches.length !== 1) return;
-        const cy = e.touches[0].clientY;
-        const cx = e.touches[0].clientX;
-        dy = cy - sy;
-        dx = cx - sx;
-        if (Math.abs(dx) > 8 || Math.abs(dy) > 8) moved = true;
-        if (mode === 'swipe-min') {
-          if (Math.abs(dx) > Math.abs(dy) && dy < 15) { mode = ''; return; }
-          if (dy > 10) {
-            if (e.cancelable) e.preventDefault();
-            vcEl.style.transition = 'none';
-            vcEl.style.transform = `translateY(${Math.min(dy, 220)}px) scale(${Math.max(0.85, 1 - dy / 1200)})`;
-          }
-        } else if (mode === 'drag-mini' && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
-          if (e.cancelable) e.preventDefault();
-          vcEl.style.transition = 'none';
-          const newRight = Math.min(Math.max(8, startRight - dx), window.innerWidth - vcEl.offsetWidth - 8);
-          const newBottom = Math.min(Math.max(72, startBottom - dy), window.innerHeight - vcEl.offsetHeight - 16);
-          vcEl.style.right = newRight + 'px';
-          vcEl.style.bottom = newBottom + 'px';
-          vcEl.style.left = 'auto';
-          vcEl.style.top = 'auto';
-        }
-      }, { passive: false });
-      const endGesture = (e) => {
-        if (!mode) return;
-        const prevMode = mode;
-        const wasTap = !moved && Math.abs(dx) < 8 && Math.abs(dy) < 8;
-        mode = '';
-        moved = false;
-        vcEl.style.transition = '';
-        vcEl.style.transform = '';
-        if (prevMode === 'swipe-min' && dy > 90) {
-          vcMin();
-        } else if (prevMode === 'drag-mini' && wasTap) {
-          if (e && e.cancelable) e.preventDefault();
-          vcExpand();
-        }
-        dy = 0; dx = 0;
-      };
-      vcEl.addEventListener('touchend', endGesture, { passive: true });
-      vcEl.addEventListener('touchcancel', endGesture, { passive: true });
-    })();
 
 
     // Efek wajah, latar, filter dengan ikon modern + teks
@@ -5148,14 +4982,9 @@
     const avatarGrad = n => { let h = 0; for (const c of String(n)) h = (h * 31 + c.charCodeAt(0)) % 360; return `linear-gradient(135deg,hsl(${h} 85% 62%),hsl(${(h + 55) % 360} 85% 55%))`; };
     function kickUser(id) {
       if (!canManageRoom()) return showToast('Hanya admin yang bisa mengeluarkan peserta');
-      if (!id || id === peer?.id || isAdminPeer(id)) return;
+      if (!id || id === peer?.id) return;
       const nm = (members[id] && members[id].name) || 'Peserta';
       if (!confirm(`Keluarkan ${nm} dari room?`)) return;
-      if (!isHost) {
-        connections.forEach(c => { if (c.open) c.send({ type: 'KICK', targetId: id }); });
-        closeProfile();
-        return;
-      }
       const conn = connections.find(c => c.peer === id);
       if (conn && conn.open) {
         try { conn.send({ type: 'KICK', targetId: id }); } catch (e) {}
@@ -5176,13 +5005,13 @@
       return `<div data-seat-id="${esc(m.id)}" onclick="openProfile('${esc(m.id)}')" class="seat flex flex-col items-center gap-1 shrink-0 cursor-pointer active:scale-95 transition">
         <div class="ring relative ${sz} rounded-full p-[3px]" style="background:${avatarGrad(m.name)}">
           <div class="w-full h-full rounded-full bg-zinc-950/40 overflow-hidden flex items-center justify-center ${c ? 'text-base' : 'text-xl'} font-extrabold text-white">${avatarInner(m.id, m.name)}</div>
-          ${(i === 0 || m.role === 'admin') ? '<span title="Admin" class="absolute -top-2.5 left-1/2 -translate-x-1/2 text-sm">👑</span>' : ''}
+          ${i === 0 ? '<span class="absolute -top-2.5 left-1/2 -translate-x-1/2 text-sm">👑</span>' : ''}
           ${canKick ? `<button type="button" onclick="event.stopPropagation();kickUser('${esc(m.id)}')" title="Keluarkan ${esc(m.name)}" class="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-red-600 hover:bg-red-500 text-white border border-zinc-950 shadow-lg flex items-center justify-center transition"><i data-lucide="user-x" class="w-3.5 h-3.5"></i></button>` : ''}
-          ${(m.ctl && m.role !== 'admin') ? '<span title="Boleh play bareng" class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-500 border border-zinc-950 text-[10px] flex items-center justify-center">🎛️</span>' : ''}
+          ${m.ctl ? '<span title="Boleh play bareng" class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-500 border border-zinc-950 text-[10px] flex items-center justify-center">🎛️</span>' : ''}
           <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-zinc-900 border border-white/20 text-[10px] flex items-center justify-center">${mic}</span>
         </div>
         <div class="text-[11px] font-semibold text-white truncate max-w-[76px]">${esc(m.name)}${m.id === peer?.id ? ' (kamu)' : ''}</div>
-        ${m.role === 'admin' && i !== 0 ? '<div class="text-[9px] text-rose-300 font-bold -mt-0.5">admin</div>' : (m.role === 'guest' ? `<div class="text-[9px] text-zinc-400 -mt-0.5">tamu${m.ctl ? ' • bisa play' : ''}</div>` : '')}
+        ${m.role === 'guest' ? `<div class="text-[9px] text-zinc-400 -mt-0.5">tamu${m.ctl ? ' • bisa play' : ''}</div>` : ''}
       </div>`;
     }
     const emptySeatHTML = (i, c) => `<button onclick="moveSeat(${i})" class="flex flex-col items-center gap-1 shrink-0"><div class="${c ? 'w-11 h-11' : 'w-16 h-16'} rounded-full border-2 border-dashed border-white/20 flex items-center justify-center text-xl text-zinc-500">+</div><div class="text-[11px] text-zinc-500">Kursi ${i + 1}</div></button>`;
@@ -5466,10 +5295,7 @@
     let curTab = 'online', vcPrev = 'together';
     document.addEventListener('pointerdown', e => { if (e.target.closest('nav')) window.__userNav = true; }, true);
     function switchTab(tab) {
-      if (tab === 'videocall') {
-        if (curTab !== 'videocall') vcPrev = curTab;
-        vcMinimized = false;
-      }
+      if (tab === 'videocall' && curTab !== 'videocall') vcPrev = curTab;
       curTab = tab;
       ['online', 'offline', 'playlists', 'together', 'game', 'videocall', 'anatomy'].forEach(t => {
         document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
