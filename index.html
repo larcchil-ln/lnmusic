@@ -916,6 +916,7 @@
                 <form id="form-create-custom-room" onsubmit="doCreateCustomRoom(event)" class="space-y-2.5">
                   <input id="croom-host-name" type="text" maxlength="20" placeholder="Nama kamu (Host)" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-none" />
                   <input id="croom-title" type="text" maxlength="28" placeholder="Nama Room (opsional, misal: Nobar Santai)" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-none" />
+                  <input id="croom-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="new-password" placeholder="PIN Host 4-8 angka (untuk masuk lagi dari perangkat lain)" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-none" />
                   <p id="croom-create-error" class="hidden text-xs text-rose-400"></p>
                   <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 to-violet-600 hover:opacity-95 text-xs font-bold text-white transition shadow-lg shadow-rose-600/25 flex items-center justify-center gap-1.5">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i> Buat &amp; Masuk Room Baru
@@ -924,6 +925,7 @@
                 <form id="form-join-custom-room" onsubmit="doJoinCustomRoom(event)" class="hidden space-y-2.5">
                   <input id="jroom-guest-name" type="text" maxlength="20" placeholder="Nama kamu" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-violet-500 focus:outline-none" />
                   <input id="jroom-code" type="text" maxlength="20" autocapitalize="characters" placeholder="Kode Room (contoh: LN-8492)" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white uppercase tracking-wider focus:border-violet-500 focus:outline-none" />
+                  <input id="jroom-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" placeholder="PIN Host (isi hanya jika kamu pembuat room ini)" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-violet-500 focus:outline-none" />
                   <p id="croom-join-error" class="hidden text-xs text-rose-400"></p>
                   <button type="submit" class="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white transition shadow-lg shadow-violet-600/25 flex items-center justify-center gap-1.5">
                     <i data-lucide="log-in" class="w-4 h-4"></i> Gabung ke Room
@@ -2307,52 +2309,90 @@
       if (tJ) tJ.className = !isCreate ? 'flex-1 py-2 rounded-lg bg-violet-600 text-white transition' : 'flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition';
     }
 
-    function doCreateCustomRoom(e) {
-      if (e) e.preventDefault();
-      const errEl = document.getElementById('croom-create-error');
-      const rawName = document.getElementById('croom-host-name').value.trim();
-      if (rawName.length < 2) {
-        errEl.textContent = 'Isi nama kamu minimal 2 huruf';
-        errEl.classList.remove('hidden');
-        return;
-      }
-      errEl.classList.add('hidden');
-      const hostName = cleanName(rawName);
-      const code = 'LN-' + Math.floor(1000 + Math.random() * 9000);
-      const rawTitle = document.getElementById('croom-title').value.trim();
-      const title = rawTitle ? cleanName(rawTitle) : `Room ${hostName}`;
-      customRoom = { role: 'host', code, peerId: 'lnmusic-croom-' + code.toLowerCase(), title };
+    async function croomApi(action, payload) {
       try {
-        localStorage.setItem(SESSION_KEY, 'custom');
-        localStorage.setItem('lnmusic_custom_room', JSON.stringify({ ...customRoom, name: hostName }));
-      } catch (err) {}
-      enterRoom('custom', hostName);
+        const r = await fetch('/api/store', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, ...payload })
+        });
+        const j = await r.json().catch(() => ({}));
+        return { status: r.status, ok: r.ok, data: j };
+      } catch (err) { return { status: 0, ok: false, data: {} }; }
     }
 
-    function doJoinCustomRoom(e) {
-      if (e) e.preventDefault();
-      const errEl = document.getElementById('croom-join-error');
-      const rawName = document.getElementById('jroom-guest-name').value.trim();
-      const rawCode = document.getElementById('jroom-code').value.trim().toUpperCase();
-      if (rawName.length < 2) {
-        errEl.textContent = 'Isi nama kamu minimal 2 huruf';
-        errEl.classList.remove('hidden');
-        return;
-      }
-      const normCode = rawCode.startsWith('LN-') ? rawCode : ('LN-' + rawCode.replace(/[^A-Z0-9]/g, ''));
-      if (!/^LN-[A-Z0-9]{4,8}$/.test(normCode)) {
-        errEl.textContent = 'Masukkan kode room yang valid (contoh: LN-8492)';
-        errEl.classList.remove('hidden');
-        return;
-      }
-      errEl.classList.add('hidden');
-      const guestName = cleanName(rawName);
-      customRoom = { role: 'guest', code: normCode, peerId: 'lnmusic-croom-' + normCode.toLowerCase(), title: `Room ${normCode}` };
+    function showCroomErr(id, msg) {
+      const el = document.getElementById(id);
+      el.textContent = msg; el.classList.toggle('hidden', !msg);
+    }
+
+    function startCustomRoom(role, code, title, name) {
+      customRoom = { role, code, peerId: 'lnmusic-croom-' + code.toLowerCase(), title };
       try {
         localStorage.setItem(SESSION_KEY, 'custom');
-        localStorage.setItem('lnmusic_custom_room', JSON.stringify({ ...customRoom, name: guestName }));
+        localStorage.setItem('lnmusic_custom_room', JSON.stringify({ ...customRoom, name }));
       } catch (err) {}
-      enterRoom('custom', guestName);
+      enterRoom('custom', name);
+    }
+
+    let croomBusy = false;
+    async function doCreateCustomRoom(e) {
+      if (e) e.preventDefault();
+      if (croomBusy) return;
+      const rawName = document.getElementById('croom-host-name').value.trim();
+      const pin = document.getElementById('croom-pin').value.trim();
+      if (rawName.length < 2) return showCroomErr('croom-create-error', 'Isi nama kamu minimal 2 huruf');
+      if (!/^\d{4,8}$/.test(pin)) return showCroomErr('croom-create-error', 'PIN Host harus 4-8 angka');
+      showCroomErr('croom-create-error', '');
+      croomBusy = true;
+      try {
+        const hostName = cleanName(rawName);
+        const rawTitle = document.getElementById('croom-title').value.trim();
+        const title = rawTitle ? cleanName(rawTitle) : `Room ${hostName}`;
+        let code = '', saved = false;
+        for (let i = 0; i < 6 && !saved; i++) {
+          code = 'LN-' + Math.floor(1000 + Math.random() * 9000);
+          const r = await croomApi('croom_create', { code, pin, title, hostName });
+          if (r.ok) saved = true;
+          else if (r.status === 409) continue;
+          else if (r.status === 429) return showCroomErr('croom-create-error', 'Terlalu banyak percobaan. Coba lagi beberapa menit.');
+          else if (r.status === 400) return showCroomErr('croom-create-error', r.data.error || 'Data tidak valid');
+          else break; // server tidak tersedia -> tetap bisa dipakai di perangkat ini saja
+        }
+        if (!saved) {
+          code = 'LN-' + Math.floor(1000 + Math.random() * 9000);
+          showToast('Server tidak terjangkau: room hanya tersimpan di perangkat ini.');
+        }
+        document.getElementById('croom-pin').value = '';
+        startCustomRoom('host', code, title, hostName);
+        if (saved) showToast(`Room ${code} dibuat. Ingat PIN-mu untuk masuk lagi dari perangkat lain.`);
+      } finally { croomBusy = false; }
+    }
+
+    async function doJoinCustomRoom(e) {
+      if (e) e.preventDefault();
+      if (croomBusy) return;
+      const rawName = document.getElementById('jroom-guest-name').value.trim();
+      const rawCode = document.getElementById('jroom-code').value.trim().toUpperCase();
+      const pin = document.getElementById('jroom-pin').value.trim();
+      if (rawName.length < 2) return showCroomErr('croom-join-error', 'Isi nama kamu minimal 2 huruf');
+      const normCode = rawCode.startsWith('LN-') ? rawCode : ('LN-' + rawCode.replace(/[^A-Z0-9]/g, ''));
+      if (!/^LN-[A-Z0-9]{4,8}$/.test(normCode)) return showCroomErr('croom-join-error', 'Masukkan kode room yang valid (contoh: LN-8492)');
+      if (pin && !/^\d{4,8}$/.test(pin)) return showCroomErr('croom-join-error', 'PIN Host harus 4-8 angka');
+      showCroomErr('croom-join-error', '');
+      const guestName = cleanName(rawName);
+      if (!pin) return startCustomRoom('guest', normCode, `Room ${normCode}`, guestName);
+      // ada PIN -> klaim kembali sebagai Host
+      croomBusy = true;
+      try {
+        const r = await croomApi('croom_claim', { code: normCode, pin });
+        if (r.status === 401) return showCroomErr('croom-join-error', 'Kode atau PIN salah');
+        if (r.status === 429) return showCroomErr('croom-join-error', 'Terlalu banyak percobaan. Coba lagi beberapa menit.');
+        if (!r.ok) return showCroomErr('croom-join-error', 'Server tidak bisa dihubungi. Coba lagi.');
+        document.getElementById('jroom-pin').value = '';
+        const hostName = cleanName(guestName || r.data.hostName);
+        startCustomRoom('host', normCode, r.data.title || `Room ${normCode}`, hostName);
+        showToast('Berhasil masuk kembali sebagai Host 👑');
+      } finally { croomBusy = false; }
     }
 
     const slimTrack = t => ({ id: t.id, title: t.title, artist: t.artist, thumb: t.thumb, type: t.type, isVideo: !!t.isVideo });
@@ -2530,15 +2570,17 @@
       if (!document.getElementById('profile-modal').classList.contains('hidden')) renderProfileModal();
     }
 
+    let sessionToken = 0;
     async function startSession(attempt = 0) {
       if (!session) return;
+      const myToken = ++sessionToken;
       teardownPeer();
       isHost = session === 'nuki' || (session === 'custom' && customRoom?.role === 'host');
       const desiredPeerId = session === 'custom'
         ? (customRoom?.role === 'host' ? customRoom.peerId : null)
         : (session === 'guest' ? null : USERS[session].peerId);
       const p = await newPeer(desiredPeerId);
-      if (!session) { try { p.destroy(); } catch (e) {} return; }
+      if (!session || myToken !== sessionToken) { try { p.destroy(); } catch (e) {} return; }
       peer = p;
       bindVoice(p);
       keepSignalingAlive(p);
@@ -2566,13 +2608,16 @@
         if (peer !== p) return;
         console.warn('PeerJS error:', err);
         if (err.type === 'unavailable-id') {
-          if (attempt < 10) { setTimeout(() => { if (session) startSession(attempt + 1); }, 3000); }
-          else showToast('ID Room atau akun ini sedang aktif di perangkat lain.');
+          // ID masih "nyangkut" di server dari sesi lamamu sendiri: coba terus sampai dilepas server, jangan menyerah.
+          const wait = Math.min(2000 + attempt * 500, 8000);
+          setRoomPill('Menyambungkan kembali ke room…', false);
+          if (attempt === 3) showToast('Menyambungkan ulang ke room, tunggu sebentar…');
+          setTimeout(() => { if (session && myToken === sessionToken) startSession(attempt + 1); }, wait);
           return;
         }
         if (err.type === 'peer-unavailable') return;
         if (['network', 'server-error', 'socket-error', 'socket-closed', 'webrtc'].includes(err.type)) {
-          setTimeout(() => { if (session && peer === p) startSession(0); }, 5000);
+          setTimeout(() => { if (session && peer === p && myToken === sessionToken) startSession(0); }, 5000);
         }
       });
     }
@@ -5433,13 +5478,27 @@
       fs.addEventListener('touchcancel', finishSwipe, { passive: true });
     })();
 
-    window.addEventListener('pagehide', () => { saveRoomState(); saveChat(); DBX.flush(); });
+    // Lepas ID peer segera saat tab/app ditutup (sesi tetap tersimpan, jadi otomatis masuk lagi saat dibuka)
+    window.addEventListener('pagehide', () => {
+      saveRoomState(); saveChat(); DBX.flush();
+      try { if (session) { sessionToken++; teardownPeer(); } } catch (e) {}
+    });
+    // Halaman dipulihkan dari cache (bfcache) -> sambungkan lagi
+    window.addEventListener('pageshow', (e) => { if (e.persisted && session) startSession(0); });
+    // Pastikan selalu tersambung ke room: dipanggil saat tab aktif lagi / internet kembali
+    function ensureRoomConnected() {
+      if (!session) return;
+      if (!peer || peer.destroyed) { startSession(0); return; }
+      if (peer.disconnected) { try { peer.reconnect(); } catch (e) {} }
+      if (!isHost && !partnerOnline()) { try { guestConnectLoop(peer); } catch (e) {} }
+    }
+    window.addEventListener('online', ensureRoomConnected);
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         saveRoomState();
         saveChat();
-      } else if (peer && !peer.destroyed && peer.disconnected) {
-        try { peer.reconnect(); } catch (e) {}
+      } else {
+        ensureRoomConnected();
       }
     });
 
