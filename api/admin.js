@@ -35,6 +35,7 @@ module.exports = async (q, s) => {
     case 'openRoom': del('closed', String(b.code || '')); await save(); break;
     case 'broadcast': cfg.bc = b.text ? { text: String(b.text).slice(0, 200), id: String(now) } : null; await save(); break;
     case 'setHome': cfg.homeCountry = String(b.value || '').trim().slice(0, 2).toUpperCase(); await save(); break;
+    case 'toggleAnatomy': cfg.anatomyOff = !!b.off; await save(); break;
     case 'clearLog': await r('DEL', 'lnlog'); break;
     case 'clearFails': await r('DEL', 'lnfail'); break;
   }
