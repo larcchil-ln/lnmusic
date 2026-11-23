@@ -3,33 +3,141 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow"><title>LNMusic Admin</title>
 <style>
-*{box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif}body{margin:0;background:#060609;color:#fafafa;padding:14px;padding-bottom:60px}
-.c{background:#14141c;border:1px solid #ffffff14;border-radius:16px;padding:14px;margin-bottom:12px}
-h1{font-size:18px;margin:0 0 12px}h2{font-size:13px;color:#a1a1aa;margin:0 0 10px;text-transform:uppercase;letter-spacing:.05em}
-input,button{font-size:14px;border-radius:10px;border:1px solid #ffffff22;background:#0c0c12;color:#fff;padding:10px 12px;width:100%}
-button{background:#e11d48;border:0;font-weight:700;cursor:pointer;width:auto}button.g{background:#27272a}button.r{background:#7f1d1d;padding:6px 10px;font-size:12px}
-.row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}.row>input{flex:1;min-width:140px}
-.k{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.k div{background:#0c0c12;border-radius:12px;padding:10px;text-align:center}.k b{font-size:22px;display:block}.k span{font-size:11px;color:#a1a1aa}
-.tabs{display:flex;gap:6px;margin-bottom:12px;overflow:auto}.tabs button{background:#27272a;white-space:nowrap}.tabs button.on{background:#e11d48}
-.it{border-top:1px solid #ffffff10;padding:10px 0;font-size:12px;line-height:1.5}.it:first-child{border:0}.m{color:#a1a1aa}.d{display:inline-block;width:8px;height:8px;border-radius:50%;background:#52525b;margin-right:6px}.d.on{background:#10b981}
-code{background:#0c0c12;padding:1px 6px;border-radius:6px;font-size:12px}.hide{display:none}.err{color:#fda4af;font-size:12px;margin-top:8px}
+:root{--bg:#07070b;--c:#121219;--c2:#0c0c12;--bd:#ffffff17;--tx:#fafafa;--mut:#9a9aa5;--pri:#e11d48;--pri2:#fb7185;--ok:#10b981;--warn:#f59e0b;--bad:#f43f5e;--sidebar:230px}
+*{box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif}
+body{margin:0;background:var(--bg);color:var(--tx);background-image:radial-gradient(circle at 15% -10%,#e11d4822,transparent 40%),radial-gradient(circle at 100% 0%,#7c3aed1c,transparent 35%)}
+h1{font-size:19px;margin:0}h2{font-size:12.5px;color:var(--mut);margin:0 0 12px;text-transform:uppercase;letter-spacing:.07em;font-weight:800;display:flex;align-items:center;gap:6px}
+.c{background:linear-gradient(180deg,var(--c),var(--c2));border:1px solid var(--bd);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 10px 30px -18px #000}
+input,select{font-size:14px;border-radius:10px;border:1px solid #ffffff22;background:#0a0a10;color:#fff;padding:10px 12px;width:100%}
+button{font-size:14px;border-radius:10px;border:0;background:var(--pri);color:#fff;font-weight:700;cursor:pointer;padding:10px 14px;width:auto;transition:filter .15s,transform .1s}
+button:hover{filter:brightness(1.12)}button:active{transform:scale(.97)}
+button.g{background:#24242c;color:#e7e7ea}button.r{background:#4c1324;color:#ffb4c2;padding:7px 11px;font-size:12px;border:1px solid #7f1d1d66}
+button.o{background:transparent;border:1px solid #ffffff2e;color:#e7e7ea}
+.row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}.row>input,.row>select{flex:1;min-width:140px}
+.layout{display:flex;min-height:100vh}
+.side{width:var(--sidebar);flex:none;padding:18px 12px;border-right:1px solid var(--bd);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:4px}
+.side .brand{display:flex;align-items:center;gap:10px;padding:6px 10px 18px}.side .brand b{font-size:15px}.side .brand span{font-size:11px;color:var(--mut)}
+.nav-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:transparent;color:var(--mut);font-weight:700;text-align:left;width:100%;justify-content:flex-start}
+.nav-btn.on{background:linear-gradient(135deg,var(--pri),#9333ea1a);color:#fff}.nav-btn .ico{width:18px;text-align:center}
+.nav-btn .bdg{margin-left:auto;background:var(--bad);color:#fff;font-size:10.5px;font-weight:800;border-radius:99px;padding:1px 7px;min-width:18px;text-align:center}
+.main{flex:1;min-width:0;padding:16px 18px 70px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px}
+.kgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kcard{background:#0c0c12;border:1px solid var(--bd);border-radius:14px;padding:12px 14px}.kcard b{font-size:24px;display:block;line-height:1.1}.kcard span{font-size:11px;color:var(--mut)}
+.kcard.wa b{color:var(--warn)}.kcard.ba b{color:var(--bad)}.kcard.ok b{color:var(--ok)}
+.chartwrap{position:relative;height:160px}
+.it{border-top:1px solid #ffffff10;padding:11px 2px;font-size:12.5px;line-height:1.6}.it:first-child{border:0}
+.m{color:var(--mut)}.d{display:inline-block;width:8px;height:8px;border-radius:50%;background:#52525b;margin-right:6px}.d.on{background:var(--ok);box-shadow:0 0 8px #10b98199}
+code{background:#0a0a10;padding:1.5px 7px;border-radius:7px;font-size:11.5px;border:1px solid #ffffff12}
+.hide{display:none!important}.err{color:#fda4af;font-size:12px;margin-top:8px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;margin-left:4px}
+.badge.foreign{background:#f59e0b22;color:#fbbf24}.badge.sus{background:#f43f5e22;color:#fb7185}.badge.host{background:#10b98122;color:#34d399}
+.grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:14px}
+.taglist{display:flex;flex-wrap:wrap;gap:6px}.tag{background:#0a0a10;border:1px solid var(--bd);border-radius:99px;padding:5px 10px;font-size:11.5px;display:flex;align-items:center;gap:6px}
+.bottomnav{display:none}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#ffffff22;border-radius:99px}
+@media(max-width:860px){
+  .side{display:none}.layout{display:block}.main{padding:12px 12px 90px}
+  .kgrid{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}
+  .bottomnav{display:flex;position:fixed;left:0;right:0;bottom:0;background:#0c0c12ee;backdrop-filter:blur(10px);border-top:1px solid var(--bd);padding:6px max(6px,env(safe-area-inset-bottom)) calc(6px + env(safe-area-inset-bottom));z-index:9;gap:2px}
+  .bottomnav button{flex:1;background:transparent;color:var(--mut);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:700;padding:6px 2px;border-radius:10px;position:relative}
+  .bottomnav button.on{color:#fff}.bottomnav .ico{font-size:17px}
+  .bottomnav .bdg{position:absolute;top:2px;right:16%;background:var(--bad);color:#fff;font-size:9px;font-weight:800;border-radius:99px;padding:0 4px;min-width:14px}
+}
 </style></head><body>
-<div id="login" class="c" style="max-width:380px;margin:12vh auto"><h1>🔐 LNMusic Admin</h1>
-<form onsubmit="return L(event)"><div class="row"><input id="u" placeholder="Username" autocomplete="username"></div><div class="row"><input id="p" type="password" placeholder="Password" autocomplete="current-password"></div><button style="width:100%">Masuk</button><div id="e" class="err"></div></form></div>
 
-<div id="app" class="hide">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h1 style="margin:0">LNMusic Admin</h1><button class="g" onclick="out()">Keluar</button></div>
-<div class="c"><div class="k"><div><b id="kon">0</b><span>Online</span></div><div><b id="kro">0</b><span>Room aktif</span></div><div><b id="kto">0</b><span>Total pengunjung</span></div></div>
-<div id="lk" style="margin-top:10px;font-size:13px"></div></div>
-<div class="tabs"><button data-t="v" class="on">Pengunjung</button><button data-t="r">Room</button><button data-t="l">Log</button><button data-t="c">Kontrol</button></div>
-<div id="t-v" class="c"></div><div id="t-r" class="c hide"></div><div id="t-l" class="c hide"></div>
-<div id="t-c" class="hide">
-<div class="c"><h2>Kunci website</h2><div class="row"><input id="lm" placeholder="Pesan untuk pengunjung (opsional)"></div><div class="row"><button id="lb" onclick="lockT()"></button></div></div>
-<div class="c"><h2>Perangkat ini</h2><div class="m" style="font-size:12px;margin-bottom:8px">Default: kunci berlaku juga untuk perangkat ini, jadi kamu bisa mengetes. Aktifkan hanya kalau ingin memakai web saat terkunci.</div><button class="g" id="bp" onclick="bypass()"></button></div>
-<div class="c"><h2>Siaran pesan ke semua yang online</h2><div class="row"><input id="bt" placeholder="Tulis pesan..."><button onclick="A({action:'broadcast',text:bt.value}).then(()=>bt.value='')">Kirim</button><button class="g" onclick="A({action:'broadcast',text:''})">Hapus</button></div></div>
-<div class="c"><h2>Diblokir</h2><div id="bl"></div><div class="row" style="margin-top:8px"><input id="bi" placeholder="Blokir IP manual"><button onclick="ban('ip',bi.value);bi.value=''">Blokir</button></div></div>
-<div class="c"><button class="g" onclick="confirm('Hapus semua log?')&&A({action:'clearLog'})">Bersihkan log</button></div></div>
+<div id="login" class="c" style="max-width:380px;margin:14vh auto 0">
+  <div style="text-align:center;margin-bottom:6px;font-size:30px">🔐</div>
+  <h1 style="text-align:center;margin-bottom:4px">LNMusic Admin</h1>
+  <p style="text-align:center;color:var(--mut);font-size:12.5px;margin:0 0 16px">Masuk untuk mengelola website</p>
+  <form onsubmit="return L(event)">
+    <div class="row"><input id="u" placeholder="Username" autocomplete="username"></div>
+    <div class="row"><input id="p" type="password" placeholder="Password" autocomplete="current-password"></div>
+    <button style="width:100%">Masuk</button>
+    <div id="e" class="err"></div>
+  </form>
 </div>
+
+<div id="app" class="hide layout">
+  <aside class="side">
+    <div class="brand"><span style="font-size:22px">🎧</span><div><b>LNMusic</b><br><span>Admin panel</span></div></div>
+    <button class="nav-btn on" data-t="d"><span class="ico">📊</span>Dasbor</button>
+    <button class="nav-btn" data-t="v"><span class="ico">👤</span>Pengunjung</button>
+    <button class="nav-btn" data-t="r"><span class="ico">🎧</span>Room</button>
+    <button class="nav-btn" data-t="l"><span class="ico">📜</span>Log</button>
+    <button class="nav-btn" data-t="s"><span class="ico">🛡️</span>Keamanan<span class="bdg hide" id="navsec-bdg">0</span></button>
+    <button class="nav-btn" data-t="c"><span class="ico">⚙️</span>Kontrol</button>
+    <div style="flex:1"></div>
+    <button class="g" onclick="out()" style="width:100%">↩ Keluar</button>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <h1 id="pagetitle">Dasbor</h1>
+      <div id="lk" style="font-size:12.5px;font-weight:700"></div>
+    </div>
+
+    <div id="t-d">
+      <div class="kgrid">
+        <div class="kcard ok"><b id="kon">0</b><span>Online sekarang</span></div>
+        <div class="kcard"><b id="kro">0</b><span>Room aktif</span></div>
+        <div class="kcard"><b id="kto">0</b><span>Total pengunjung</span></div>
+        <div class="kcard wa"><b id="kfa">0</b><span>Login gagal (tersimpan)</span></div>
+      </div>
+      <div class="grid2" style="margin-top:14px">
+        <div class="c"><h2>📈 Aktivitas terbaru (dari log)</h2><div class="chartwrap"><canvas id="chActivity"></canvas></div></div>
+        <div class="c"><h2>🌍 Negara pengunjung</h2><div class="chartwrap"><canvas id="chCountry"></canvas></div></div>
+      </div>
+      <div class="c"><h2>⚡ Pengunjung online</h2><div id="t-d-online"></div></div>
+    </div>
+
+    <div id="t-v" class="hide"><div class="c"><h2>👤 Pengunjung terbaru</h2><div id="t-v-list"></div></div></div>
+    <div id="t-r" class="hide"><div class="c"><h2>🎧 Room</h2><div id="t-r-list"></div></div></div>
+    <div id="t-l" class="hide"><div class="c"><h2>📜 Log aktivitas</h2><div id="t-l-list"></div></div></div>
+
+    <div id="t-s" class="hide">
+      <div class="c">
+        <h2>🌍 Negara asal (rumah)</h2>
+        <p class="m" style="font-size:12px;margin:0 0 10px">Set kode negaramu (mis. <code>ID</code>) biar pengunjung dari negara lain ditandai otomatis supaya gampang dicek.</p>
+        <div class="row"><input id="homeC" placeholder="Kode negara, contoh: ID" maxlength="2" style="max-width:160px"><button onclick="A({action:'setHome',value:homeC.value})">Simpan</button></div>
+      </div>
+      <div class="c">
+        <h2>⚠️ IP mencurigakan / asing yang aktif</h2>
+        <p class="m" style="font-size:12px;margin:0 0 10px">Ditandai karena bukan dari negara rumahmu, atau jumlah kunjungannya sangat tinggi (mirip bot).</p>
+        <div id="susList"></div>
+        <div class="row" style="margin-top:10px"><button class="r" id="banAllBtn" onclick="banAllSus()">🚫 Blokir semua IP asing di atas</button></div>
+      </div>
+      <div class="c">
+        <h2>🔑 Percobaan login gagal <span id="faBadge" class="badge sus hide"></span></h2>
+        <p class="m" style="font-size:12px;margin:0 0 10px">IP yang gagal login 20x berturut akan otomatis terblokir.</p>
+        <div id="failList"></div>
+        <div class="row" style="margin-top:8px"><button class="g" onclick="confirm('Hapus riwayat percobaan login?')&&A({action:'clearFails'})">Bersihkan riwayat</button></div>
+      </div>
+      <div class="c">
+        <h2>⛔ Diblokir</h2>
+        <div id="bl"></div>
+        <div class="row" style="margin-top:8px"><input id="bi" placeholder="Blokir IP manual"><button onclick="ban('ip',bi.value);bi.value=''">Blokir</button></div>
+      </div>
+    </div>
+
+    <div id="t-c" class="hide">
+      <div class="c"><h2>🔒 Kunci website</h2><div class="row"><input id="lm" placeholder="Pesan untuk pengunjung (opsional)"></div><div class="row"><button id="lb" onclick="lockT()"></button></div></div>
+      <div class="c"><h2>📱 Perangkat ini</h2><div class="m" style="font-size:12px;margin-bottom:8px">Default: kunci berlaku juga untuk perangkat ini, jadi kamu bisa mengetes. Aktifkan hanya kalau ingin memakai web saat terkunci.</div><button class="g" id="bp" onclick="bypass()"></button></div>
+      <div class="c"><h2>📢 Siaran pesan ke semua yang online</h2><div class="row"><input id="bt" placeholder="Tulis pesan..."><button onclick="A({action:'broadcast',text:bt.value}).then(()=>bt.value='')">Kirim</button><button class="g" onclick="A({action:'broadcast',text:''})">Hapus</button></div></div>
+      <div class="c"><button class="g" onclick="confirm('Hapus semua log?')&&A({action:'clearLog'})">Bersihkan log</button></div>
+    </div>
+  </div>
+</div>
+
+<nav class="bottomnav" id="bnav">
+  <button class="on" data-t="d"><span class="ico">📊</span>Dasbor</button>
+  <button data-t="v"><span class="ico">👤</span>Tamu</button>
+  <button data-t="r"><span class="ico">🎧</span>Room</button>
+  <button data-t="s"><span class="ico">🛡️</span>Aman<span class="bdg hide" id="navsec-bdg2">0</span></button>
+  <button data-t="c"><span class="ico">⚙️</span>Kontrol</button>
+</nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);let tok=sessionStorage.getItem('ln_adm')||'',D=null,tm;
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -44,15 +152,69 @@ function bypass(){try{if(localStorage.getItem('ln_admin_tok'))localStorage.remov
 function bpUI(){try{$('bp').textContent=localStorage.getItem('ln_admin_tok')?'✅ Lolos kunci: AKTIF (ketuk untuk matikan)':'⛔ Lolos kunci: MATI (ketuk untuk aktifkan)'}catch(x){}}
 const lockT=()=>A({action:'lock',on:!D.cfg.locked,msg:$('lm').value});
 const ban=(k,v)=>v&&confirm('Blokir '+v+'?')&&A({action:'ban',kind:k,value:v});
-function draw(){bpUI();const c=D.cfg;$('kon').textContent=D.online;$('kro').textContent=D.rooms.length;$('kto').textContent=D.total;
-$('lk').innerHTML=c.locked?'🔒 Website <b style="color:#fda4af">TERKUNCI</b>':'🟢 Website terbuka';
-$('lb').textContent=c.locked?'🔓 Buka kunci website':'🔒 Kunci website sekarang';if(document.activeElement!==$('lm'))$('lm').value=c.msg||'';
-$('t-v').innerHTML='<h2>Pengunjung terbaru</h2>'+(D.visitors.map(v=>`<div class="it"><span class="d ${v.online?'on':''}"></span><b>${esc(v.name||'(belum ada nama)')}</b> <span class="m">• ${ago(v.last)} • ${v.hits}x</span><br>IP <code>${esc(v.ip)}</code> ${esc([v.city,v.region,v.country].filter(Boolean).join(', '))}<br><span class="m">${esc(dev(v))} • ${esc(v.pf)} • layar ${esc(v.scr)} • CPU ${v.cpu} • RAM ${v.mem||'?'}GB • ${esc(v.net||'-')} • ${esc(v.lang)} • ${esc(v.tz)}${v.pwa?' • PWA':''}</span>${v.room?'<br>Room: <code>'+esc(v.room)+'</code>':''}<br><button class="r" onclick="ban('ip','${esc(v.ip)}')">Blokir IP</button> <button class="r" onclick="ban('vid','${esc(v.vid)}')">Blokir perangkat</button></div>`).join('')||'<span class="m">Belum ada data</span>');
-$('t-r').innerHTML='<h2>Room aktif</h2>'+(D.rooms.map(r=>{const cl=(c.closed||[]).includes(r.code);return `<div class="it"><b>${esc(r.title)}</b> <code>${esc(r.code)}</code><br>Host: ${esc(r.host||'?')} • ${r.n} orang • dibuat ${ago(r.created)}<br>IP host <code>${esc(r.ip)}</code> ${esc([r.city,r.country].filter(Boolean).join(', '))}<br>${r.code==='PRIVAT'?'':cl?`<button class="g" onclick="A({action:'openRoom',code:'${esc(r.code)}'})">Buka lagi</button>`:`<button class="r" onclick="confirm('Tutup room ${esc(r.code)}?')&&A({action:'closeRoom',code:'${esc(r.code)}'})">Tutup room</button>`}</div>`}).join('')||'<span class="m">Tidak ada room aktif</span>')+((c.closed||[]).length?'<h2 style="margin-top:14px">Room ditutup</h2>'+c.closed.map(x=>`<div class="it"><code>${esc(x)}</code> <button class="g" onclick="A({action:'openRoom',code:'${esc(x)}'})">Buka lagi</button></div>`).join(''):'');
-const T={visit:'👤 Pengunjung baru',room_create:'🎧 Room dibuat',room_join:'➡️ Masuk room'};
-$('t-l').innerHTML='<h2>Log aktivitas</h2>'+(D.log.map(l=>`<div class="it">${T[l.type]||esc(l.type)} <b>${esc(l.name||'')}</b> ${l.room?'<code>'+esc(l.room)+'</code>':''}<br><span class="m">${ago(l.t)} • ${esc(l.ip)} ${esc(l.city||'')}</span></div>`).join('')||'<span class="m">Kosong</span>');
-$('bl').innerHTML=[...(c.banIps||[]).map(x=>['ip',x]),...(c.banVids||[]).map(x=>['vid',x])].map(([k,x])=>`<div class="it"><code>${esc(k==='ip'?x:'perangkat '+x.slice(0,8))}</code> <button class="g" onclick="A({action:'unban',kind:'${k}',value:'${esc(x)}'})">Buka blokir</button></div>`).join('')||'<span class="m">Tidak ada</span>'}
-document.querySelector('.tabs').onclick=e=>{const t=e.target.dataset.t;if(!t)return;document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b===e.target));['v','r','l','c'].forEach(x=>$('t-'+x).classList.toggle('hide',x!==t))};
+function banAllSus(){const ips=[...new Set(curSus.map(v=>v.ip))];if(!ips.length)return;if(confirm('Blokir '+ips.length+' IP asing yang sedang terlihat?'))A({action:'banBulk',values:ips})}
+
+let curSus=[], chA=null, chC=null;
+function flagVisitor(v){const home=(D.cfg.homeCountry||'').toUpperCase();const cc=(v.countryCode||v.country||'').toUpperCase().slice(0,2);const foreign=home&&v.country&&cc&&cc!==home.slice(0,2)&&v.country.toUpperCase().slice(0,2)!==home;const sus=v.hits>60;return {foreign: home? v.country && v.country.toUpperCase()!==home && cc!==home : false, sus}}
+
+function draw(){bpUI();const c=D.cfg;
+  $('kon').textContent=D.online;$('kro').textContent=D.rooms.length;$('kto').textContent=D.total;$('kfa').textContent=D.failTotal||0;
+  $('lk').innerHTML=c.locked?'🔒 <span style="color:var(--bad)">TERKUNCI</span>':'🟢 Terbuka';
+  $('lb').textContent=c.locked?'🔓 Buka kunci website':'🔒 Kunci website sekarang';if(document.activeElement!==$('lm'))$('lm').value=c.msg||'';
+  if(document.activeElement!==$('homeC'))$('homeC').value=c.homeCountry||'';
+
+  // flags
+  curSus = D.visitors.filter(v=>{const f=flagVisitor(v);v._foreign=f.foreign;v._sus=f.sus;return (f.foreign||f.sus)&&v.online});
+  const secCount = curSus.length + (D.failTotal||0);
+  [$('navsec-bdg'),$('navsec-bdg2')].forEach(e=>{e.classList.toggle('hide',!secCount);e.textContent=secCount>99?'99+':secCount});
+
+  const badges=v=>(v._foreign?'<span class="badge foreign">🌍 asing</span>':'')+(v._sus?'<span class="badge sus">⚠️ aktivitas tinggi</span>':'');
+  const vRow=v=>`<div class="it"><span class="d ${v.online?'on':''}"></span><b>${esc(v.name||'(belum ada nama)')}</b> <span class="m">• ${ago(v.last)} • ${v.hits}x</span>${badges(v)}<br>IP <code>${esc(v.ip)}</code> ${esc([v.city,v.region,v.country].filter(Boolean).join(', '))}<br><span class="m">${esc(dev(v))} • ${esc(v.pf)} • layar ${esc(v.scr)} • CPU ${v.cpu} • RAM ${v.mem||'?'}GB • ${esc(v.net||'-')} • ${esc(v.lang)} • ${esc(v.tz)}${v.pwa?' • PWA':''}</span>${v.room?'<br>Room: <code>'+esc(v.room)+'</code>':''}<br><button class="r" onclick="ban('ip','${esc(v.ip)}')">Blokir IP</button> <button class="r" onclick="ban('vid','${esc(v.vid)}')">Blokir perangkat</button></div>`;
+
+  $('t-v-list').innerHTML=D.visitors.map(vRow).join('')||'<span class="m">Belum ada data</span>';
+  $('t-d-online').innerHTML=D.visitors.filter(v=>v.online).slice(0,8).map(vRow).join('')||'<span class="m">Tidak ada yang online</span>';
+
+  $('t-r-list').innerHTML=(D.rooms.map(r=>{const cl=(c.closed||[]).includes(r.code);return `<div class="it"><b>${esc(r.title)}</b> <code>${esc(r.code)}</code><br>Host: ${esc(r.host||'?')} • ${r.n} orang • dibuat ${ago(r.created)}<br>IP host <code>${esc(r.ip)}</code> ${esc([r.city,r.country].filter(Boolean).join(', '))}<br>${r.code==='PRIVAT'?'':cl?`<button class="g" onclick="A({action:'openRoom',code:'${esc(r.code)}'})">Buka lagi</button>`:`<button class="r" onclick="confirm('Tutup room ${esc(r.code)}?')&&A({action:'closeRoom',code:'${esc(r.code)}'})">Tutup room</button>`}</div>`}).join('')||'<span class="m">Tidak ada room aktif</span>')+((c.closed||[]).length?'<h2 style="margin-top:14px">Room ditutup</h2>'+c.closed.map(x=>`<div class="it"><code>${esc(x)}</code> <button class="g" onclick="A({action:'openRoom',code:'${esc(x)}'})">Buka lagi</button></div>`).join(''):'');
+
+  const T={visit:'👤 Pengunjung baru',room_create:'🎧 Room dibuat',room_join:'➡️ Masuk room'};
+  $('t-l-list').innerHTML=(D.log.map(l=>`<div class="it">${T[l.type]||esc(l.type)} <b>${esc(l.name||'')}</b> ${l.room?'<code>'+esc(l.room)+'</code>':''}<br><span class="m">${ago(l.t)} • ${esc(l.ip)} ${esc(l.city||'')}</span></div>`).join('')||'<span class="m">Kosong</span>');
+
+  $('susList').innerHTML=curSus.length?curSus.map(v=>`<div class="it"><b>${esc(v.name||v.ip)}</b> ${badges(v)}<br>IP <code>${esc(v.ip)}</code> ${esc([v.city,v.country].filter(Boolean).join(', '))} • ${v.hits}x kunjungan<br><button class="r" onclick="ban('ip','${esc(v.ip)}')">Blokir IP</button></div>`).join(''):'<span class="m">Tidak ada yang mencurigakan saat ini 👍</span>';
+  $('banAllBtn').classList.toggle('hide',!curSus.some(v=>v._foreign));
+
+  const fails=D.fails||[];
+  $('faBadge').classList.toggle('hide',!fails.length);$('faBadge').textContent=fails.length;
+  $('failList').innerHTML=fails.length?fails.slice(0,20).map(f=>`<div class="it">IP <code>${esc(f.ip)}</code> mencoba user <b>${esc(f.user||'-')}</b><br><span class="m">${ago(f.t)}</span> <button class="r" onclick="ban('ip','${esc(f.ip)}')">Blokir IP</button></div>`).join(''):'<span class="m">Belum ada percobaan gagal 👍</span>';
+
+  $('bl').innerHTML=[...(c.banIps||[]).map(x=>['ip',x]),...(c.banVids||[]).map(x=>['vid',x])].map(([k,x])=>`<div class="it"><code>${esc(k==='ip'?x:'perangkat '+x.slice(0,8))}</code> <button class="g" onclick="A({action:'unban',kind:'${k}',value:'${esc(x)}'})">Buka blokir</button></div>`).join('')||'<span class="m">Tidak ada</span>';
+
+  drawCharts();
+}
+
+function drawCharts(){
+  if(typeof Chart==='undefined')return;
+  // activity: bucket log entries by hour label (based on available log window)
+  const buckets={};
+  (D.log||[]).forEach(l=>{const d=new Date(l.t);const k=d.getHours()+':00';buckets[k]=(buckets[k]||0)+1});
+  const labels=Object.keys(buckets).reverse(), vals=labels.map(k=>buckets[k]);
+  const ctxA=$('chActivity').getContext('2d');
+  if(chA)chA.destroy();
+  chA=new Chart(ctxA,{type:'bar',data:{labels:labels.length?labels:['-'],datasets:[{data:vals.length?vals:[0],backgroundColor:'#e11d48cc',borderRadius:6,maxBarThickness:22}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9a9aa5',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#9a9aa5',font:{size:10}},grid:{color:'#ffffff0f'},beginAtZero:true}}}});
+  const cc={};
+  (D.visitors||[]).forEach(v=>{const n=v.country||'?';cc[n]=(cc[n]||0)+1});
+  const ce=Object.entries(cc).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const ctxC=$('chCountry').getContext('2d');
+  if(chC)chC.destroy();
+  chC=new Chart(ctxC,{type:'bar',data:{labels:ce.map(x=>x[0]),datasets:[{data:ce.map(x=>x[1]),backgroundColor:'#8b5cf6cc',borderRadius:6,maxBarThickness:18}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9a9aa5',font:{size:10}},grid:{color:'#ffffff0f'},beginAtZero:true},y:{ticks:{color:'#e7e7ea',font:{size:11}},grid:{display:false}}}}});
+}
+
+function setTab(t){
+  document.querySelectorAll('.nav-btn,.bottomnav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  ['d','v','r','l','s','c'].forEach(x=>{const e=$('t-'+x);if(e)e.classList.toggle('hide',x!==t)});
+  const names={d:'Dasbor',v:'Pengunjung',r:'Room',l:'Log',s:'Keamanan',c:'Kontrol'};$('pagetitle').textContent=names[t]||'Dasbor';
+}
+document.querySelector('.side').addEventListener('click',e=>{const t=e.target.closest('.nav-btn');if(t)setTab(t.dataset.t)});
+$('bnav').addEventListener('click',e=>{const t=e.target.closest('button');if(t)setTab(t.dataset.t)});
 try{localStorage.removeItem('ln_admin_tok')}catch(x){}
 if(tok)start();
 </script></body></html>
