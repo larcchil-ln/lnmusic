@@ -1,8 +1,19 @@
 /* LNMusic Anatomi: cermin anatomi lewat kamera. Deteksi wajah, tangan, dan tubuh (MediaPipe) berjalan di perangkatmu; video tidak diunggah.
    Ini ilustrasi anatomi umum, bukan alat medis dan bukan diagnosis.
    Tambahan: ekspresi/mata/perasaan (blendshape MediaPipe, di perangkat), perkiraan usia (face-api, di perangkat), teks suara (layanan suara browser). */
-(function () {
+(async function () {
   const root = document.getElementById('tab-anatomy'); if (!root) return;
+  // Bisa dimatikan lewat dashboard admin (tab Kontrol). Kalau server tak terjangkau, fitur tetap jalan (fail-open).
+  try {
+    const r = await fetch('/api/config', { cache: 'no-store' });
+    const j = await r.json();
+    if (j && j.anatomyOff) {
+      root.remove();
+      const nb = document.getElementById('nav-anatomy'); if (nb) nb.remove();
+      const mb = document.getElementById('mob-nav-anatomy'); if (mb) mb.remove();
+      return;
+    }
+  } catch (e) {}
   const CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14', MD = 'https://storage.googleapis.com/mediapipe-models/';
   const S = { lang: (function () { try { return localStorage.getItem('an_lang') || 'id-ID'; } catch (e) { return 'id-ID'; } })(), skull: 1, brain: 1, muscle: 1, eyes: 1, head: 1, hand: 1, body: 1, labels: 1, track: 0, look: 'xray', bright: 0.9, reveal: 'full', size: 1, w: 1, h: 1 };
   let face, hand, pose, stream, run = false, loading = false, v, c, x, W = 0, H = 0, C, lastT = -1, lastTs = 0, n = 0, lastPose = null, lbl = [], info = {}, fpsN = 0, fpsT = 0, uiT = 0, blinks = 0, closed = false, t0 = 0;

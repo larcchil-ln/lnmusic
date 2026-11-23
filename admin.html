@@ -122,6 +122,7 @@ code{background:#0a0a10;padding:1.5px 7px;border-radius:7px;font-size:11.5px;bor
 
     <div id="t-c" class="hide">
       <div class="c"><h2>🔒 Kunci website</h2><div class="row"><input id="lm" placeholder="Pesan untuk pengunjung (opsional)"></div><div class="row"><button id="lb" onclick="lockT()"></button></div></div>
+      <div class="c"><h2>🎭 Fitur Anatomi</h2><div class="m" style="font-size:12px;margin-bottom:8px">Sembunyikan tab & fitur kamera "Cermin Anatomi" dari semua pengunjung. Tinggal nyalakan lagi kapan pun mau dipakai.</div><button id="anb" onclick="A({action:'toggleAnatomy',off:!D.cfg.anatomyOff})"></button></div>
       <div class="c"><h2>📱 Perangkat ini</h2><div class="m" style="font-size:12px;margin-bottom:8px">Default: kunci berlaku juga untuk perangkat ini, jadi kamu bisa mengetes. Aktifkan hanya kalau ingin memakai web saat terkunci.</div><button class="g" id="bp" onclick="bypass()"></button></div>
       <div class="c"><h2>📢 Siaran pesan ke semua yang online</h2><div class="row"><input id="bt" placeholder="Tulis pesan..."><button onclick="A({action:'broadcast',text:bt.value}).then(()=>bt.value='')">Kirim</button><button class="g" onclick="A({action:'broadcast',text:''})">Hapus</button></div></div>
       <div class="c"><button class="g" onclick="confirm('Hapus semua log?')&&A({action:'clearLog'})">Bersihkan log</button></div>
@@ -160,7 +161,8 @@ function flagVisitor(v){const home=(D.cfg.homeCountry||'').toUpperCase();const c
 function draw(){bpUI();const c=D.cfg;
   $('kon').textContent=D.online;$('kro').textContent=D.rooms.length;$('kto').textContent=D.total;$('kfa').textContent=D.failTotal||0;
   $('lk').innerHTML=c.locked?'🔒 <span style="color:var(--bad)">TERKUNCI</span>':'🟢 Terbuka';
-  $('lb').textContent=c.locked?'🔓 Buka kunci website':'🔒 Kunci website sekarang';if(document.activeElement!==$('lm'))$('lm').value=c.msg||'';
+  $('lb').textContent=c.locked?'🔓 Buka kunci website':'🔒 Kunci website sekarang';
+  $('anb').textContent=c.anatomyOff?'✅ Aktifkan lagi fitur Anatomi':'🚫 Matikan fitur Anatomi';$('anb').className=c.anatomyOff?'g':'';if(document.activeElement!==$('lm'))$('lm').value=c.msg||'';
   if(document.activeElement!==$('homeC'))$('homeC').value=c.homeCountry||'';
 
   // flags
