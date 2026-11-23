@@ -11,55 +11,83 @@
   const P = l => [(1 - l.x) * W, l.y * H], $ = s => root.querySelector(s);
   const norm = r => r > 90 ? r - 180 : r < -90 ? r + 180 : r;
 
-  // ---------- UI ----------
+  // ---------- UI (layar penuh) ----------
+  root.classList.remove('space-y-5');
+  let vis = { s: 1, x0: 0, x1: 1280, y0: 0, y1: 720 }, active = false, slow = 0;
   const chk = (k, t) => `<label class="an-chk"><input type="checkbox" data-k="${k}"> ${t}</label>`;
-  const rng = (k, t, a, b, s) => `<div class="an-rng"><span>${t}</span><input type="range" data-k="${k}" min="${a}" max="${b}" step="${s}"><output></output></div>`;
-  root.innerHTML = `<div><h3 class="text-2xl md:text-3xl font-extrabold text-white" style="letter-spacing:-.02em">Cermin Anatomi</h3>
-  <p class="text-zinc-400 text-sm md:text-base mt-1">Nyalakan kamera, lalu lihat tengkorak, otak, otot, dan tulang tangan menempel di wajah dan tubuhmu secara real-time.</p></div>
-  <div class="an-wrap"><div class="an-stage" id="an-st"><video id="an-v" playsinline muted style="display:none"></video><canvas id="an-c"></canvas>
-    <div class="an-hud" id="an-hud"></div>
-    <div class="an-ov" id="an-ov"><div><h3>Mulai cermin anatomi</h3><p id="an-msg">Arahkan kamera ke wajah, tangan, atau seluruh badan. Video diproses di perangkatmu dan tidak diunggah ke mana pun.</p><button class="an-btn" id="an-go">Mulai kamera</button></div></div>
-    <div class="an-bar" id="an-bar"><button class="an-mini" id="an-shot">Simpan foto</button><button class="an-mini" id="an-stop">Hentikan</button></div></div>
-  <aside class="an-panel">
-    <div class="an-sec"><h4>Lapisan</h4><div class="an-chips" id="an-q"><button data-q="skull">Tengkorak</button><button data-q="brain">Otak</button><button data-q="muscle">Otot</button><button data-q="all">Semua</button></div>
-      <div class="an-grid">${chk('skull', 'Tengkorak')}${chk('brain', 'Otak')}${chk('muscle', 'Otot')}${chk('eyes', 'Mata')}${chk('head', 'Garis kepala')}${chk('hand', 'Tulang tangan')}${chk('body', 'Tulang tubuh')}${chk('labels', 'Label')}</div></div>
-    <div class="an-sec"><h4>Tampilan</h4><div class="an-chips" id="an-look"><button data-l="xray">X-ray</button><button data-l="solid">Solid</button></div>${rng('bright', 'Kecerahan', 0.3, 1, 0.05)}
-      <div class="an-rng"><span>Reveal</span><select data-k="reveal"><option value="full">Penuh</option><option value="half">Setengah wajah</option><option value="lens">Lensa (ikut tangan)</option></select><output></output></div></div>
+  const rng = (k, t, a, b, st2) => `<div class="an-rng"><span>${t}</span><input type="range" data-k="${k}" min="${a}" max="${b}" step="${st2}"><output></output></div>`;
+  const XI = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  const SI = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>';
+  root.innerHTML = `<video id="an-v" playsinline muted></video><canvas id="an-c"></canvas><div class="an-dim"></div><div class="an-vig"></div><div class="an-scan"></div>
+  <div class="an-top"><button class="an-ib" id="an-close" aria-label="Tutup">${XI}</button><div class="an-pill"><i class="an-live"></i>Cermin Anatomi<span id="an-state"></span></div><span style="flex:1"></span><button class="an-ib" id="an-set" aria-label="Pengaturan">${SI}</button></div>
+  <div class="an-info" id="an-info"><div class="an-info-h" id="an-ih">Cek tubuh <small>ketuk untuk lipat</small></div><div id="an-check" class="an-check">Menunggu kamera...</div><p class="an-note">Ilustrasi anatomi umum dari titik pelacakan kamera, bukan alat medis atau diagnosis. Video diproses di perangkatmu.</p></div>
+  <div class="an-hud" id="an-hud"></div>
+  <div class="an-dock"><div class="an-chips" id="an-q"><button data-q="skull">Tengkorak</button><button data-q="brain">Otak</button><button data-q="muscle">Otot</button><button data-q="all">Semua</button></div>
+    <div class="an-chips" id="an-look"><button data-l="xray">X-ray</button><button data-l="solid">Solid</button></div><div class="an-chips"><button id="an-lbl">Label</button><button id="an-shot">Foto</button></div></div>
+  <aside class="an-drawer"><div class="an-dh"><h3>Pengaturan</h3><button class="an-ib" id="an-set2" aria-label="Tutup">${XI}</button></div>
+    <div class="an-sec"><h4>Lapisan</h4><div class="an-grid">${chk('skull', 'Tengkorak')}${chk('brain', 'Otak')}${chk('muscle', 'Otot')}${chk('eyes', 'Mata')}${chk('head', 'Garis kepala')}${chk('hand', 'Tulang tangan')}${chk('body', 'Tulang tubuh')}${chk('labels', 'Label')}</div></div>
+    <div class="an-sec"><h4>Tampilan</h4>${rng('bright', 'Kecerahan', 0.3, 1, 0.05)}<div class="an-rng"><span>Reveal</span><select data-k="reveal"><option value="full">Penuh</option><option value="half">Setengah wajah</option><option value="lens">Lensa (ikut tangan)</option></select><output></output></div></div>
     <div class="an-sec"><h4>Sesuaikan ke kepalamu</h4>${rng('size', 'Ukuran', 0.7, 1.4, 0.01)}${rng('w', 'Lebar', 0.7, 1.4, 0.01)}${rng('h', 'Tinggi', 0.7, 1.4, 0.01)}<button class="an-mini" id="an-reset" style="margin-top:6px">Reset</button></div>
-    <div class="an-sec"><h4>Cek tubuh</h4><div id="an-check" class="an-check">Nyalakan kamera untuk memulai pengecekan.</div>${chk('track', 'Tampilkan data tracking')}</div>
-    <p class="an-note">Ilustrasi anatomi umum dari titik pelacakan kamera. Bukan alat medis dan bukan diagnosis. Hasil cek tubuh hanya perkiraan kasar.</p>
-  </aside></div>`;
+    <div class="an-sec"><h4>Performa</h4>${chk('lite', 'Mode hemat (lebih ringan)')}${chk('track', 'Tampilkan data tracking')}</div>
+  </aside>
+  <div class="an-ov" id="an-ov"><div><div class="an-spin"></div><h3 id="an-ttl">Menyalakan kamera</h3><p id="an-msg">Izinkan akses kamera saat diminta browser.</p><button class="an-btn" id="an-go" style="display:none">Coba lagi</button></div></div>`;
   const st = document.createElement('style');
-  st.textContent = `.an-wrap{display:grid;gap:20px;grid-template-columns:minmax(0,1fr)}@media(min-width:1024px){.an-wrap{grid-template-columns:minmax(0,1.7fr) minmax(340px,1fr);align-items:start}}
-  .an-stage{position:relative;border-radius:22px;overflow:hidden;background:#000;border:1px solid rgba(255,255,255,.1);aspect-ratio:16/10;display:grid;place-items:center}.an-stage canvas{width:100%;height:100%;object-fit:contain;display:block}
-  .an-ov{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;background:radial-gradient(circle at 50% 40%,rgba(244,63,94,.16),rgba(0,0,0,.9) 70%)}
+  st.textContent = `#tab-anatomy:not(.hidden){display:block;position:fixed;inset:0;z-index:70;background:#000;margin:0!important;overflow:hidden}
+  #tab-anatomy video,#tab-anatomy canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}#an-v{transform:scaleX(-1)}
+  .an-xr #an-c{mix-blend-mode:screen}.an-dim{position:absolute;inset:0;background:rgba(0,8,26,.4);opacity:0;pointer-events:none;transition:opacity .3s}.an-xr .an-dim{opacity:1}
+  .an-vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.6))}
+  .an-scan{position:absolute;left:0;right:0;top:0;height:2px;pointer-events:none;opacity:.45;background:linear-gradient(90deg,transparent,rgba(120,180,255,.6),transparent);animation:anScan 5s linear infinite}@keyframes anScan{to{transform:translateY(100vh)}}
+  .an-top{position:absolute;top:max(12px,env(safe-area-inset-top));left:12px;right:12px;display:flex;align-items:center;gap:10px;z-index:3}
+  .an-pill{display:flex;align-items:center;gap:9px;padding:.6rem 1.05rem;border-radius:999px;background:rgba(10,10,16,.72);border:1px solid rgba(255,255,255,.12);color:#fff;font-weight:800;font-size:15.5px}.an-pill span{font-weight:600;font-size:13px;color:#a1a1aa}
+  .an-live{width:9px;height:9px;border-radius:50%;background:#f43f5e;box-shadow:0 0 10px #f43f5e;animation:anPulse 1.4s infinite}@keyframes anPulse{50%{opacity:.3}}
+  .an-ib{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:rgba(10,10,16,.72);border:1px solid rgba(255,255,255,.12);color:#fff;flex:none}.an-ib:hover{background:rgba(40,40,52,.9)}
+  .an-info{position:absolute;left:12px;top:calc(max(12px,env(safe-area-inset-top)) + 58px);width:min(310px,calc(100% - 24px));padding:14px 16px;border-radius:18px;background:rgba(10,10,16,.72);border:1px solid rgba(255,255,255,.12);z-index:3}
+  .an-info-h{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:#a1a1aa;font-weight:800;cursor:pointer;display:flex;justify-content:space-between;margin-bottom:6px}.an-info-h small{font-size:11px;text-transform:none;letter-spacing:0;font-weight:500;color:#71717a}
+  .an-info.min .an-check,.an-info.min .an-note{display:none}
+  .an-hud{position:absolute;left:12px;bottom:96px;display:none;font:600 12.5px/1.55 ui-monospace,monospace;color:#d1fae5;background:rgba(0,0,0,.6);padding:8px 11px;border-radius:10px;white-space:pre;z-index:3}
+  .an-dock{position:absolute;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;max-width:calc(100% - 24px);padding:8px 12px;border-radius:22px;background:rgba(10,10,16,.78);border:1px solid rgba(255,255,255,.12);z-index:3}
+  .an-dock .an-chips{margin:0}.an-chips{display:flex;gap:6px}.an-chips button{padding:.6rem 1.05rem;border-radius:999px;font-size:15px;font-weight:700;color:#d4d4d8;background:rgba(255,255,255,.08);white-space:nowrap}.an-chips button.on{background:#fff;color:#09090b}
+  .an-drawer{position:absolute;top:0;right:0;bottom:0;width:min(380px,100%);background:rgba(12,12,18,.97);border-left:1px solid rgba(255,255,255,.1);transform:translateX(105%);transition:transform .35s cubic-bezier(.22,1,.36,1);z-index:5;overflow-y:auto;padding:max(18px,env(safe-area-inset-top)) 18px 26px;display:flex;flex-direction:column;gap:22px}
+  #tab-anatomy.an-open .an-drawer{transform:none}.an-dh{display:flex;justify-content:space-between;align-items:center}.an-dh h3{font-size:1.5rem;font-weight:800;color:#fff}
+  @media(max-width:767px){.an-drawer{top:auto;left:0;width:100%;max-height:74vh;border-left:0;border-top:1px solid rgba(255,255,255,.1);border-radius:22px 22px 0 0;transform:translateY(105%)}.an-dock{gap:6px 8px;padding:8px}.an-chips button{padding:.5rem .8rem;font-size:14px}}
+  .an-ov{position:absolute;inset:0;z-index:6;display:grid;place-items:center;text-align:center;padding:24px;background:radial-gradient(circle at 50% 40%,rgba(244,63,94,.18),rgba(0,0,0,.93) 70%)}
   .an-ov h3{font-size:clamp(1.5rem,3vw,2.2rem);font-weight:800;color:#fff}.an-ov p{font-size:16px;color:#a1a1aa;max-width:460px;margin:10px auto 20px;line-height:1.5}
-  .an-btn{padding:.95rem 2rem;border-radius:14px;font-weight:700;font-size:16px;color:#fff;background:linear-gradient(135deg,#f43f5e,#8b5cf6);box-shadow:0 10px 30px -10px rgba(244,63,94,.7)}.an-btn:disabled{opacity:.6}
-  .an-bar{position:absolute;right:12px;bottom:12px;display:none;gap:8px}.an-mini{padding:.55rem 1rem;border-radius:12px;background:rgba(255,255,255,.12);color:#fff;font-weight:700;font-size:14px}.an-mini:hover{background:rgba(255,255,255,.22)}
-  .an-hud{position:absolute;left:12px;top:12px;display:none;font:600 12.5px/1.55 ui-monospace,monospace;color:#d1fae5;background:rgba(0,0,0,.6);padding:8px 11px;border-radius:10px;white-space:pre}
-  .an-panel{border-radius:22px;padding:20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);display:flex;flex-direction:column;gap:22px}
+  .an-spin{width:44px;height:44px;margin:0 auto 18px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:#f43f5e;animation:anSp .9s linear infinite}@keyframes anSp{to{transform:rotate(360deg)}}
+  .an-btn{padding:.95rem 2rem;border-radius:14px;font-weight:700;font-size:16px;color:#fff;background:linear-gradient(135deg,#f43f5e,#8b5cf6)}
+  .an-mini{padding:.55rem 1rem;border-radius:12px;background:rgba(255,255,255,.12);color:#fff;font-weight:700;font-size:14px}
   .an-sec h4{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:#a1a1aa;font-weight:800;margin-bottom:10px}
-  .an-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}.an-chips button{padding:.5rem 1rem;border-radius:999px;font-size:14.5px;font-weight:700;color:#d4d4d8;background:rgba(255,255,255,.08)}.an-chips button.on{background:#fff;color:#09090b}
   .an-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 14px}.an-chk{display:flex;align-items:center;gap:10px;font-size:15.5px;font-weight:600;color:#fff;padding:6px 0;cursor:pointer}.an-chk input{width:18px;height:18px;accent-color:#f43f5e}
   .an-rng{display:grid;grid-template-columns:92px 1fr 46px;align-items:center;gap:10px;font-size:14.5px;font-weight:600;color:#e4e4e7;padding:5px 0}.an-rng input{accent-color:#f43f5e;width:100%}.an-rng output{font-size:13px;color:#a1a1aa;text-align:right}
   .an-rng select{grid-column:2/4;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;padding:.5rem .6rem;font-size:14.5px}
-  .an-check{font-size:15px;line-height:1.7;color:#d4d4d8;margin-bottom:6px}.an-check b{color:#fff}.an-check .ok{color:#34d399}.an-check .warn{color:#fbbf24}
-  .an-note{font-size:13px;line-height:1.5;color:#71717a}`;
+  .an-check{font-size:14.5px;line-height:1.7;color:#d4d4d8}.an-check b{color:#fff}.an-check .ok{color:#34d399}.an-check .warn{color:#fbbf24}.an-note{font-size:12px;line-height:1.5;color:#71717a;margin-top:6px}`;
   document.head.appendChild(st);
-  v = $('#an-v'); c = $('#an-c'); x = c.getContext('2d');
+  v = $('#an-v'); c = $('#an-c'); x = c.getContext('2d', { desynchronized: true });
   function sync() {
     root.querySelectorAll('[data-k]').forEach(e => { const k = e.dataset.k; if (e.type === 'checkbox') e.checked = !!S[k]; else e.value = S[k]; const o = e.nextElementSibling; if (e.type === 'range' && o) o.textContent = (+S[k]).toFixed(2); });
     root.querySelectorAll('#an-look button').forEach(b => b.classList.toggle('on', b.dataset.l === S.look));
+    root.classList.toggle('an-xr', S.look === 'xray'); $('#an-lbl').classList.toggle('on', !!S.labels);
   }
   root.addEventListener('input', e => { const k = e.target.dataset && e.target.dataset.k; if (!k) return; S[k] = e.target.type === 'checkbox' ? (e.target.checked ? 1 : 0) : e.target.type === 'range' ? +e.target.value : e.target.value; sync(); });
   root.addEventListener('click', e => {
+    if (e.target.closest('#an-ih')) $('#an-info').classList.toggle('min');
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.l) { S.look = b.dataset.l; sync(); }
     if (b.dataset.q) { const q = b.dataset.q; S.skull = +(q === 'skull' || q === 'all'); S.brain = +(q === 'brain' || q === 'all'); S.muscle = +(q === 'muscle' || q === 'all'); S.eyes = 1; sync(); }
     if (b.id === 'an-reset') { S.size = S.w = S.h = 1; sync(); }
-    if (b.id === 'an-go') start(); if (b.id === 'an-stop') stop();
-    if (b.id === 'an-shot') c.toBlob(bl => { const a = document.createElement('a'); a.href = URL.createObjectURL(bl); a.download = 'anatomi.png'; a.click(); });
+    if (b.id === 'an-lbl') { S.labels = S.labels ? 0 : 1; sync(); }
+    if (b.id === 'an-set' || b.id === 'an-set2') root.classList.toggle('an-open');
+    if (b.id === 'an-close') window.switchTab('online');
+    if (b.id === 'an-go') start();
+    if (b.id === 'an-shot') shot();
   });
+  function shot() {
+    const o = document.createElement('canvas'); o.width = W; o.height = H; const g = o.getContext('2d');
+    g.translate(W, 0); g.scale(-1, 1); g.drawImage(v, 0, 0, W, H); g.setTransform(1, 0, 0, 1, 0, 0);
+    if (S.look === 'xray') { g.fillStyle = 'rgba(0,8,26,.4)'; g.fillRect(0, 0, W, H); g.globalCompositeOperation = 'screen'; } g.drawImage(c, 0, 0);
+    o.toBlob(bl => { const a = document.createElement('a'); a.href = URL.createObjectURL(bl); a.download = 'anatomi.png'; a.click(); });
+  }
+  function view() { const bw = root.clientWidth || innerWidth, bh = root.clientHeight || innerHeight, w = c.width || 1280, h = c.height || 720, k = Math.max(bw / w, bh / h); vis = { s: k, x0: (w - bw / k) / 2, x1: (w + bw / k) / 2, y0: (h - bh / k) / 2, y1: (h + bh / k) / 2 }; }
+  window.addEventListener('resize', view);
   sync();
 
   // ---------- Model ----------
@@ -70,25 +98,27 @@
     hand = await mk(m.HandLandmarker, 'hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task', { numHands: 2 });
     pose = await mk(m.PoseLandmarker, 'pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task', {});
   }
-  const msg = t => { $('#an-msg').textContent = t; };
+  const ov = (show, ttl, txt, btn) => { $('#an-ov').style.display = show ? 'grid' : 'none'; if (!show) return; $('#an-ttl').textContent = ttl; $('#an-msg').textContent = txt; $('#an-go').style.display = btn ? '' : 'none'; $('.an-spin').style.display = btn ? 'none' : ''; };
   async function start() {
-    if (run || loading) return; loading = true; $('#an-go').disabled = true; msg('Memuat model deteksi (sekali saja)...');
+    if (run || loading) return; loading = true; ov(1, 'Menyalakan kamera', 'Izinkan akses kamera saat diminta browser. Video hanya diproses di perangkatmu.', 0);
     try {
+      const big = innerWidth >= 768;
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: big ? 960 : 640 }, height: { ideal: big ? 540 : 480 }, frameRate: { ideal: 30 } }, audio: false });
+      ov(1, 'Memuat model deteksi', 'Hanya sekali, sebentar saja...', 0);
       if (!face) await load();
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
-      v.srcObject = stream; await v.play(); run = true; $('#an-ov').style.display = 'none'; $('#an-bar').style.display = 'flex'; lastT = -1; blinks = 0; t0 = performance.now(); frame();
-    } catch (e) { msg(e && e.name === 'NotAllowedError' ? 'Izin kamera ditolak. Izinkan kamera di pengaturan browser lalu coba lagi.' : 'Gagal memulai. Pastikan internet aktif (untuk memuat model) dan situs dibuka lewat https.'); }
-    loading = false; $('#an-go').disabled = false;
+      v.srcObject = stream; await v.play(); run = true; ov(0); lastT = -1; blinks = 0; t0 = performance.now(); nextF();
+    } catch (e) {
+      if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+      ov(1, 'Belum bisa memulai', e && e.name === 'NotAllowedError' ? 'Izin kamera ditolak. Izinkan kamera di pengaturan browser untuk situs ini, lalu coba lagi.' : 'Pastikan internet aktif (model dimuat sekali) dan situs dibuka lewat https.', 1);
+    }
+    loading = false;
   }
-  function stop() {
-    run = false; if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; v.srcObject = null;
-    $('#an-ov').style.display = 'grid'; $('#an-bar').style.display = 'none'; $('#an-hud').style.display = 'none'; msg('Kamera dimatikan. Tekan mulai untuk menyalakan lagi.');
-  }
+  function stop() { run = false; if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; v.srcObject = null; }
 
   // ---------- Gambar ----------
   const colors = () => { const X = S.look === 'xray', a = +S.bright; return X ? { X, bone: `rgba(228,242,255,${.92 * a})`, glow: `rgba(110,160,255,${.3 * a})`, fill: `rgba(120,170,255,${.1 * a})`, hole: 'rgba(0,8,30,.55)', brain: `rgba(255,110,190,${.5 * a})`, mus: `rgba(255,70,80,${.38 * a})`, eye: `rgba(170,225,255,${.9 * a})`, head: 'rgba(70,130,255,.95)' } : { X, bone: '#ece5d2', glow: '#7d725a', fill: '#d9d0b8', hole: '#2a2420', brain: '#d98aa0', mus: '#b3262e', eye: '#f5f5f5', head: '#3b82f6' }; };
-  const line = (pts, w) => { x.lineCap = x.lineJoin = 'round'; x.beginPath(); pts.forEach((q, i) => i ? x.lineTo(q[0], q[1]) : x.moveTo(q[0], q[1])); x.strokeStyle = C.glow; x.lineWidth = w * 1.7; x.stroke(); x.strokeStyle = C.bone; x.lineWidth = C.X ? w * .5 : w; x.stroke(); };
-  const shape = (fn, w, hole) => { x.lineCap = x.lineJoin = 'round'; x.beginPath(); fn(); x.fillStyle = hole ? C.hole : C.fill; x.fill(); x.strokeStyle = C.glow; x.lineWidth = w * 1.7; x.stroke(); x.strokeStyle = C.bone; x.lineWidth = C.X ? w * .5 : w; x.stroke(); };
+  const line = (pts, w) => { x.lineCap = x.lineJoin = 'round'; x.beginPath(); pts.forEach((q, i) => i ? x.lineTo(q[0], q[1]) : x.moveTo(q[0], q[1])); if (!S.lite) { x.strokeStyle = C.glow; x.lineWidth = w * 1.7; x.stroke(); } x.strokeStyle = C.bone; x.lineWidth = C.X ? w * .5 : w; x.stroke(); };
+  const shape = (fn, w, hole) => { x.lineCap = x.lineJoin = 'round'; x.beginPath(); fn(); x.fillStyle = hole ? C.hole : C.fill; x.fill(); if (!S.lite) { x.strokeStyle = C.glow; x.lineWidth = w * 1.7; x.stroke(); } x.strokeStyle = C.bone; x.lineWidth = C.X ? w * .5 : w; x.stroke(); };
   const ell = (q, rx, ry, a) => x.ellipse(q[0], q[1], Math.max(rx, .1), Math.max(ry, .1), a, 0, 7);
   const dot = (q, r, col) => { x.beginPath(); x.arc(q[0], q[1], Math.max(r, .1), 0, 7); x.fillStyle = col; x.fill(); };
   const lab = (t, q, on) => { if (S.labels && on) lbl.push([t, q]); };
@@ -113,14 +143,16 @@
     }
     if (S.brain) {
       const bc = add(p(168), u, .6 * fh), rx = fw * .42, ry = fh * .3;
-      x.save(); x.beginPath(); ell(bc, rx, ry, ang); x.fillStyle = C.brain; x.fill(); x.clip();
+      x.save(); x.beginPath(); ell(bc, rx, ry, ang); const bg = x.createRadialGradient(bc[0], bc[1], 0, bc[0], bc[1], Math.max(rx, ry)); bg.addColorStop(0, C.brain); bg.addColorStop(1, C.X ? 'rgba(170,60,200,.45)' : '#b8607f'); x.fillStyle = bg; x.fill(); x.clip();
       x.strokeStyle = C.X ? 'rgba(255,200,230,.7)' : '#a35c75'; x.lineWidth = fw * .012;
-      for (let k = -4; k <= 4; k++) { x.beginPath(); for (let t = -1; t <= 1.01; t += .08) { const o = [t * rx, k * ry * .22 + Math.sin(t * 9 + k) * ry * .07]; const q = [bc[0] + o[0] * Math.cos(ang) - o[1] * Math.sin(ang), bc[1] + o[0] * Math.sin(ang) + o[1] * Math.cos(ang)]; t <= -.99 ? x.moveTo(q[0], q[1]) : x.lineTo(q[0], q[1]); } x.stroke(); }
+      for (let k = -4; k <= 4 && !S.lite; k++) { x.beginPath(); for (let t = -1; t <= 1.01; t += .08) { const o = [t * rx, k * ry * .22 + Math.sin(t * 9 + k) * ry * .07]; const q = [bc[0] + o[0] * Math.cos(ang) - o[1] * Math.sin(ang), bc[1] + o[0] * Math.sin(ang) + o[1] * Math.cos(ang)]; t <= -.99 ? x.moveTo(q[0], q[1]) : x.lineTo(q[0], q[1]); } x.stroke(); }
+      x.strokeStyle = 'rgba(255,230,245,.8)'; x.lineWidth = fw * .015; x.beginPath(); x.moveTo(...add(bc, u, ry)); x.lineTo(...add(bc, u, -ry)); x.stroke();
       x.restore(); lab('Otak (serebrum)', bc, 1);
     }
     if (S.skull) {
       const c1 = sd(up(A, .95), -.06), c2 = sd(up(B, .95), .06);
       shape(() => { x.moveTo(...A); x.bezierCurveTo(...c1, ...c2, ...B);[300, 293, 334, 296, 336, 107, 66, 105, 63, 70].forEach(i => x.lineTo(...p(i))); x.closePath(); }, lw);
+      { const cg = x.createRadialGradient(...up(M, .6), 0, ...up(M, .5), fh * .75); cg.addColorStop(0, C.X ? 'rgba(190,220,255,.34)' : 'rgba(255,250,235,.5)'); cg.addColorStop(1, 'rgba(0,0,0,0)'); x.beginPath(); x.moveTo(...A); x.bezierCurveTo(...c1, ...c2, ...B); x.closePath(); x.fillStyle = cg; x.fill(); }
       line([up(A, .6), up(M, .8), up(B, .6)], lw * .6); line([up(M, .97), up(M, .12)], lw * .5);
       [[33, 133], [362, 263]].forEach(([a, b]) => { const ec = mid(p(a), p(b)), ew = d(p(a), p(b)); shape(() => ell(ec, ew * .72, ew * .58, ang), lw * 1.3, 1); });
       shape(() => { x.moveTo(...lerp(p(168), p(1), .3)); x.lineTo(...p(129)); x.lineTo(...p(2)); x.lineTo(...p(358)); x.closePath(); }, lw, 1);
@@ -178,48 +210,52 @@
 
   function drawLabels() {
     if (!S.labels || !lbl.length) return;
-    const fs = Math.max(12, Math.round(W / 62)), pad = 14, L = [], R = []; x.font = `600 ${fs}px sans-serif`; x.textBaseline = 'middle';
-    lbl.sort((a, b) => a[1][1] - b[1][1]).forEach(l => (l[1][0] < W / 2 ? L : R).push(l));
+    const fs = Math.round(15 / vis.s), pad = Math.round(14 / vis.s), top = vis.y0 + 110 / vis.s, bot = vis.y1 - 100 / vis.s, mx = (vis.x0 + vis.x1) / 2, L = [], R = [];
+    x.font = `600 ${fs}px system-ui,sans-serif`; x.textBaseline = 'middle';
+    lbl.filter(l => l[1][0] > vis.x0 && l[1][0] < vis.x1 && l[1][1] > vis.y0 && l[1][1] < vis.y1).sort((a, b) => a[1][1] - b[1][1]).forEach(l => (l[1][0] < mx ? L : R).push(l));
     [[L, 0], [R, 1]].forEach(([arr, r]) => {
       let y0 = -1e9;
       arr.forEach(([t, q]) => {
-        const y = Math.max(q[1], y0 + fs * 1.5); y0 = y; const tx = r ? W - pad : pad, w2 = x.measureText(t).width, ex = r ? tx - w2 - 8 : tx + w2 + 8;
-        x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = 1; x.beginPath(); x.moveTo(q[0], q[1]); x.lineTo(ex, y); x.stroke(); dot(q, 2.5, '#fff');
-        x.fillStyle = '#fff'; x.textAlign = r ? 'right' : 'left'; x.shadowColor = 'rgba(0,0,0,.9)'; x.shadowBlur = 4; x.fillText(t, tx, y); x.shadowBlur = 0;
+        const y = Math.min(Math.max(q[1], top, y0 + fs * 1.7), bot); y0 = y; const tx = r ? vis.x1 - pad : vis.x0 + pad, w2 = x.measureText(t).width, ex = r ? tx - w2 - 10 : tx + w2 + 10;
+        x.strokeStyle = 'rgba(255,255,255,.6)'; x.lineWidth = 1; x.beginPath(); x.moveTo(q[0], q[1]); x.lineTo(ex, y); x.stroke(); dot(q, 2.5, '#fff');
+        x.fillStyle = 'rgba(8,10,18,.62)'; x.fillRect(r ? tx - w2 - 8 : tx - 6, y - fs * .75, w2 + 14, fs * 1.5);
+        x.fillStyle = '#fff'; x.textAlign = r ? 'right' : 'left'; x.fillText(t, tx, y);
       });
     });
   }
 
-  let lastFace = null;
+  let lastFace = null, cur = { f: null, h: [], p: null }, sm = { f: null, h: [], p: null };
+  const nextF = () => v.requestVideoFrameCallback ? v.requestVideoFrameCallback(frame) : requestAnimationFrame(frame);
+  const smooth = (a, b, k) => !b ? null : (!a || a.length !== b.length) ? b : b.map((q, i) => ({ x: a[i].x + (q.x - a[i].x) * k, y: a[i].y + (q.y - a[i].y) * k, z: q.z, visibility: q.visibility }));
   function frame() {
-    if (!run) return; requestAnimationFrame(frame);
-    if (v.readyState < 2 || v.currentTime === lastT) return; lastT = v.currentTime;
-    if (c.width !== v.videoWidth) { c.width = v.videoWidth; c.height = v.videoHeight; $('#an-st').style.aspectRatio = c.width + '/' + c.height; }
-    W = c.width; H = c.height; const ts = Math.max(performance.now(), lastTs + 1); lastTs = ts;
-    let F = null, Hs = [], Po = lastPose;
-    try { const fr = face.detectForVideo(v, ts); F = fr.faceLandmarks[0] || null; Hs = hand.detectForVideo(v, ts).landmarks || []; if (n++ % 2 === 0) lastPose = Po = pose.detectForVideo(v, ts).landmarks[0] || null; } catch (e) {}
-    lastFace = F; C = colors();
-    x.globalCompositeOperation = 'source-over'; x.save(); x.translate(W, 0); x.scale(-1, 1); x.drawImage(v, 0, 0, W, H); x.restore();
-    if (C.X) { x.fillStyle = 'rgba(0,6,20,.35)'; x.fillRect(0, 0, W, H); }
-    lbl = []; let lens = null;
+    if (!run) return; nextF();
+    if (v.readyState < 2 || (!v.requestVideoFrameCallback && v.currentTime === lastT)) return; lastT = v.currentTime;
+    if (c.width !== v.videoWidth) { c.width = v.videoWidth; c.height = v.videoHeight; view(); }
+    W = c.width; H = c.height; const t1 = performance.now(), ts = Math.max(t1, lastTs + 1); lastTs = ts; n++;
+    try { // model dijalankan bergantian supaya tiap frame tetap ringan
+      cur.f = face.detectForVideo(v, ts).faceLandmarks[0] || null;
+      if (S.hand) { if (n % (S.lite ? 3 : 2) === 0) cur.h = hand.detectForVideo(v, ts).landmarks || []; } else cur.h = [];
+      if (n % (S.body ? (S.lite ? 5 : 3) : 8) === 0) cur.p = pose.detectForVideo(v, ts).landmarks[0] || null;
+    } catch (e) {}
+    const F = sm.f = smooth(sm.f, cur.f, .6), Po = sm.p = smooth(sm.p, cur.p, .5); sm.h = cur.h.map((hh, i) => smooth(sm.h[i], hh, .6)); const Hs = sm.h;
+    lastFace = F; C = colors(); x.clearRect(0, 0, W, H); lbl = []; let lens = null;
     x.save();
     if (S.reveal === 'half' && F) { const cn = mid(P(F[10]), P(F[152])); x.beginPath(); x.rect(0, 0, cn[0], H); x.clip(); }
     if (S.reveal === 'lens') { x.beginPath(); if (Hs[0]) { const q = Hs[0].map(P); lens = [lerp(mid(q[0], q[5]), q[17], .33), d(q[0], q[9]) * 2.4]; x.arc(lens[0][0], lens[0][1], lens[1], 0, 7); } else x.rect(0, 0, 0, 0); x.clip(); }
-    x.globalCompositeOperation = C.X ? 'lighter' : 'source-over';
     if (S.body && Po) drawBody(Po); if (F) drawFace(F); if (S.hand) Hs.forEach(drawHand);
-    x.restore(); x.globalCompositeOperation = 'source-over';
+    x.restore();
     if (lens) { x.beginPath(); x.arc(lens[0][0], lens[0][1], lens[1], 0, 7); x.strokeStyle = 'rgba(255,255,255,.6)'; x.lineWidth = 2; x.stroke(); }
     drawLabels();
-    // data tracking & cek tubuh
     fpsN++; if (ts - fpsT > 1000) { info.fps = fpsN; fpsN = 0; fpsT = ts; }
     if (F) {
       const r = k => P(F[k]), A = r(234), B = r(454), s = unit(A, B), ev = (a, b, e, f2) => d(r(a), r(b)) / d(r(e), r(f2));
       info.roll = norm(Math.atan2(s[1], s[0]) * 180 / Math.PI); info.yaw = ((P(F[1])[0] - mid(A, B)[0]) / (d(A, B) || 1)) * -120; info.pitch = ((d(r(1), mid(r(33), r(263))) / (d(r(10), r(152)) || 1)) - .3) * 220; info.fw = d(A, B) / W;
       const ear = (ev(159, 145, 33, 133) + ev(386, 374, 362, 263)) / 2; if (ear < .17 && !closed) { blinks++; closed = true; } if (ear > .21) closed = false;
     }
-    if (Po && Po[11] && Po[12]) { const a = P(Po[11]), b = P(Po[12]); info.tilt = norm(Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI); info.sw = d(a, b) / W; } else info.tilt = null;
-    if (Hs[0]) { const q = Hs[0].map(P), o = [8, 12, 16, 20].reduce((s2, i) => s2 + d(q[i], q[0]), 0) / 4 / (d(q[0], q[9]) || 1); info.open = o; } else info.open = null;
+    if (Po && Po[11] && Po[12]) { const a = P(Po[11]), b = P(Po[12]); info.tilt = norm(Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI); } else info.tilt = null;
+    if (Hs[0]) { const q = Hs[0].map(P); info.open = [8, 12, 16, 20].reduce((s2, i) => s2 + d(q[i], q[0]), 0) / 4 / (d(q[0], q[9]) || 1); } else info.open = null;
     info.face = !!F; info.hands = Hs.length; info.body = !!Po;
+    slow = slow * .92 + (performance.now() - t1) * .08; if (!S.lite && n > 45 && slow > 42) { S.lite = 1; sync(); } // otomatis hemat kalau berat
     if (ts - uiT > 400) { uiT = ts; ui(ts); }
   }
   const cls = (ok, t) => `<span class="${ok ? 'ok' : 'warn'}">${t}</span>`;
@@ -231,13 +267,21 @@
     if (info.face) rows.push(`Jarak: ${info.fw > .55 ? cls(0, 'terlalu dekat') : info.fw < .16 ? cls(0, 'terlalu jauh') : cls(1, 'pas')}`);
     if (info.face && min > .15) rows.push(`Kedip: <b>${Math.round(blinks / min)}</b>/menit ${cls(blinks / min >= 8, blinks / min >= 8 ? 'wajar' : 'jarang, istirahatkan mata')}`);
     rows.push(info.open == null ? 'Tangan: <b>belum terlihat</b>' : `Tangan: <b>${info.open > 1.7 ? 'terbuka' : 'mengepal'}</b>`);
-    ck.innerHTML = rows.join('<br>');
+    ck.innerHTML = rows.join('<br>'); $('#an-state').textContent = (S.lite ? 'hemat · ' : '') + (info.fps || 0) + ' fps';
     const hud = $('#an-hud'); hud.style.display = S.track ? 'block' : 'none';
     if (S.track) hud.textContent = `FPS ${info.fps || 0}\nWajah ${info.face ? 'ya' : '-'}  Tangan ${info.hands}  Tubuh ${info.body ? 'ya' : '-'}` + (info.face ? `\nYaw ≈${(info.yaw || 0).toFixed(0)}°  Pitch ≈${(info.pitch || 0).toFixed(0)}°  Roll ${(info.roll || 0).toFixed(0)}°` : '');
   }
 
-  // matikan kamera saat pindah tab atau halaman disembunyikan
-  const o = window.switchTab; if (typeof o === 'function') window.switchTab = function (t) { if (t !== 'anatomy' && run) stop(); return o.apply(this, arguments); };
-  document.addEventListener('visibilitychange', () => { if (document.hidden && run) stop(); });
+  // masuk tab = layar penuh + langsung minta izin kamera; keluar tab = kamera mati
+  function enter() {
+    active = true; document.documentElement.style.overflow = 'hidden'; root.classList.remove('an-open'); $('#an-info').classList.toggle('min', innerWidth < 768);
+    if (innerWidth >= 768 && root.requestFullscreen && !document.fullscreenElement) root.requestFullscreen().catch(() => {});
+    view(); start();
+  }
+  function leave() { active = false; document.documentElement.style.overflow = ''; stop(); if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {}); }
+  const o = window.switchTab;
+  if (typeof o === 'function') window.switchTab = function (t) { const r = o.apply(this, arguments); if (t === 'anatomy') { if (!active) enter(); } else if (active) leave(); return r; };
+  document.addEventListener('fullscreenchange', () => { if (active && !document.fullscreenElement && innerWidth >= 768) window.switchTab('online'); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && run) stop(); else if (!document.hidden && active && !run) start(); });
   window.LNAnatomy = { S, drawFace, drawHand, drawBody, setup(ctx, w, h) { x = ctx; W = w; H = h; C = colors(); } };
 })();
