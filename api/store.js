@@ -39,6 +39,40 @@ module.exports = async (req, res) => {
       const exp = Date.now() + 30 * 864e5;
       return res.json({ token: `${u}.${exp}.${sign(u + '.' + exp)}` });
     }
+    // ===== Room publik (kode LN-XXXX + PIN host) — tanpa login, supaya host bisa lanjut dari perangkat lain =====
+    if (b.action === 'croom_create' || b.action === 'croom_claim') {
+      const code = String(b.code || '').toUpperCase();
+      const pin = String(b.pin || '');
+      if (!/^LN-[A-Z0-9]{4,8}$/.test(code)) return res.status(400).json({ error: 'kode tidak valid' });
+      if (!/^\d{4,8}$/.test(pin)) return res.status(400).json({ error: 'PIN harus 4-8 angka' });
+      const ip = String(req.headers['x-forwarded-for'] || 'x').split(',')[0].trim();
+      const lim = async (k, max) => {
+        const n = await redis.incr(k);
+        if (n === 1) await redis.expire(k, 600);
+        return n > max;
+      };
+      if (await lim('ln:rl:croom:ip:' + ip, 40) || await lim('ln:rl:croom:code:' + code, 12))
+        return res.status(429).json({ error: 'terlalu banyak percobaan' });
+      const rk = 'ln:croom:' + code;
+      const ttl = 30 * 86400; // 30 hari, diperpanjang tiap host masuk
+      if (b.action === 'croom_create') {
+        const salt = crypto.randomBytes(8).toString('hex');
+        const rec = {
+          salt, h: sha(`croom|${salt}|${code}|${pin}`),
+          title: String(b.title || '').slice(0, 28),
+          hostName: String(b.hostName || '').slice(0, 20),
+          at: Date.now()
+        };
+        const ok = await redis.set(rk, rec, { nx: true, ex: ttl });
+        if (!ok) return res.status(409).json({ error: 'kode sudah dipakai' });
+        return res.json({ ok: true });
+      }
+      const rec = await redis.get(rk);
+      if (!rec || !same(sha(`croom|${rec.salt}|${code}|${pin}`), rec.h)) return res.status(401).json({ error: 'kode atau PIN salah' });
+      await redis.expire(rk, ttl); // perpanjang masa aktif tiap host masuk
+      return res.json({ ok: true, title: rec.title, hostName: rec.hostName });
+    }
+
     const user = verify(b.token);
     if (!user) return res.status(401).json({ error: 'token tidak valid' });
     const key = String(b.key || '');
