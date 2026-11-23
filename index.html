@@ -153,7 +153,9 @@
     #vc-min-top:hover, #vc-min-top:active { background: rgba(244,63,94,.32); border-color: rgba(244,63,94,.55); transform: scale(.96); }
     #vc-min-top svg { width: 15px; height: 15px; flex-shrink: 0; }
     #vc-mini-expand { display: none; }
-    #vc.mini #vc-mini-expand { display: inline-flex; align-items: center; gap: 4px; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 6; padding: 3px 9px; border-radius: 999px; background: rgba(9,9,13,.78); border: 1px solid rgba(255,255,255,.18); color: #fff; font-size: 10px; font-weight: 700; pointer-events: none; white-space: nowrap; }
+    #vc.mini { cursor: pointer; touch-action: manipulation; }
+    #vc.mini #vc-grid, #vc.mini #vc-self { pointer-events: none !important; }
+    #vc.mini #vc-mini-expand { display: inline-flex; align-items: center; gap: 4px; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 6; padding: 4px 10px; border-radius: 999px; background: rgba(244,63,94,.88); border: 1px solid rgba(255,255,255,.3); color: #fff; font-size: 10px; font-weight: 800; pointer-events: auto; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,.6); }
     @media (max-width: 767px) {
       #vc-top-hud { top: max(20px, calc(env(safe-area-inset-top) + 10px)) !important; left: 12px !important; max-width: calc(100% - 124px) !important; gap: 6px !important; }
       #vc:not(.swapped):not(.mini) #vc-self, #vc.swapped:not(.mini) #vc-grid { top: max(20px, calc(env(safe-area-inset-top) + 10px)) !important; right: 12px !important; width: 96px !important; height: 132px !important; }
@@ -2149,7 +2151,7 @@
     ];
     let iceCache = null, iceInfo = { src: 'belum', msg: '' };
     async function fetchTurn() {
-      const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 7000);
+      const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 2500);
       try {
         const r = await fetch('/api/turn', { signal: ctrl.signal, cache: 'no-store' });
         const j = await r.json().catch(() => null);
@@ -2161,14 +2163,19 @@
     async function getIceServers() {
       if (iceCache && Date.now() < iceCache.exp) return iceCache.list;
       let list = BASE_ICE.slice(), ok = false;
-      for (let i = 0; i < 2 && !ok; i++) {
-        try { const j = await fetchTurn(); list = j.concat(BASE_ICE); ok = true; iceInfo = { src: 'cloudflare', msg: j.length + ' entri' }; }
-        catch (e) { iceInfo = { src: 'cadangan', msg: e.message || String(e) }; console.warn('Gagal ambil TURN', e); }
+      try {
+        const j = await fetchTurn();
+        list = j.concat(BASE_ICE);
+        ok = true;
+        iceInfo = { src: 'cloudflare', msg: j.length + ' entri' };
+      } catch (e) {
+        iceInfo = { src: 'cadangan', msg: e.message || String(e) };
+        console.warn('Gagal ambil TURN', e);
       }
-      // kegagalan tidak disimpan lama supaya dicoba lagi di sesi berikutnya
-      iceCache = { list, exp: Date.now() + (ok ? 20 * 60e3 : 30e3) };
+      iceCache = { list, exp: Date.now() + (ok ? 20 * 60e3 : 15e3) };
       return list;
     }
+    setTimeout(() => { getIceServers().catch(() => {}); }, 300);
 
     async function newPeer(id) {
       const opts = { debug: 1, config: { iceServers: await getIceServers(), iceCandidatePoolSize: 4 } };
@@ -2537,10 +2544,21 @@
       profiles = {}; myProfile = { name: '', bio: '', avatar: '' };
       chatLog = []; if (u === 'guest' || u === 'custom') roomQueue = [];
       renderChat();
-      await dbHydrate();
-      if (session !== u) return; // sudah logout selama memuat
-      clearInterval(stateTimer); stateTimer = setInterval(saveRoomState, 4000);
+
+      isRoomConnected = true;
+      activateRoomUI(currentRoomCode);
+      setRoomPill('Menghubungkan ke room...', false);
       startSession();
+
+      dbHydrate().then(() => {
+        if (session !== u) return;
+        if (myProfile.name && peer && peer.id && members[peer.id]) {
+          members[peer.id].name = myDisplayName;
+          if (canManageRoom()) broadcastMembers();
+        }
+        clearInterval(stateTimer);
+        stateTimer = setInterval(saveRoomState, 4000);
+      }).catch(() => {});
     }
 
     const isMyRoleAdmin = () => !!(peer && members[peer.id] && members[peer.id].role === 'admin');
@@ -2670,7 +2688,7 @@
         if (peer !== p || p.destroyed || !session) return clearInterval(connectLoopTimer);
         if (partnerOnline()) return;
         if (p.disconnected) { try { p.reconnect(); } catch (e) {} return; }
-        if (pendingConn && !pendingConn.open && Date.now() - pendingAt < 6000) return;
+        if (pendingConn && !pendingConn.open && Date.now() - pendingAt < 3500) return;
         try { pendingConn && pendingConn.close(); } catch (e) {}
         const targetId = targets[idx % targets.length];
         idx++;
@@ -2679,7 +2697,7 @@
         setupPeerConnection(pendingConn);
       };
       tick();
-      connectLoopTimer = setInterval(tick, 3000);
+      connectLoopTimer = setInterval(tick, 1200);
     }
 
     function setupPeerConnection(conn) {
@@ -4595,14 +4613,14 @@
     (function initVcMobileGestures() {
       const vcEl = document.getElementById('vc');
       if (!vcEl) return;
-      let sy = 0, sx = 0, dy = 0, dx = 0, mode = '';
+      let sy = 0, sx = 0, dy = 0, dx = 0, mode = '', moved = false;
       let startRight = 12, startBottom = 142;
       vcEl.addEventListener('touchstart', (e) => {
         if (!vcOn || e.touches.length !== 1) return;
         if (e.target.closest('button, input, label, #vc-emote-bar, #vc-fx')) return;
         sy = e.touches[0].clientY;
         sx = e.touches[0].clientX;
-        dy = 0; dx = 0;
+        dy = 0; dx = 0; moved = false;
         if (vcEl.classList.contains('mini')) {
           mode = 'drag-mini';
           const rect = vcEl.getBoundingClientRect();
@@ -4618,6 +4636,7 @@
         const cx = e.touches[0].clientX;
         dy = cy - sy;
         dx = cx - sx;
+        if (Math.abs(dx) > 8 || Math.abs(dy) > 8) moved = true;
         if (mode === 'swipe-min') {
           if (Math.abs(dx) > Math.abs(dy) && dy < 15) { mode = ''; return; }
           if (dy > 10) {
@@ -4636,13 +4655,20 @@
           vcEl.style.top = 'auto';
         }
       }, { passive: false });
-      const endGesture = () => {
+      const endGesture = (e) => {
         if (!mode) return;
         const prevMode = mode;
+        const wasTap = !moved && Math.abs(dx) < 8 && Math.abs(dy) < 8;
         mode = '';
+        moved = false;
         vcEl.style.transition = '';
         vcEl.style.transform = '';
-        if (prevMode === 'swipe-min' && dy > 90) vcMin();
+        if (prevMode === 'swipe-min' && dy > 90) {
+          vcMin();
+        } else if (prevMode === 'drag-mini' && wasTap) {
+          if (e && e.cancelable) e.preventDefault();
+          vcExpand();
+        }
         dy = 0; dx = 0;
       };
       vcEl.addEventListener('touchend', endGesture, { passive: true });
