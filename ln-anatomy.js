@@ -20,7 +20,7 @@
   const XI = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   const SI = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>';
   root.innerHTML = `<video id="an-v" playsinline muted></video><canvas id="an-c"></canvas><div class="an-dim"></div><div class="an-vig"></div><div class="an-scan"></div>
-  <div class="an-top"><button class="an-ib" id="an-close" aria-label="Tutup">${XI}</button><div class="an-pill"><i class="an-live"></i>Cermin Anatomi<span id="an-state"></span></div><span style="flex:1"></span><button class="an-ib" id="an-set" aria-label="Pengaturan">${SI}</button></div>
+  <div class="an-top"><button class="an-ib" id="an-close" aria-label="Tutup">${XI}</button><div class="an-pill"><i class="an-live"></i>Cermin Anatomi<span id="an-state"></span></div><span style="flex:1"></span><button class="an-ib" id="an-shot" aria-label="Simpan foto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/></svg></button><button class="an-ib" id="an-set" aria-label="Pengaturan">${SI}</button></div>
   <div class="an-stack">
     <div class="an-info" id="an-info"><div class="an-info-h"><span>Cek tubuh</span><small>ketuk untuk lipat</small></div><div id="an-check" class="an-check">Menunggu kamera...</div><p class="an-note">Ilustrasi anatomi umum dari titik pelacakan kamera, bukan alat medis atau diagnosis. Video diproses di perangkatmu.</p></div>
     <div class="an-info an-face" id="an-face"><div class="an-info-h"><span>Wajah &amp; perasaan</span><small id="an-fs"></small></div><div id="an-fcheck" class="an-check">Mencari wajah...</div><p class="an-note">Usia dan perasaan hanya perkiraan dari bentuk dan ekspresi wajah, bisa meleset. Bukan alat medis atau psikologi. Teks suara memakai layanan pengenalan suara milik browser, jadi audio bisa dikirim ke penyedia browser.</p></div>
@@ -28,7 +28,7 @@
   <div class="an-sub" id="an-sub"></div>
   <div class="an-hud" id="an-hud"></div>
   <div class="an-dock"><div class="an-chips" id="an-q"><button data-q="skull">Tengkorak</button><button data-q="brain">Otak</button><button data-q="muscle">Otot</button><button data-q="all">Semua</button></div>
-    <div class="an-chips" id="an-look"><button data-l="xray">X-ray</button><button data-l="solid">Solid</button></div><div class="an-chips"><button id="an-lbl">Label</button><button id="an-shot">Foto</button><button id="an-mic">Teks suara</button></div></div>
+    <div class="an-chips" id="an-look"><button data-l="xray">X-ray</button><button data-l="solid">Solid</button></div><div class="an-chips"><button id="an-lbl">Label</button><button id="an-mic">Teks suara</button></div></div>
   <aside class="an-drawer"><div class="an-dh"><h3>Pengaturan</h3><button class="an-ib" id="an-set2" aria-label="Tutup">${XI}</button></div>
     <div class="an-sec"><h4>Lapisan</h4><div class="an-grid">${chk('skull', 'Tengkorak')}${chk('brain', 'Otak')}${chk('muscle', 'Otot')}${chk('eyes', 'Mata')}${chk('head', 'Garis kepala')}${chk('hand', 'Tulang tangan')}${chk('body', 'Tulang tubuh')}${chk('labels', 'Label')}</div></div>
     <div class="an-sec"><h4>Tampilan</h4>${rng('bright', 'Kecerahan', 0.3, 1, 0.05)}<div class="an-rng"><span>Reveal</span><select data-k="reveal"><option value="full">Penuh</option><option value="half">Setengah wajah</option><option value="lens">Lensa (ikut tangan)</option></select><output></output></div></div>
@@ -71,17 +71,17 @@
   st2.textContent = `.an-stack{position:absolute;z-index:3;left:12px;top:calc(max(12px,env(safe-area-inset-top)) + 58px);width:min(330px,calc(100% - 24px));display:flex;flex-direction:column;gap:10px;pointer-events:none}
   .an-stack .an-info{position:static;width:100%;pointer-events:auto}
   @media(min-width:768px){.an-stack{right:12px;width:auto;flex-direction:row;justify-content:space-between;align-items:flex-start}.an-stack .an-info{width:350px}.an-stack .an-face{width:380px}}
-  .an-info{padding:14px 16px 13px;border-radius:22px;background:linear-gradient(155deg,rgba(8,16,36,.36),rgba(8,16,36,.14))!important;border:1px solid rgba(150,205,255,.3)!important;-webkit-backdrop-filter:blur(8px) saturate(1.6);backdrop-filter:blur(8px) saturate(1.6);box-shadow:0 10px 44px -14px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.14),0 0 30px -8px rgba(90,170,255,.38)}
+  .an-info{padding:14px 16px 13px;border-radius:22px;background:rgba(6,14,32,.2)!important;border:1px solid rgba(150,205,255,.3)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:0 10px 44px -14px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.14),0 0 30px -8px rgba(90,170,255,.38)}
   .an-info-h{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#8fd3ff;text-shadow:0 0 14px rgba(80,170,255,.7),0 1px 4px rgba(0,0,0,.9);margin-bottom:8px;cursor:pointer}
-  .an-info-h small{font-size:12.5px;letter-spacing:0;text-transform:none;font-weight:700;color:#e6f4ff}
-  .an-check{font-size:16px;line-height:1.5;color:#f5faff;text-shadow:0 1px 6px rgba(0,0,0,.95),0 0 2px rgba(0,0,0,.9)}
-  .an-row{display:flex;align-items:baseline;gap:8px;padding:3px 0;flex-wrap:wrap}.an-row>span{color:#c3dcf8;min-width:68px;font-weight:600}.an-row b{color:#fff;font-weight:800}
+  .an-info-h small{font-size:12.5px;letter-spacing:0;text-transform:none;font-weight:700;color:#fff}
+  .an-check{font-size:16px;line-height:1.5;color:#f5faff;text-shadow:0 0 3px rgba(0,0,0,.95),0 1px 6px rgba(0,0,0,.95),0 0 12px rgba(0,0,0,.8)}
+  .an-row{display:flex;align-items:baseline;gap:8px;padding:3px 0;flex-wrap:wrap}.an-row>span{color:#7fe4ff;min-width:68px;font-weight:800}.an-row b{color:#fff;font-weight:800}
   .an-check .ok{color:#5df2b0;font-weight:700}.an-check .warn{color:#ffd24d;font-weight:700}.an-check .bad{color:#ff7a8e;font-weight:700}.an-check .inf{color:#7fd6ff;font-weight:700}
   .an-bar{position:relative;flex:1;min-width:60px;height:7px;border-radius:99px;background:rgba(255,255,255,.2);overflow:hidden;align-self:center}.an-bar s{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:linear-gradient(90deg,#38bdf8,#a78bfa);box-shadow:0 0 10px rgba(120,190,255,.85);transition:width .25s}
   .an-mood{margin:0 0 8px;font-size:21px;font-weight:800;line-height:1.25;color:#fff;text-shadow:0 0 18px rgba(130,190,255,.6),0 2px 8px rgba(0,0,0,.95)}.an-mood small{display:block;font-size:14px;font-weight:600;color:#d8e9ff;margin-top:2px}
   .an-note{margin-top:8px;font-size:12.5px;line-height:1.5;color:#d9e6f8;text-shadow:0 1px 5px rgba(0,0,0,.95)}
   .an-info.min{padding-bottom:10px}.an-info.min .an-info-h{margin-bottom:0}
-  .an-sub{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(max(14px,env(safe-area-inset-bottom)) + 96px);z-index:4;max-width:min(900px,calc(100% - 28px));text-align:center;font-size:clamp(19px,2.6vw,30px);font-weight:800;line-height:1.35;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);padding:.5rem 1.1rem;border-radius:18px;background:rgba(0,0,0,.34);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;transition:opacity .25s;pointer-events:none}
+  .an-sub{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(max(14px,env(safe-area-inset-bottom)) + 96px);z-index:4;max-width:min(900px,calc(100% - 28px));text-align:center;font-size:clamp(19px,2.6vw,30px);font-weight:800;line-height:1.35;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);padding:.5rem 1.1rem;border-radius:18px;background:rgba(0,0,0,.34);-webkit-backdrop-filter:none;backdrop-filter:none;opacity:0;transition:opacity .25s;pointer-events:none}
   .an-sub.on{opacity:1}.an-sub i{font-style:normal;opacity:.72;font-weight:700}.an-sub em{display:block;font-style:normal;font-size:.55em;font-weight:600;color:#fcd34d}
   .an-chips button#an-mic.on{background:#34d399;color:#04201a}
   @media(max-width:767px){.an-sub{bottom:calc(max(14px,env(safe-area-inset-bottom)) + 132px)}}`;
@@ -327,15 +327,15 @@
   function drawLabels() {
     if (!S.labels || !lbl.length) return;
     const fs = Math.round(15 / vis.s), pad = Math.round(14 / vis.s), top = vis.y0 + 110 / vis.s, bot = vis.y1 - 100 / vis.s, mx = (vis.x0 + vis.x1) / 2, L = [], R = [];
-    x.font = `600 ${fs}px system-ui,sans-serif`; x.textBaseline = 'middle';
+    x.font = `800 ${fs}px system-ui,sans-serif`; x.textBaseline = 'middle';
     lbl.filter(l => l[1][0] > vis.x0 && l[1][0] < vis.x1 && l[1][1] > vis.y0 && l[1][1] < vis.y1).sort((a, b) => a[1][1] - b[1][1]).forEach(l => (l[1][0] < mx ? L : R).push(l));
     [[L, 0], [R, 1]].forEach(([arr, r]) => {
       let y0 = -1e9;
       arr.forEach(([t, q]) => {
         const y = Math.min(Math.max(q[1], top, y0 + fs * 1.7), bot); y0 = y; const tx = r ? vis.x1 - pad : vis.x0 + pad, w2 = x.measureText(t).width, ex = r ? tx - w2 - 10 : tx + w2 + 10;
-        x.strokeStyle = 'rgba(255,255,255,.6)'; x.lineWidth = 1; x.beginPath(); x.moveTo(q[0], q[1]); x.lineTo(ex, y); x.stroke(); dot(q, 2.5, '#fff');
-        x.fillStyle = 'rgba(8,10,18,.62)'; x.fillRect(r ? tx - w2 - 8 : tx - 6, y - fs * .75, w2 + 14, fs * 1.5);
-        x.fillStyle = '#fff'; x.textAlign = r ? 'right' : 'left'; x.fillText(t, tx, y);
+        x.strokeStyle = 'rgba(120,235,255,.9)'; x.lineWidth = 1.4; x.beginPath(); x.moveTo(q[0], q[1]); x.lineTo(ex, y); x.stroke(); dot(q, 3, '#7fe9ff');
+        x.fillStyle = 'rgba(8,10,18,.8)'; x.fillRect(r ? tx - w2 - 8 : tx - 6, y - fs * .75, w2 + 14, fs * 1.5);
+        x.fillStyle = '#8af0ff'; x.textAlign = r ? 'right' : 'left'; x.fillText(t, tx, y);
       });
     });
   }
@@ -411,7 +411,7 @@
 
   // masuk tab = layar penuh + langsung minta izin kamera; keluar tab = kamera mati
   function enter() {
-    active = true; document.documentElement.style.overflow = 'hidden'; root.classList.remove('an-open'); $('#an-info').classList.toggle('min', innerWidth < 768); $('#an-face').classList.toggle('min', innerWidth < 768); ages = []; ageState = ageNet ? 'load' : 'idle'; subFatal = '';
+    active = true; document.documentElement.style.overflow = 'hidden'; root.classList.remove('an-open'); $('#an-info').classList.remove('min'); $('#an-face').classList.remove('min'); ages = []; ageState = ageNet ? 'load' : 'idle'; subFatal = '';
     if (innerWidth >= 768 && root.requestFullscreen && !document.fullscreenElement) root.requestFullscreen().catch(() => {});
     view(); start();
   }
