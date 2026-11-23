@@ -160,6 +160,100 @@
       #ln-top nav .nav-btn { gap: .5rem; }
     }
 
+    /* ===== Tab Bareng: modern, lega, dinamis ===== */
+    #tab-together > .glass { padding: 1.25rem; }
+    #tab-together h3 { font-size: 1.6rem; line-height: 1.15; letter-spacing: -.01em; }
+    #tab-together h3 + p { font-size: .9rem; }
+    #active-room-code { font-size: 1.7rem !important; }
+    #room-active-area > div:first-child { padding: 1.1rem 1.25rem; border-radius: 1.5rem; }
+    #room-active-area > div:first-child button { font-size: .85rem; padding: .65rem 1.05rem; border-radius: 999px; }
+    #tab-together .tg-card { position: relative; overflow: hidden; border-radius: 1.75rem; border: 1px solid rgba(255,255,255,.1); padding: 1.25rem;
+      background: radial-gradient(120% 90% at 0% 0%, rgba(244,63,94,.18), transparent 55%), radial-gradient(110% 100% at 100% 100%, rgba(139,92,246,.2), transparent 55%), #0b0910; }
+    .tg-voice-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1.25rem; }
+    .tg-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -.01em; }
+    .tg-sub { font-size: .85rem; color: #a1a1aa; margin-top: .2rem; line-height: 1.45; }
+    .tg-count { padding: .4rem .95rem; border-radius: 999px; background: rgba(255,255,255,.1); font-size: .9rem; font-weight: 700; white-space: nowrap; }
+    .tg-voice-body { display: grid; gap: 1.25rem; }
+    .tg-seats { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.4rem; }
+    #voice-seats-main .seat .truncate { font-size: .82rem; max-width: 92px; }
+    .tg-mic { text-align: center; }
+    .tg-mic-btn { padding: 1rem 2.4rem; border-radius: 999px; font-size: 1rem; font-weight: 800; color: #fff; background: linear-gradient(135deg, #e11d48, #7c3aed); box-shadow: 0 16px 36px -14px rgba(225,29,72,.85); transition: transform .15s, box-shadow .2s; }
+    .tg-mic-btn:hover { box-shadow: 0 18px 44px -12px rgba(225,29,72,.95); }
+    .tg-mic-btn:active { transform: scale(.96); }
+    .tg-hint { font-size: .78rem; color: #71717a; margin-top: .75rem; }
+    .tg-chat { display: flex; flex-direction: column; min-height: 22rem; max-height: 30rem; border-radius: 1.4rem; padding: 1rem; background: rgba(5,5,8,.62); border: 1px solid rgba(255,255,255,.08); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+    .tg-chat #room-chat-messages { flex: 1; min-height: 8rem; font-size: .92rem; }
+    .tg-chat #room-chat-messages .text-xs { font-size: .9rem; line-height: 1.45; }
+    .tg-chat #room-chat-input { font-size: .9rem; padding: .65rem 1rem; }
+    .tg-chat .ln-rx-chip { font-size: 1.15rem; }
+    .tg-section-title { font-size: 1.25rem; font-weight: 800; letter-spacing: -.01em; margin: .5rem .25rem -.25rem; }
+    #room-search-main > div { border-radius: 1.75rem; padding: 1.1rem; background: #0b0910; border: 1px solid rgba(255,255,255,.1); }
+    #room-search-main .rs-input { font-size: .95rem; padding: .8rem 1.1rem; border-radius: 999px; }
+    #room-search-main .rs-mode { font-size: .85rem; padding: 0 1rem; border-radius: 999px; }
+    #room-search-main .rs-status { font-size: .8rem; }
+    #room-search-main img { width: 3.1rem; height: 3.1rem; border-radius: .7rem; }
+    #room-search-main .text-\[11px\] { font-size: .92rem; }
+    #room-search-main .text-\[10px\] { font-size: .78rem; }
+    #room-search-main button.px-2 { font-size: .78rem; padding: .45rem .8rem; border-radius: .7rem; }
+    #room-search-main .rs-results > div, #room-search-main .rs-queue > div { padding: .55rem .7rem; border-radius: 1rem; }
+    #room-search-main .rs-results { max-height: 22rem; }
+    #room-search-main .rs-queue { max-height: 16rem; }
+    .tg-link { display: flex; flex-direction: column; gap: 1rem; }
+    .tg-link-title { font-size: 1.1rem; font-weight: 800; }
+    .tg-link-row { display: flex; gap: .6rem; }
+    .tg-link-row input { flex: 1; min-width: 0; height: 3rem; padding: 0 1.1rem; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); color: #fff; font-size: .92rem; outline: none; }
+    .tg-link-row input:focus { border-color: rgba(244,63,94,.6); box-shadow: 0 0 0 3px rgba(244,63,94,.15); }
+    .tg-link-row button { height: 3rem; padding: 0 1.4rem; border-radius: 999px; border: 0; font-weight: 800; font-size: .9rem; color: #fff; white-space: nowrap; background: linear-gradient(135deg, #e11d48, #7c3aed); }
+    @media (min-width: 1024px) {
+      #tab-together > .glass { padding: 2rem; }
+      #tab-together .tg-card { padding: 1.9rem; }
+      .tg-voice-body { grid-template-columns: minmax(330px, 36%) 1fr; gap: 1.9rem; }
+      .tg-chat { min-height: 33rem; max-height: 42rem; padding: 1.25rem; }
+      #voice-seats-main { gap: 1.7rem 1.25rem; }
+      #voice-seats-main .seat .ring { width: 5rem; height: 5rem; }
+      #voice-seats-main .seat .truncate { font-size: .88rem; max-width: 104px; }
+      #room-search-main > div { display: grid; grid-template-columns: 1.5fr 1fr; column-gap: 1.5rem; row-gap: .6rem; padding: 1.5rem; align-content: start; }
+      #room-search-main > div > :nth-child(1), #room-search-main > div > :nth-child(2) { grid-column: 1 / -1; }
+      #room-search-main > div > :nth-child(3) { grid-column: 1; grid-row: 3 / 5; }
+      #room-search-main > div > :nth-child(4) { grid-column: 2; grid-row: 3; font-size: .85rem; }
+      #room-search-main > div > :nth-child(5) { grid-column: 2; grid-row: 4; }
+      #room-search-main .rs-results { max-height: 28rem; }
+      #room-search-main .rs-queue { max-height: 24rem; }
+      .tg-link { flex-direction: row; align-items: center; justify-content: space-between; gap: 2rem; }
+      .tg-link-text { flex: 0 1 38%; }
+      .tg-link-row { flex: 1; }
+    }
+
+    /* ===== Tab Bareng: perbaikan tampilan HP ===== */
+    @media (max-width: 1023px) {
+      /* hilangkan kartu pembungkus (kartu di dalam kartu bikin sempit) */
+      #tab-together > .glass { padding: 0 !important; background: transparent !important; border: 0 !important; box-shadow: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; border-radius: 0 !important; }
+      #tab-together h3 { font-size: 1.3rem; }
+      #tab-together h3 + p { font-size: .8rem; }
+      #tab-together .tg-card { padding: 1rem; border-radius: 1.5rem; }
+      #active-room-code { font-size: 1.4rem !important; }
+      #room-active-area > div:first-child { padding: 1rem; border-radius: 1.4rem; }
+      #room-active-area > div:first-child > div:last-child { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; width: 100%; }
+      #room-active-area > div:first-child > div:last-child > :first-child { grid-column: 1 / -1; }
+      #room-active-area > div:first-child button { font-size: .8rem; padding: .65rem .5rem; justify-content: center; }
+      .tg-voice-head { margin-bottom: 1rem; }
+      .tg-title { font-size: 1.2rem; }
+      .tg-sub { font-size: .8rem; }
+      .tg-seats { gap: 1.1rem; }
+      .tg-mic-btn { width: 100%; padding: .95rem 1rem; }
+      .tg-chat { padding: .8rem; border-radius: 1.2rem; min-height: 20rem; max-height: 26rem; }
+      /* kolom ketik di baris sendiri supaya tidak terjepit tombol */
+      .tg-chat form { flex-wrap: wrap; row-gap: .5rem; }
+      .tg-chat form #room-chat-input { order: -1; flex: 1 0 100%; }
+      .tg-chat form button[type="submit"] { margin-left: auto; }
+      .tg-section-title { font-size: 1.1rem; margin-top: .75rem; }
+      #room-search-main > div { padding: .85rem; border-radius: 1.5rem; }
+      #room-search-main img { width: 2.8rem; height: 2.8rem; }
+      .tg-link-title { font-size: 1rem; }
+      .tg-link-row { flex-direction: column; }
+      .tg-link-row button { width: 100%; }
+    }
+
     /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -494,7 +588,7 @@
   #ln-bh{display:none}
   @media (min-width:768px){
     html body #room-setup-area{max-width:none!important}
-    #tab-together > .glass > div:first-child h3{font-size:clamp(1.7rem,2.4vw,2.2rem)!important;letter-spacing:-.02em;line-height:1.2!important;margin-bottom:6px}
+    #tab-together > .glass > div:first-child h3{font-size:clamp(1.7rem,2.4vw,2.2rem)!important;letter-spacing:-.02em}
     #tab-together > .glass > div:first-child p{font-size:15px!important}
     #room-status-pill{font-size:14px!important;padding:.6rem 1.05rem!important}
     #room-setup-area:not(.hidden){grid-template-columns:1fr 1fr!important;gap:20px!important;align-items:stretch}
@@ -520,52 +614,6 @@
     .ln-st span{display:block;font-size:14.5px;color:#a1a1aa;line-height:1.5;margin-top:2px}
     .ln-bh-tags{display:flex;flex-wrap:wrap;gap:8px}
     .ln-bh-tags span{padding:.4rem .9rem;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);font-size:13.5px;font-weight:600;color:#e4e4e7}
-  }
-    /* ===== Desktop: Bareng aktif, Video Call, Playlist ===== */
-  .ln-ra-party{display:none!important}
-  .ln-vc-feat{display:none}
-  @media (min-width:768px){
-    #room-active-area .text-xs,#tab-playlists .text-xs,#tab-videocall .text-xs{font-size:14.5px!important;line-height:1.5}
-    #room-active-area .text-\[11px\],#tab-playlists .text-\[11px\]{font-size:13px!important}
-    #room-active-area .text-\[10px\],#tab-playlists .text-\[10px\]{font-size:12.5px!important}
-    #room-active-area .text-sm,#tab-playlists .text-sm{font-size:15.5px!important}
-    .ln-ra-head{padding:1.15rem 1.5rem!important;border-radius:20px!important}
-    .ln-ra-head #active-room-code{font-size:1.8rem!important}
-    .ln-ra-head button{font-size:14.5px!important;font-weight:700!important;padding:.7rem 1.1rem!important;border-radius:12px!important}
-    .ln-ra-voice{padding:1.6rem!important}
-    .ln-ra-voice .text-sm{font-size:1.3rem!important}
-    #voice-seats-main{gap:22px 14px!important}
-    .ln-ra-voice .voice-btn{font-size:15.5px!important;padding:.9rem 2rem!important}
-    .ln-ra-chat{padding:1.25rem!important}
-    #room-chat-messages{font-size:15px!important}
-    #room-chat-input{font-size:15.5px!important;padding:.8rem 1.15rem!important}
-    .ln-ra-chat form label,.ln-ra-chat form button{min-width:44px;height:44px}
-    #room-search-main{font-size:14.5px}
-    #tab-videocall > .glass{padding:2.5rem!important}
-    #tab-videocall h3{font-size:2rem!important;letter-spacing:-.02em}
-    #tab-videocall #vc-hint{font-size:16.5px!important}
-    #tab-videocall #vc-start-btn{font-size:16px!important;padding:1rem 2.2rem!important}
-    #tab-videocall .glass button:not(#vc-start-btn){font-size:14.5px!important;padding:.7rem 1.2rem!important}
-    #tab-playlists > :first-child h3{font-size:clamp(1.7rem,2.4vw,2.2rem)!important;letter-spacing:-.02em}
-    #tab-playlists > :first-child p{font-size:15px!important}
-    #tab-playlists > :first-child button{font-size:15px!important;padding:.75rem 1.3rem!important;border-radius:14px!important}
-    #tab-playlists button{font-size:14.5px!important}
-  }
-  @media (min-width:1100px){
-    #room-active-area:not(.hidden){display:grid!important;grid-template-columns:minmax(380px,5fr) minmax(0,7fr);grid-template-areas:"head head" "voice chat" "search chat";gap:20px;align-items:start}
-    #room-active-area > *{margin:0!important}
-    .ln-ra-head{grid-area:head}.ln-ra-voice{grid-area:voice}.ln-ra-grid{display:contents}
-    .ln-ra-chat{grid-area:chat;align-self:stretch;height:auto!important;min-height:600px}
-    #room-search-main{grid-area:search}
-    #tab-videocall > .glass{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:56px;text-align:left!important;align-items:center;padding:3rem 3.5rem!important}
-    #tab-videocall > .glass > *{grid-column:1;justify-self:start;margin:0 0 18px!important}
-    #tab-videocall > .glass > .ln-vc-feat{grid-column:2!important;grid-row:1 / span 6;justify-self:stretch!important;display:flex;flex-direction:column;gap:24px;margin:0!important;padding:1.75rem;border-radius:22px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
-    #tab-playlists:not(.hidden){display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px 24px;align-items:start}
-    #tab-playlists > *{margin:0!important}
-    #tab-playlists > :first-child{grid-column:1 / -1}
-    #tab-playlists > :not(:first-child):not(#playlists-container):not(#playlist-detail-box){grid-column:1;grid-row:2 / span 2}
-    #playlists-container{grid-column:2;grid-row:2;grid-template-columns:repeat(2,minmax(0,1fr))!important}
-    #playlist-detail-box{grid-column:2;grid-row:3}
   }
   </style>
 
@@ -610,14 +658,14 @@
           <span class="flex items-center gap-3"><i data-lucide="video" class="w-4 h-4 text-violet-400"></i> Video Call</span>
           <span id="vc-nav-dot" class="hidden w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
         </button>
+        <button onclick="switchTab('anatomy')" id="nav-anatomy" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition">
+          <span class="flex items-center gap-3"><i data-lucide="scan-face" class="w-4 h-4 text-sky-400"></i> Anatomi</span>
+        </button>
         <button onclick="switchTab('playlists')" id="nav-playlists" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition">
           <span class="flex items-center gap-3"><i data-lucide="list-music" class="w-4 h-4"></i> Playlist</span>
         </button>
         <button onclick="switchTab('offline')" id="nav-offline" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition">
           <span class="flex items-center gap-3">Offline</span>
-        </button>
-        <button onclick="switchTab('anatomy')" id="nav-anatomy" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition">
-          <span class="flex items-center gap-3">Anatomi</span>
         </button>
       </nav>
 
@@ -915,7 +963,7 @@
 
           <!-- Active Room Area -->
           <div id="room-active-area" class="hidden space-y-5">
-            <div class="ln-ra-head flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-rose-500/15 to-violet-500/15 border border-rose-500/25">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-rose-500/15 to-violet-500/15 border border-rose-500/25">
               <div>
                 <span id="active-room-type-label" class="text-[11px] text-zinc-400">Room Pribadi:</span>
                 <span id="partner-status" class="ml-1 text-[11px] text-zinc-200"></span>
@@ -940,29 +988,28 @@
               </div>
             </div>
 
-            <!-- Voice Room Seats -->
-            <div class="ln-ra-voice rounded-3xl p-4 border border-white/10 relative overflow-hidden" style="background:radial-gradient(circle at 15% 0%,rgba(244,63,94,.28),transparent 55%),radial-gradient(circle at 95% 100%,rgba(139,92,246,.28),transparent 55%),#0c0a12">
-              <div class="flex items-center justify-between mb-4">
+            <!-- Voice Room + Chat & Reaksi (digabung) -->
+            <div id="tg-voice" class="tg-card">
+              <div class="tg-voice-head">
                 <div>
-                  <div class="text-sm font-extrabold">🎙️ Voice Room</div>
-                  <div class="text-[11px] text-zinc-400">Ngobrol sambil dengerin bareng. Ketuk kursi kosong untuk pindah.</div>
+                  <div class="tg-title">Voice Room</div>
+                  <div class="tg-sub">Ngobrol sambil dengerin bareng. Ketuk kursi kosong untuk pindah.</div>
                 </div>
-                <span id="voice-count" class="px-2.5 py-1 rounded-full bg-white/10 text-[11px] font-semibold">1/6</span>
+                <span id="voice-count" class="tg-count">1/6</span>
               </div>
-              <div id="voice-seats-main" class="grid grid-cols-3 gap-x-3 gap-y-5 justify-items-center"></div>
-              <div class="flex items-center justify-center gap-2.5 mt-5">
-                <button onclick="toggleVoice()" class="voice-btn px-6 py-3 rounded-full bg-gradient-to-r from-rose-600 to-violet-600 text-sm font-bold text-white shadow-lg shadow-rose-600/30">🎙️ Voice: Mati</button>
-              </div>
-              <p class="text-center text-[10px] text-zinc-500 mt-2.5">Pakai earphone supaya suara lagu tidak bocor ke mic.</p>
-            </div>
-
-            <!-- Live Chat & Quick Watch Link -->
-            <div class="ln-ra-grid grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div class="ln-ra-chat lg:col-span-2 rounded-2xl bg-zinc-950/80 border border-white/10 p-4 flex flex-col h-80">
-                <div class="pb-2.5 mb-2 border-b border-white/10 space-y-2">
+              <div class="tg-voice-body">
+                <div class="tg-seats">
+                  <div id="voice-seats-main" class="grid grid-cols-3 gap-x-3 gap-y-6 justify-items-center w-full"></div>
+                  <div class="tg-mic">
+                    <button onclick="toggleVoice()" class="voice-btn tg-mic-btn">Voice: Mati</button>
+                    <p class="tg-hint">Pakai earphone supaya suara lagu tidak bocor ke mic.</p>
+                  </div>
+                </div>
+                <div class="tg-chat">
+                  <div class="pb-2.5 mb-2 border-b border-white/10 space-y-2">
                   <div class="flex items-center justify-between gap-2">
                     <span class="text-xs font-bold text-zinc-300 flex items-center gap-1.5 min-w-0">
-                      <i data-lucide="message-circle-heart" class="w-4 h-4 text-rose-400 shrink-0"></i> <span class="truncate">Live Chat &amp; Reaksi</span>
+                      <i data-lucide="message-circle-heart" class="w-4 h-4 text-rose-400 shrink-0"></i> <span class="truncate">Chat &amp; Reaksi</span>
                     </span>
                     <button type="button" onclick="clearRoomChat()" title="Bersihkan Chat" class="ln-clean-btn">
                       <i data-lucide="eraser" class="w-3.5 h-3.5"></i><span>Clean</span>
@@ -1003,34 +1050,35 @@
                     </button>
                   </form>
                 </div>
-              </div>
-
-              <div class="ln-ra-party rounded-2xl bg-zinc-950/80 border border-white/10 p-4 flex flex-col justify-between space-y-3">
-                <div>
-                  <h4 class="text-xs font-bold text-white mb-1">Putar Film / Lagu di Room Ini</h4>
-                  <p class="text-[11px] text-zinc-400 leading-relaxed">Tempel link YouTube (lagu, podcast, atau film) untuk langsung diputar bersama di layar masing-masing.</p>
+              
                 </div>
-                <div class="space-y-2">
-                  <input type="text" id="party-yt-url" placeholder="https://youtu.be/..." class="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-none" />
-                  <button onclick="playPartyLink()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-violet-600 text-xs font-bold text-white">
-                    Putar Bareng di Layar Penuh
-                  </button>
-                </div>
-                <p class="text-[10px] text-zinc-500">Tips: Gunakan mode Full-Screen Player di bawah untuk tampilan bioskop &amp; Spotify mode.</p>
               </div>
             </div>
 
-            <!-- Room Search & Queue -->
+            <!-- Cari lagu & antrean (di bawah Voice Room) -->
+            <div class="tg-section-title">Cari Lagu &amp; Antrean</div>
             <div id="room-search-main"></div>
+
+            <!-- Putar lewat link -->
+            <div class="tg-card tg-link">
+              <div class="tg-link-text">
+                <div class="tg-link-title">Putar Film / Lagu lewat Link</div>
+                <div class="tg-sub">Tempel link YouTube (lagu, podcast, atau film) untuk diputar bersama di layar masing-masing.</div>
+              </div>
+              <div class="tg-link-row">
+                <input type="text" id="party-yt-url" placeholder="https://youtu.be/..." />
+                <button onclick="playPartyLink()">Putar Bareng</button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
 
       <!-- TAB: VIDEO CALL -->
-      <section id="tab-anatomy" class="hidden space-y-5"></section>
-
       <section id="tab-game" class="hidden space-y-4"><div id="lg-root"></div></section>
+
+      <section id="tab-anatomy" class="hidden space-y-5"></section>
 
       <section id="tab-videocall" class="hidden space-y-5">
         <div class="glass rounded-3xl p-7 text-center space-y-4 border border-white/10">
@@ -1039,11 +1087,6 @@
           <p id="vc-hint" class="text-xs text-zinc-400 leading-relaxed">Gabung room di tab Bareng dulu, lalu mulai video call sambil dengerin lagu.</p>
           <button id="vc-start-btn" onclick="vcToggle()" class="px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-600 to-violet-600 text-xs font-bold text-white shadow-lg shadow-rose-600/25">Mulai video call</button>
           <div><button onclick="lnDiag()" class="px-4 py-2 rounded-xl bg-white/[0.06] border border-white/10 text-[11px] font-semibold text-zinc-300 inline-flex items-center gap-1.5"><i data-lucide="activity" class="w-3.5 h-3.5"></i> Tes koneksi</button></div>
-          <div class="ln-vc-feat">
-            <div class="ln-st"><i>1</i><div><b>Gabung room dulu</b><span>Buka tab Bareng, buat room atau masuk dengan kode.</span></div></div>
-            <div class="ln-st"><i>2</i><div><b>Mulai video call</b><span>Tekan tombol Mulai video call, lalu izinkan kamera dan mikrofon.</span></div></div>
-            <div class="ln-st"><i>3</i><div><b>Ngobrol sambil dengerin lagu</b><span>Musik tetap sinkron di layar kalian berdua selama video call.</span></div></div>
-          </div>
         </div>
       </section>
 
@@ -1196,6 +1239,14 @@
               <span class="text-[11px] font-semibold text-zinc-400">Obrolan Room</span>
               <button type="button" onclick="clearRoomChat()" title="Bersihkan Chat" class="ln-clean-btn"><i data-lucide="eraser" class="w-3.5 h-3.5"></i><span>Clean</span></button>
             </div>
+            <div class="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+              <button type="button" onclick="sendReaction('❤️')" class="ln-rx-chip">❤️</button>
+              <button type="button" onclick="sendReaction('🔥')" class="ln-rx-chip">🔥</button>
+              <button type="button" onclick="sendReaction('😂')" class="ln-rx-chip">😂</button>
+              <button type="button" onclick="sendReaction('🥺')" class="ln-rx-chip">🥺</button>
+              <button type="button" onclick="sendReaction('🍿')" class="ln-rx-chip">🍿</button>
+              <button type="button" data-rxbtn onclick="rxPanel()" title="Reaksi lucu & stiker gerak" class="ml-auto shrink-0 h-8 px-3 rounded-full bg-rose-500/20 border border-rose-400/30 text-[11px] font-bold text-rose-200 active:scale-95 transition whitespace-nowrap">😆 Lucu</button>
+            </div>
             <div id="fs-chat-messages" class="h-40 overflow-y-auto space-y-2 pr-1 text-xs"></div>
             <div id="fs-chat-rec-bar" class="hidden items-center justify-between px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-[11px] text-rose-200">
               <span class="inline-flex items-center gap-2 font-semibold"><span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> Merekam... <span id="fs-chat-rec-sec">0:00</span></span>
@@ -1311,7 +1362,7 @@
         <button onclick="switchTab('videocall')" id="mob-nav-videocall" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6.5" width="12" height="11" rx="3.2"/><path d="m15 10.6 5.5-3.1v9L15 13.4"/></svg><span>Call</span></button>
         <button onclick="switchTab('playlists')" id="mob-nav-playlists" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h11M4 11.5h11M4 16.5h6"/><circle cx="17.5" cy="17" r="2.6"/><path d="M20.1 17V7.8l-3-1"/></svg><span>Playlist</span></button>
         <button onclick="switchTab('offline')" id="mob-nav-offline" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4.5 20h15"/></svg><span>Offline</span></button>
-    <button onclick="switchTab('anatomy')" id="mob-nav-anatomy" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.2a2.4 2.4 0 1 0 0 .01"/><path d="M12 9v6.5M6.5 11.5 12 10l5.5 1.5M9.3 21l2.7-5.5 2.7 5.5"/><path d="M3.5 8V5.5A2 2 0 0 1 5.5 3.5H8M16 3.5h2.5a2 2 0 0 1 2 2V8M20.5 16v2.5a2 2 0 0 1-2 2H16M8 20.5H5.5a2 2 0 0 1-2-2V16"/></svg><span>Anatomi</span></button>
+        <button onclick="switchTab('anatomy')" id="mob-nav-anatomy" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.2a2.4 2.4 0 1 0 0 .01"/><path d="M12 9v6.5M6.5 11.5 12 10l5.5 1.5M9.3 21l2.7-5.5 2.7 5.5"/><path d="M3.5 8V5.5A2 2 0 0 1 5.5 3.5H8M16 3.5h2.5a2 2 0 0 1 2 2V8M20.5 16v2.5a2 2 0 0 1-2 2H16M8 20.5H5.5a2 2 0 0 1-2-2V16"/></svg><span>Anatomi</span></button>
       </nav>
 
   <!-- ===================================================================== -->
@@ -4034,7 +4085,8 @@
 
     (function initSplash() {
       const standalone = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone;
-      if (standalone) return document.getElementById('splash').remove();
+      const desktop = innerWidth >= 1024 && matchMedia('(pointer: fine)').matches; // mode layar penuh hanya untuk HP/tablet
+      if (standalone || desktop) return document.getElementById('splash').remove();
       if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) {
         document.getElementById('splash-hint').textContent = 'iPhone: untuk layar penuh, ketuk Bagikan lalu "Tambah ke Layar Utama", dan buka dari ikon itu.';
       }
@@ -4067,10 +4119,10 @@
       const seen = new Set(); return rs.flat().filter(t => t && t.id && !seen.has(t.id) && seen.add(t.id)).slice(0, 50);
     }
     async function loadTop50() {
-      try { const c = JSON.parse(localStorage.getItem('lnmusic_top50v2') || 'null'); if (c && Date.now() - c.t < 30 * 60e3 && c.d.id.length) { top50 = c.d; return renderShelves(); } } catch (e) {}
+      try { const c = JSON.parse(localStorage.getItem('lnmusic_top50v3') || 'null'); if (c && Date.now() - c.t < 30 * 60e3 && c.d.id.length) { top50 = c.d; return renderShelves(); } } catch (e) {}
       const [a, b] = await Promise.all([fetchChart('ID', 'lagu trending indonesia'), fetchChart('US', 'global trending songs')]);
       top50 = { id: a, west: b }; renderShelves();
-      if (a.length) { try { localStorage.setItem('lnmusic_top50v2', JSON.stringify({ t: Date.now(), d: top50 })); } catch (e) {} }
+      if (a.length) { try { localStorage.setItem('lnmusic_top50v3', JSON.stringify({ t: Date.now(), d: top50 })); } catch (e) {} }
     }
     // Rak horizontal: tombol panah kiri/kanan + tarik dengan mouse (khusus desktop)
     function enhanceHScroll(root) {
@@ -5486,6 +5538,7 @@
   <script src="./ln-rooms.js"></script>
   <script src="./ln-game.js"></script>
   <script src="./ln-desktop.js"></script>
+  <script src="./ln-trending.js"></script>
   <script src="./ln-anatomy.js"></script>
   <script src="./ln-native.js"></script>
 <script>

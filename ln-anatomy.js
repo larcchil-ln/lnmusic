@@ -1,9 +1,10 @@
 /* LNMusic Anatomi: cermin anatomi lewat kamera. Deteksi wajah, tangan, dan tubuh (MediaPipe) berjalan di perangkatmu; video tidak diunggah.
-   Ini ilustrasi anatomi umum, bukan alat medis dan bukan diagnosis. */
+   Ini ilustrasi anatomi umum, bukan alat medis dan bukan diagnosis.
+   Tambahan: ekspresi/mata/perasaan (blendshape MediaPipe, di perangkat), perkiraan usia (face-api, di perangkat), teks suara (layanan suara browser). */
 (function () {
   const root = document.getElementById('tab-anatomy'); if (!root) return;
   const CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14', MD = 'https://storage.googleapis.com/mediapipe-models/';
-  const S = { skull: 1, brain: 1, muscle: 1, eyes: 1, head: 1, hand: 1, body: 1, labels: 1, track: 0, look: 'xray', bright: 0.9, reveal: 'full', size: 1, w: 1, h: 1 };
+  const S = { lang: (function () { try { return localStorage.getItem('an_lang') || 'id-ID'; } catch (e) { return 'id-ID'; } })(), skull: 1, brain: 1, muscle: 1, eyes: 1, head: 1, hand: 1, body: 1, labels: 1, track: 0, look: 'xray', bright: 0.9, reveal: 'full', size: 1, w: 1, h: 1 };
   let face, hand, pose, stream, run = false, loading = false, v, c, x, W = 0, H = 0, C, lastT = -1, lastTs = 0, n = 0, lastPose = null, lbl = [], info = {}, fpsN = 0, fpsT = 0, uiT = 0, blinks = 0, closed = false, t0 = 0;
   const d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]), mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
   const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t], add = (a, b, k) => [a[0] + b[0] * k, a[1] + b[1] * k];
@@ -20,14 +21,19 @@
   const SI = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>';
   root.innerHTML = `<video id="an-v" playsinline muted></video><canvas id="an-c"></canvas><div class="an-dim"></div><div class="an-vig"></div><div class="an-scan"></div>
   <div class="an-top"><button class="an-ib" id="an-close" aria-label="Tutup">${XI}</button><div class="an-pill"><i class="an-live"></i>Cermin Anatomi<span id="an-state"></span></div><span style="flex:1"></span><button class="an-ib" id="an-set" aria-label="Pengaturan">${SI}</button></div>
-  <div class="an-info" id="an-info"><div class="an-info-h" id="an-ih">Cek tubuh <small>ketuk untuk lipat</small></div><div id="an-check" class="an-check">Menunggu kamera...</div><p class="an-note">Ilustrasi anatomi umum dari titik pelacakan kamera, bukan alat medis atau diagnosis. Video diproses di perangkatmu.</p></div>
+  <div class="an-stack">
+    <div class="an-info" id="an-info"><div class="an-info-h"><span>Cek tubuh</span><small>ketuk untuk lipat</small></div><div id="an-check" class="an-check">Menunggu kamera...</div><p class="an-note">Ilustrasi anatomi umum dari titik pelacakan kamera, bukan alat medis atau diagnosis. Video diproses di perangkatmu.</p></div>
+    <div class="an-info an-face" id="an-face"><div class="an-info-h"><span>Wajah &amp; perasaan</span><small id="an-fs"></small></div><div id="an-fcheck" class="an-check">Mencari wajah...</div><p class="an-note">Usia dan perasaan hanya perkiraan dari bentuk dan ekspresi wajah, bisa meleset. Bukan alat medis atau psikologi. Teks suara memakai layanan pengenalan suara milik browser, jadi audio bisa dikirim ke penyedia browser.</p></div>
+  </div>
+  <div class="an-sub" id="an-sub"></div>
   <div class="an-hud" id="an-hud"></div>
   <div class="an-dock"><div class="an-chips" id="an-q"><button data-q="skull">Tengkorak</button><button data-q="brain">Otak</button><button data-q="muscle">Otot</button><button data-q="all">Semua</button></div>
-    <div class="an-chips" id="an-look"><button data-l="xray">X-ray</button><button data-l="solid">Solid</button></div><div class="an-chips"><button id="an-lbl">Label</button><button id="an-shot">Foto</button></div></div>
+    <div class="an-chips" id="an-look"><button data-l="xray">X-ray</button><button data-l="solid">Solid</button></div><div class="an-chips"><button id="an-lbl">Label</button><button id="an-shot">Foto</button><button id="an-mic">Teks suara</button></div></div>
   <aside class="an-drawer"><div class="an-dh"><h3>Pengaturan</h3><button class="an-ib" id="an-set2" aria-label="Tutup">${XI}</button></div>
     <div class="an-sec"><h4>Lapisan</h4><div class="an-grid">${chk('skull', 'Tengkorak')}${chk('brain', 'Otak')}${chk('muscle', 'Otot')}${chk('eyes', 'Mata')}${chk('head', 'Garis kepala')}${chk('hand', 'Tulang tangan')}${chk('body', 'Tulang tubuh')}${chk('labels', 'Label')}</div></div>
     <div class="an-sec"><h4>Tampilan</h4>${rng('bright', 'Kecerahan', 0.3, 1, 0.05)}<div class="an-rng"><span>Reveal</span><select data-k="reveal"><option value="full">Penuh</option><option value="half">Setengah wajah</option><option value="lens">Lensa (ikut tangan)</option></select><output></output></div></div>
     <div class="an-sec"><h4>Sesuaikan ke kepalamu</h4>${rng('size', 'Ukuran', 0.7, 1.4, 0.01)}${rng('w', 'Lebar', 0.7, 1.4, 0.01)}${rng('h', 'Tinggi', 0.7, 1.4, 0.01)}<button class="an-mini" id="an-reset" style="margin-top:6px">Reset</button></div>
+    <div class="an-sec"><h4>Teks suara</h4><div class="an-rng"><span>Bahasa</span><select data-k="lang"><option value="id-ID">Indonesia</option><option value="en-US">English</option><option value="ms-MY">Melayu</option><option value="ko-KR">한국어</option><option value="ja-JP">日本語</option></select></div></div>
     <div class="an-sec"><h4>Performa</h4>${chk('lite', 'Mode hemat (lebih ringan)')}${chk('track', 'Tampilkan data tracking')}</div>
   </aside>
   <div class="an-ov" id="an-ov"><div><div class="an-spin"></div><h3 id="an-ttl">Menyalakan kamera</h3><p id="an-msg">Izinkan akses kamera saat diminta browser.</p><button class="an-btn" id="an-go" style="display:none">Coba lagi</button></div></div>`;
@@ -61,15 +67,34 @@
   .an-rng select{grid-column:2/4;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;padding:.5rem .6rem;font-size:14.5px}
   .an-check{font-size:14.5px;line-height:1.7;color:#d4d4d8}.an-check b{color:#fff}.an-check .ok{color:#34d399}.an-check .warn{color:#fbbf24}.an-note{font-size:12px;line-height:1.5;color:#71717a;margin-top:6px}`;
   document.head.appendChild(st);
+  const st2 = document.createElement('style');
+  st2.textContent = `.an-stack{position:absolute;z-index:3;left:12px;top:calc(max(12px,env(safe-area-inset-top)) + 58px);width:min(330px,calc(100% - 24px));display:flex;flex-direction:column;gap:10px;pointer-events:none}
+  .an-stack .an-info{position:static;width:100%;pointer-events:auto}
+  @media(min-width:768px){.an-stack{right:12px;width:auto;flex-direction:row;justify-content:space-between;align-items:flex-start}.an-stack .an-info{width:350px}.an-stack .an-face{width:380px}}
+  .an-info{padding:14px 16px 13px;border-radius:22px;background:linear-gradient(155deg,rgba(8,16,36,.36),rgba(8,16,36,.14))!important;border:1px solid rgba(150,205,255,.3)!important;-webkit-backdrop-filter:blur(8px) saturate(1.6);backdrop-filter:blur(8px) saturate(1.6);box-shadow:0 10px 44px -14px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.14),0 0 30px -8px rgba(90,170,255,.38)}
+  .an-info-h{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#8fd3ff;text-shadow:0 0 14px rgba(80,170,255,.7),0 1px 4px rgba(0,0,0,.9);margin-bottom:8px;cursor:pointer}
+  .an-info-h small{font-size:12.5px;letter-spacing:0;text-transform:none;font-weight:700;color:#e6f4ff}
+  .an-check{font-size:16px;line-height:1.5;color:#f5faff;text-shadow:0 1px 6px rgba(0,0,0,.95),0 0 2px rgba(0,0,0,.9)}
+  .an-row{display:flex;align-items:baseline;gap:8px;padding:3px 0;flex-wrap:wrap}.an-row>span{color:#c3dcf8;min-width:68px;font-weight:600}.an-row b{color:#fff;font-weight:800}
+  .an-check .ok{color:#5df2b0;font-weight:700}.an-check .warn{color:#ffd24d;font-weight:700}.an-check .bad{color:#ff7a8e;font-weight:700}.an-check .inf{color:#7fd6ff;font-weight:700}
+  .an-bar{position:relative;flex:1;min-width:60px;height:7px;border-radius:99px;background:rgba(255,255,255,.2);overflow:hidden;align-self:center}.an-bar s{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:linear-gradient(90deg,#38bdf8,#a78bfa);box-shadow:0 0 10px rgba(120,190,255,.85);transition:width .25s}
+  .an-mood{margin:0 0 8px;font-size:21px;font-weight:800;line-height:1.25;color:#fff;text-shadow:0 0 18px rgba(130,190,255,.6),0 2px 8px rgba(0,0,0,.95)}.an-mood small{display:block;font-size:14px;font-weight:600;color:#d8e9ff;margin-top:2px}
+  .an-note{margin-top:8px;font-size:12.5px;line-height:1.5;color:#d9e6f8;text-shadow:0 1px 5px rgba(0,0,0,.95)}
+  .an-info.min{padding-bottom:10px}.an-info.min .an-info-h{margin-bottom:0}
+  .an-sub{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(max(14px,env(safe-area-inset-bottom)) + 96px);z-index:4;max-width:min(900px,calc(100% - 28px));text-align:center;font-size:clamp(19px,2.6vw,30px);font-weight:800;line-height:1.35;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);padding:.5rem 1.1rem;border-radius:18px;background:rgba(0,0,0,.34);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);opacity:0;transition:opacity .25s;pointer-events:none}
+  .an-sub.on{opacity:1}.an-sub i{font-style:normal;opacity:.72;font-weight:700}.an-sub em{display:block;font-style:normal;font-size:.55em;font-weight:600;color:#fcd34d}
+  .an-chips button#an-mic.on{background:#34d399;color:#04201a}
+  @media(max-width:767px){.an-sub{bottom:calc(max(14px,env(safe-area-inset-bottom)) + 132px)}}`;
+  document.head.appendChild(st2);
   v = $('#an-v'); c = $('#an-c'); x = c.getContext('2d', { desynchronized: true });
   function sync() {
     root.querySelectorAll('[data-k]').forEach(e => { const k = e.dataset.k; if (e.type === 'checkbox') e.checked = !!S[k]; else e.value = S[k]; const o = e.nextElementSibling; if (e.type === 'range' && o) o.textContent = (+S[k]).toFixed(2); });
     root.querySelectorAll('#an-look button').forEach(b => b.classList.toggle('on', b.dataset.l === S.look));
     root.classList.toggle('an-xr', S.look === 'xray'); $('#an-lbl').classList.toggle('on', !!S.labels);
   }
-  root.addEventListener('input', e => { const k = e.target.dataset && e.target.dataset.k; if (!k) return; S[k] = e.target.type === 'checkbox' ? (e.target.checked ? 1 : 0) : e.target.type === 'range' ? +e.target.value : e.target.value; sync(); });
+  root.addEventListener('input', e => { const k = e.target.dataset && e.target.dataset.k; if (!k) return; S[k] = e.target.type === 'checkbox' ? (e.target.checked ? 1 : 0) : e.target.type === 'range' ? +e.target.value : e.target.value; sync(); if (k === 'lang') { try { localStorage.setItem('an_lang', S.lang); } catch (x) {} subStop(); setTimeout(subStart, 250); } });
   root.addEventListener('click', e => {
-    if (e.target.closest('#an-ih')) $('#an-info').classList.toggle('min');
+    const hh = e.target.closest('.an-info-h'); if (hh) hh.parentElement.classList.toggle('min');
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.l) { S.look = b.dataset.l; sync(); }
     if (b.dataset.q) { const q = b.dataset.q; S.skull = +(q === 'skull' || q === 'all'); S.brain = +(q === 'brain' || q === 'all'); S.muscle = +(q === 'muscle' || q === 'all'); S.eyes = 1; sync(); }
@@ -79,6 +104,7 @@
     if (b.id === 'an-close') window.switchTab('online');
     if (b.id === 'an-go') start();
     if (b.id === 'an-shot') shot();
+    if (b.id === 'an-mic') micToggle();
   });
   function shot() {
     const o = document.createElement('canvas'); o.width = W; o.height = H; const g = o.getContext('2d');
@@ -94,26 +120,116 @@
   async function load() {
     const m = await import(CDN + '/+esm'), fs = await m.FilesetResolver.forVisionTasks(CDN + '/wasm');
     const mk = async (K, p, ex) => { for (const dl of ['GPU', 'CPU']) { try { return await K.createFromOptions(fs, Object.assign({ baseOptions: { modelAssetPath: MD + p, delegate: dl }, runningMode: 'VIDEO' }, ex)); } catch (e) {} } throw new Error('model'); };
-    face = await mk(m.FaceLandmarker, 'face_landmarker/face_landmarker/float16/1/face_landmarker.task', { numFaces: 1 });
+    face = await mk(m.FaceLandmarker, 'face_landmarker/face_landmarker/float16/1/face_landmarker.task', { numFaces: 1, outputFaceBlendshapes: true });
     hand = await mk(m.HandLandmarker, 'hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task', { numHands: 2 });
     pose = await mk(m.PoseLandmarker, 'pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task', {});
   }
   const ov = (show, ttl, txt, btn) => { $('#an-ov').style.display = show ? 'grid' : 'none'; if (!show) return; $('#an-ttl').textContent = ttl; $('#an-msg').textContent = txt; $('#an-go').style.display = btn ? '' : 'none'; $('.an-spin').style.display = btn ? 'none' : ''; };
+
+  // ---------- Ekspresi, mata, perasaan (dari blendshape wajah) ----------
+  const EM = { laugh: ['😂', 'Tertawa'], smile: ['😊', 'Tersenyum'], surprise: ['😮', 'Terkejut'], angry: ['😠', 'Kesal'], sad: ['😢', 'Sedih'], sleepy: ['😴', 'Mengantuk'], neutral: ['😐', 'Netral'] };
+  const MOOD = { laugh: 'Lagi senang banget', smile: 'Suasana hatimu terlihat positif', surprise: 'Terlihat kaget atau penasaran', angry: 'Terlihat kesal atau serius', sad: 'Terlihat sedih atau murung', sleepy: 'Terlihat mengantuk atau lelah', neutral: 'Terlihat tenang dan santai' };
+  const BK = ['eyeBlinkLeft', 'eyeBlinkRight', 'eyeWideLeft', 'eyeWideRight', 'eyeSquintLeft', 'eyeSquintRight', 'mouthSmileLeft', 'mouthSmileRight', 'mouthFrownLeft', 'mouthFrownRight', 'jawOpen', 'browDownLeft', 'browDownRight', 'browInnerUp', 'browOuterUpLeft', 'browOuterUpRight', 'mouthPressLeft', 'mouthPressRight', 'cheekSquintLeft', 'cheekSquintRight'];
+  let bsv = null, expr = 'neutral', eyeSt = 'terbuka', wasClosed = false, closedSince = 0, lastBlinkAt = 0, hold = { k: 'neutral', t: 0 };
+  function analyze(cats, ts) {
+    if (!cats) { bsv = null; wasClosed = false; return; }
+    const raw = {}; cats.forEach(c => { raw[c.categoryName] = c.score; });
+    bsv = bsv || {}; BK.forEach(k => { const r = raw[k] || 0; bsv[k] = bsv[k] === undefined ? r : bsv[k] + (r - bsv[k]) * .45; });
+    const g = k => bsv[k] || 0, av = (p, q) => (g(p) + g(q)) / 2, blinkRaw = ((raw.eyeBlinkLeft || 0) + (raw.eyeBlinkRight || 0)) / 2;
+    // kedip dihitung dari nilai mentah supaya kedipan cepat tetap tertangkap; menutup mata lama bukan kedip
+    if (blinkRaw > .5 && !wasClosed) { wasClosed = true; closedSince = ts; }
+    if (blinkRaw < .3 && wasClosed) { wasClosed = false; if (ts - closedSince < 700) { blinks++; lastBlinkAt = ts; } }
+    const blink = av('eyeBlinkLeft', 'eyeBlinkRight'), wide = av('eyeWideLeft', 'eyeWideRight'), squint = av('eyeSquintLeft', 'eyeSquintRight');
+    eyeSt = wasClosed && ts - closedSince > 600 ? 'memejam' : (wasClosed || ts - lastBlinkAt < 350) ? 'berkedip' : (wide > .4 && blink < .25) ? 'melotot' : (squint > .5 && blink < .45) ? 'menyipit' : 'terbuka';
+    const smile = av('mouthSmileLeft', 'mouthSmileRight'), frown = av('mouthFrownLeft', 'mouthFrownRight'), jaw = g('jawOpen'), bd = av('browDownLeft', 'browDownRight'),
+      bu = g('browInnerUp'), bo = av('browOuterUpLeft', 'browOuterUpRight'), press = av('mouthPressLeft', 'mouthPressRight');
+    let k = 'neutral';
+    if (smile > .45 && jaw > .25) k = 'laugh';
+    else if (smile > .3) k = 'smile';
+    else if (jaw > .35 && wide > .3 && (bu > .25 || bo > .25)) k = 'surprise';
+    else if (bd > .4 && (press > .2 || frown > .15 || squint > .3)) k = 'angry';
+    else if (frown > .3 || (frown > .18 && bu > .2)) k = 'sad';
+    else if (wasClosed && ts - closedSince > 1500) k = 'sleepy';
+    if (k !== hold.k) hold = { k, t: ts };
+    if (ts - hold.t > 250) expr = k; // tahan 0,25 dtk supaya tidak berkedip-kedip
+  }
+
+  // ---------- Perkiraan usia (face-api, jalan di perangkat; hanya tebakan) ----------
+  const FA = 'https://cdn.jsdelivr.net/gh/vladmandic/face-api@1.7.12/';
+  let ageNet = null, ageState = 'idle', ageBusy = false, nextAge = 0, ages = [], ageCv = null;
+  function loadAge() {
+    return new Promise((res, rej) => {
+      const go = async () => { try { await window.faceapi.nets.ageGenderNet.loadFromUri(FA + 'model/'); ageNet = window.faceapi.nets.ageGenderNet; res(); } catch (e) { rej(e); } };
+      if (window.faceapi) return go();
+      const sc = document.createElement('script'); sc.src = FA + 'dist/face-api.js'; sc.onload = go; sc.onerror = () => rej(new Error('face-api')); document.head.appendChild(sc);
+    });
+  }
+  function ageSample(F, ts) {
+    if (ageState === 'err' || ageBusy || ts < nextAge || !F) return;
+    nextAge = ts + 1400; ageBusy = true;
+    (async () => {
+      try {
+        if (!ageNet) { ageState = 'load'; await loadAge(); }
+        let x0 = 1, y0 = 1, x1 = 0, y1 = 0; for (const q of F) { if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x; if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y; }
+        const cx = (x0 + x1) / 2 * W, cy = (y0 + y1) / 2 * H, sz = Math.max((x1 - x0) * W, (y1 - y0) * H) * 1.2;
+        ageCv = ageCv || document.createElement('canvas'); ageCv.width = ageCv.height = 112;
+        ageCv.getContext('2d').drawImage(v, cx - sz / 2, cy - sz / 2, sz, sz, 0, 0, 112, 112);
+        let r = await ageNet.predictAgeAndGender(ageCv); r = Array.isArray(r) ? r[0] : r;
+        if (r && isFinite(r.age)) { ages.push(r.age); if (ages.length > 20) ages.shift(); if (ages.length >= 4) ageState = 'ok'; }
+      } catch (e) { ageState = 'err'; }
+      ageBusy = false;
+    })();
+  }
+  const medAge = () => { const a = ages.slice().sort((p, q) => p - q); return Math.round(a[a.length >> 1]); };
+
+  // ---------- Teks suara otomatis (SpeechRecognition bawaan browser) ----------
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null, subOn = (() => { try { return localStorage.getItem('an_sub') !== '0'; } catch (e) { return true; } })(), subFatal = '', subFin = '', subLast = 0, subHide = 0;
+  function showSub(fin, it, note) {
+    const box = $('#an-sub'); if (!box) return; const now = Date.now();
+    if (now - subLast > 4000) subFin = ''; subLast = now;
+    if (fin) subFin = (subFin + ' ' + fin).trim().slice(-140);
+    box.textContent = subFin;
+    if (it) { const i = document.createElement('i'); i.textContent = (subFin ? ' ' : '') + it; box.appendChild(i); }
+    if (note) { const em = document.createElement('em'); em.textContent = note; box.appendChild(em); }
+    box.classList.toggle('on', !!(subFin || it || note));
+    clearTimeout(subHide); subHide = setTimeout(() => { box.classList.remove('on'); subFin = ''; }, note ? 7000 : 4500);
+  }
+  const micUI = () => { const b = $('#an-mic'); if (b) b.classList.toggle('on', !!(SR && subOn && !subFatal)); };
+  function subStart() {
+    micUI(); if (!SR || !subOn || !active || rec || subFatal) return;
+    const r = rec = new SR(); r.lang = S.lang || 'id-ID'; r.continuous = true; r.interimResults = true; r.maxAlternatives = 1;
+    r.onresult = e => { let fin = '', it = ''; for (let i = e.resultIndex; i < e.results.length; i++) { const t = e.results[i][0].transcript; if (e.results[i].isFinal) fin += t; else it += t; } showSub(fin, it); };
+    r.onerror = e => {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') subFatal = 'Izin mikrofon ditolak. Izinkan mikrofon untuk situs ini, lalu ketuk Teks suara.';
+      else if (e.error === 'network') subFatal = 'Layanan suara browser tidak bisa dihubungi (Brave memblokirnya). Coba Chrome, Edge, atau Safari.';
+      else if (e.error === 'audio-capture') subFatal = 'Mikrofon tidak ditemukan.';
+      if (subFatal) { showSub('', '', subFatal); micUI(); }
+    };
+    r.onend = () => { rec = null; if (active && run && subOn && !subFatal) setTimeout(subStart, 350); else micUI(); };
+    try { r.start(); } catch (e) { rec = null; }
+  }
+  function subStop() { const r = rec; rec = null; if (r) { r.onend = null; try { r.abort(); } catch (e) {} } micUI(); }
+  function micToggle() {
+    if (!SR) return showSub('', '', 'Browser ini belum mendukung teks suara.');
+    subFatal = ''; subOn = !subOn; try { localStorage.setItem('an_sub', subOn ? '1' : '0'); } catch (e) {}
+    if (subOn) subStart(); else { subStop(); $('#an-sub').classList.remove('on'); }
+  }
   async function start() {
-    if (run || loading) return; loading = true; ov(1, 'Menyalakan kamera', 'Izinkan akses kamera saat diminta browser. Video hanya diproses di perangkatmu.', 0);
+    if (run || loading) return; loading = true; ov(1, 'Menyalakan kamera', 'Izinkan kamera (dan mikrofon untuk teks suara) saat diminta browser. Video hanya diproses di perangkatmu.', 0);
     try {
       const big = innerWidth >= 768;
       stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: big ? 960 : 640 }, height: { ideal: big ? 540 : 480 }, frameRate: { ideal: 30 } }, audio: false });
       ov(1, 'Memuat model deteksi', 'Hanya sekali, sebentar saja...', 0);
       if (!face) await load();
-      v.srcObject = stream; await v.play(); run = true; ov(0); lastT = -1; blinks = 0; t0 = performance.now(); nextF();
+      v.srcObject = stream; await v.play(); run = true; ov(0); lastT = -1; blinks = 0; t0 = performance.now(); nextF(); subStart();
     } catch (e) {
       if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
       ov(1, 'Belum bisa memulai', e && e.name === 'NotAllowedError' ? 'Izin kamera ditolak. Izinkan kamera di pengaturan browser untuk situs ini, lalu coba lagi.' : 'Pastikan internet aktif (model dimuat sekali) dan situs dibuka lewat https.', 1);
     }
     loading = false;
   }
-  function stop() { run = false; if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; v.srcObject = null; }
+  function stop() { run = false; subStop(); if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; v.srcObject = null; }
 
   // ---------- Gambar ----------
   const colors = () => { const X = S.look === 'xray', a = +S.bright; return X ? { X, bone: `rgba(228,242,255,${.92 * a})`, glow: `rgba(110,160,255,${.3 * a})`, fill: `rgba(120,170,255,${.1 * a})`, hole: 'rgba(0,8,30,.55)', brain: `rgba(255,110,190,${.5 * a})`, mus: `rgba(255,70,80,${.38 * a})`, eye: `rgba(170,225,255,${.9 * a})`, head: 'rgba(70,130,255,.95)' } : { X, bone: '#ece5d2', glow: '#7d725a', fill: '#d9d0b8', hole: '#2a2420', brain: '#d98aa0', mus: '#b3262e', eye: '#f5f5f5', head: '#3b82f6' }; };
@@ -233,7 +349,7 @@
     if (c.width !== v.videoWidth) { c.width = v.videoWidth; c.height = v.videoHeight; view(); }
     W = c.width; H = c.height; const t1 = performance.now(), ts = Math.max(t1, lastTs + 1); lastTs = ts; n++;
     try { // model dijalankan bergantian supaya tiap frame tetap ringan
-      cur.f = face.detectForVideo(v, ts).faceLandmarks[0] || null;
+      const fr = face.detectForVideo(v, ts); cur.f = fr.faceLandmarks[0] || null; cur.bs = fr.faceBlendshapes && fr.faceBlendshapes[0] ? fr.faceBlendshapes[0].categories : null;
       if (S.hand) { if (n % (S.lite ? 3 : 2) === 0) cur.h = hand.detectForVideo(v, ts).landmarks || []; } else cur.h = [];
       if (n % (S.body ? (S.lite ? 5 : 3) : 8) === 0) cur.p = pose.detectForVideo(v, ts).landmarks[0] || null;
     } catch (e) {}
@@ -250,31 +366,52 @@
     if (F) {
       const r = k => P(F[k]), A = r(234), B = r(454), s = unit(A, B), ev = (a, b, e, f2) => d(r(a), r(b)) / d(r(e), r(f2));
       info.roll = norm(Math.atan2(s[1], s[0]) * 180 / Math.PI); info.yaw = ((P(F[1])[0] - mid(A, B)[0]) / (d(A, B) || 1)) * -120; info.pitch = ((d(r(1), mid(r(33), r(263))) / (d(r(10), r(152)) || 1)) - .3) * 220; info.fw = d(A, B) / W;
-      const ear = (ev(159, 145, 33, 133) + ev(386, 374, 362, 263)) / 2; if (ear < .17 && !closed) { blinks++; closed = true; } if (ear > .21) closed = false;
+      if (!cur.bs) { const ear = (ev(159, 145, 33, 133) + ev(386, 374, 362, 263)) / 2; if (ear < .17 && !closed) { blinks++; closed = true; } if (ear > .21) closed = false; }
     }
     if (Po && Po[11] && Po[12]) { const a = P(Po[11]), b = P(Po[12]); info.tilt = norm(Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI); } else info.tilt = null;
     if (Hs[0]) { const q = Hs[0].map(P); info.open = [8, 12, 16, 20].reduce((s2, i) => s2 + d(q[i], q[0]), 0) / 4 / (d(q[0], q[9]) || 1); } else info.open = null;
     info.face = !!F; info.hands = Hs.length; info.body = !!Po;
+    analyze(F ? cur.bs : null, ts); if (F) ageSample(cur.f, ts);
     slow = slow * .92 + (performance.now() - t1) * .08; if (!S.lite && n > 45 && slow > 42) { S.lite = 1; sync(); } // otomatis hemat kalau berat
     if (ts - uiT > 400) { uiT = ts; ui(ts); }
   }
   const cls = (ok, t) => `<span class="${ok ? 'ok' : 'warn'}">${t}</span>`;
+  const tag = (k, t) => `<span class="${k}">${t}</span>`;
+  const row = (l, v) => `<div class="an-row"><span>${l}</span>${v}</div>`;
+  const bar = p => `<i class="an-bar"><s style="width:${Math.round(Math.min(1, Math.max(0, p)) * 100)}%"></s></i>`;
   function ui(ts) {
-    const ck = $('#an-check'), min = (ts - t0) / 60000;
-    const rows = [];
-    rows.push(info.tilt == null ? 'Bahu: <b>belum terlihat</b>' : `Bahu: <b>${Math.abs(info.tilt).toFixed(1)}°</b> ${cls(Math.abs(info.tilt) < 4, Math.abs(info.tilt) < 4 ? 'sejajar' : 'miring')}`);
-    rows.push(info.face ? `Kepala: <b>${Math.abs(info.roll).toFixed(1)}°</b> ${cls(Math.abs(info.roll) < 6, Math.abs(info.roll) < 6 ? 'tegak' : 'miring')}` : 'Kepala: <b>belum terlihat</b>');
-    if (info.face) rows.push(`Jarak: ${info.fw > .55 ? cls(0, 'terlalu dekat') : info.fw < .16 ? cls(0, 'terlalu jauh') : cls(1, 'pas')}`);
-    if (info.face && min > .15) rows.push(`Kedip: <b>${Math.round(blinks / min)}</b>/menit ${cls(blinks / min >= 8, blinks / min >= 8 ? 'wajar' : 'jarang, istirahatkan mata')}`);
-    rows.push(info.open == null ? 'Tangan: <b>belum terlihat</b>' : `Tangan: <b>${info.open > 1.7 ? 'terbuka' : 'mengepal'}</b>`);
-    ck.innerHTML = rows.join('<br>'); $('#an-state').textContent = (S.lite ? 'hemat · ' : '') + (info.fps || 0) + ' fps';
+    const ck = $('#an-check'), min = (ts - t0) / 60000, rows = [];
+    rows.push(row('Bahu', info.tilt == null ? '<b>belum terlihat</b>' : `<b>${Math.abs(info.tilt).toFixed(1)}°</b> ${cls(Math.abs(info.tilt) < 4, Math.abs(info.tilt) < 4 ? 'sejajar' : 'miring')}`));
+    rows.push(row('Kepala', info.face ? `<b>${Math.abs(info.roll).toFixed(1)}°</b> ${cls(Math.abs(info.roll) < 6, Math.abs(info.roll) < 6 ? 'tegak' : 'miring')}` : '<b>belum terlihat</b>'));
+    if (info.face) rows.push(row('Jarak', info.fw > .55 ? cls(0, 'terlalu dekat') : info.fw < .16 ? cls(0, 'terlalu jauh') : cls(1, 'pas')));
+    if (info.face && min > .15) rows.push(row('Kedip', `<b>${Math.round(blinks / min)}</b>/menit ${cls(blinks / min >= 8, blinks / min >= 8 ? 'wajar' : 'jarang, istirahatkan mata')}`));
+    rows.push(row('Tangan', info.open == null ? '<b>belum terlihat</b>' : `<b>${info.open > 1.7 ? 'terbuka' : 'mengepal'}</b>`));
+    ck.innerHTML = rows.join(''); $('#an-state').textContent = (S.lite ? 'hemat · ' : '') + (info.fps || 0) + ' fps';
+
+    // wajah & perasaan
+    const fc = $('#an-fcheck'), fs = $('#an-fs');
+    if (!info.face || !bsv) { fc.innerHTML = 'Wajah belum terlihat. Hadapkan wajahmu ke kamera.'; fs.textContent = ''; }
+    else {
+      const g = k => bsv[k] || 0, av = (p, q) => (g(p) + g(q)) / 2, smile = av('mouthSmileLeft', 'mouthSmileRight'), frown = av('mouthFrownLeft', 'mouthFrownRight'),
+        jaw = g('jawOpen'), bd = av('browDownLeft', 'browDownRight'), bu = Math.max(g('browInnerUp'), av('browOuterUpLeft', 'browOuterUpRight')), open = 1 - av('eyeBlinkLeft', 'eyeBlinkRight');
+      const [em, nm] = EM[expr], fr = [];
+      fr.push(`<div class="an-mood">${em} ${MOOD[expr]}<small>Ekspresi: ${nm}</small></div>`);
+      const age = ages.length ? medAge() : 0;
+      fr.push(row('Usia', ageState === 'ok' ? `<b>≈ ${age} th</b> ${tag('inf', 'kisaran ' + Math.max(1, age - 5) + '–' + (age + 5))}` : ageState === 'err' ? tag('warn', 'belum tersedia') : tag('inf', 'mengukur…')));
+      fr.push(row('Mata', `<b>${eyeSt}</b> ${bar(open)}`));
+      fr.push(row('Senyum', `${bar(smile / .7)} <b>${Math.round(Math.min(1, smile / .7) * 100)}%</b>`));
+      fr.push(row('Alis', bd > .4 ? tag('warn', 'mengerut') : bu > .35 ? tag('inf', 'terangkat') : '<b>normal</b>'));
+      fr.push(row('Mulut', jaw > .5 ? '<b>terbuka lebar</b>' : jaw > .2 ? '<b>terbuka</b>' : smile > .3 ? '<b>tersenyum</b>' : frown > .3 ? '<b>cemberut</b>' : '<b>rapat</b>'));
+      fr.push(row('Suara', !SR ? tag('warn', 'tidak didukung browser ini') : subFatal ? tag('bad', 'tidak aktif') : subOn ? tag('ok', 'teks suara aktif · ' + (S.lang || 'id-ID')) : tag('inf', 'mati')));
+      fc.innerHTML = fr.join(''); fs.textContent = em + ' ' + nm;
+    }
     const hud = $('#an-hud'); hud.style.display = S.track ? 'block' : 'none';
     if (S.track) hud.textContent = `FPS ${info.fps || 0}\nWajah ${info.face ? 'ya' : '-'}  Tangan ${info.hands}  Tubuh ${info.body ? 'ya' : '-'}` + (info.face ? `\nYaw ≈${(info.yaw || 0).toFixed(0)}°  Pitch ≈${(info.pitch || 0).toFixed(0)}°  Roll ${(info.roll || 0).toFixed(0)}°` : '');
   }
 
   // masuk tab = layar penuh + langsung minta izin kamera; keluar tab = kamera mati
   function enter() {
-    active = true; document.documentElement.style.overflow = 'hidden'; root.classList.remove('an-open'); $('#an-info').classList.toggle('min', innerWidth < 768);
+    active = true; document.documentElement.style.overflow = 'hidden'; root.classList.remove('an-open'); $('#an-info').classList.toggle('min', innerWidth < 768); $('#an-face').classList.toggle('min', innerWidth < 768); ages = []; ageState = ageNet ? 'load' : 'idle'; subFatal = '';
     if (innerWidth >= 768 && root.requestFullscreen && !document.fullscreenElement) root.requestFullscreen().catch(() => {});
     view(); start();
   }
@@ -283,5 +420,5 @@
   if (typeof o === 'function') window.switchTab = function (t) { const r = o.apply(this, arguments); if (t === 'anatomy') { if (!active) enter(); } else if (active) leave(); return r; };
   document.addEventListener('fullscreenchange', () => { if (active && !document.fullscreenElement && innerWidth >= 768) window.switchTab('online'); });
   document.addEventListener('visibilitychange', () => { if (document.hidden && run) stop(); else if (!document.hidden && active && !run) start(); });
-  window.LNAnatomy = { S, drawFace, drawHand, drawBody, setup(ctx, w, h) { x = ctx; W = w; H = h; C = colors(); } };
+  window.LNAnatomy = { _t: { analyze, state: () => ({ expr, eyeSt, blinks }) }, S, drawFace, drawHand, drawBody, setup(ctx, w, h) { x = ctx; W = w; H = h; C = colors(); } };
 })();
