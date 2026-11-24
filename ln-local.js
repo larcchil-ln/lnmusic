@@ -135,7 +135,7 @@
   function renderLyrics(lines){var box=$('ln-offline-lyrics');if(!box)return;lyricLines=lines||[];box.innerHTML=lyricLines.length?lyricLines.map(function(l,i){return '<p data-lyric-index="'+i+'">'+esc(l.text||'♪')+'</p>';}).join(''):'<p class="ln-lyrics-empty">Lirik belum tersedia. Impor file .LRC atau coba cari online.</p>';}
   function showLyrics(title,artist){var key=lyricKey(title,artist);if(lyricCache[key]){renderLyrics(lyricCache[key]);return;}if(showLyrics.last===key)return;showLyrics.last=key;fetch('https://lrclib.net/api/get?'+new URLSearchParams({track_name:title,artist_name:artist}).toString()).then(function(r){if(!r.ok)throw new Error('not found');return r.json();}).then(function(data){var lines=parseLrc(data.syncedLyrics||'');if(!lines.length&&data.plainLyrics)lines=String(data.plainLyrics).split(/\r?\n/).map(function(t){return {time:0,text:t};});if(lines.length){lyricCache[key]=lines;localStorage.setItem('lnOfflineLyrics',JSON.stringify(lyricCache));renderLyrics(lines);}else renderLyrics([]);}).catch(function(){renderLyrics([]);});}
   function poll() {
-    if (!LM || !$('tab-offline') || $('tab-offline').classList.contains('hidden')) return;
+    if (!LM) return;
     LM.getState().then(function (next) {
       updatePlayer(next);
       if (!remoteLocalSync && next && next.active && typeof isRoomConnected !== 'undefined' && isRoomConnected && Date.now() - lastLocalRoomSync > 2500) {
