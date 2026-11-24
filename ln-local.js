@@ -13,7 +13,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var LM = null, BP = null;
   var lib = [], view = [], state = {}, scanned = false, busy = false, dragging = false;
-  var PAGE = 60, rendered = 0, timer = null, category = 'all', groupSelection = '', queue = [], queueIndex = 0, artworkCache = {}, favorites = JSON.parse(localStorage.getItem('lnOfflineFavorites') || '[]'), lyricCache = JSON.parse(localStorage.getItem('lnOfflineLyrics') || '{}'), lyricLines = [];
+  var PAGE = 60, rendered = 0, timer = null, category = 'all', groupSelection = '', letterFilter = '', queue = [], queueIndex = 0, artworkCache = {}, favorites = JSON.parse(localStorage.getItem('lnOfflineFavorites') || '[]'), lyricCache = JSON.parse(localStorage.getItem('lnOfflineLyrics') || '{}'), lyricLines = [];
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }); }
   function fmt(ms) { var n = Math.max(0, Math.floor((Number(ms) || 0) / 1000)); return Math.floor(n / 60) + ':' + ('0' + (n % 60)).slice(-2); }
   function setStatus(msg, kind) {
@@ -68,9 +68,11 @@
     }
     renderMore();
   }
+  function renderAlphabet(){var box=$('ln-alphabet');if(!box)return;var letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ#'.split('');box.innerHTML=letters.map(function(ch){return '<button type="button" data-ln-letter="'+ch+'" class="'+(letterFilter===ch?'active':'')+'">'+ch+'</button>';}).join('');Array.prototype.forEach.call(box.querySelectorAll('[data-ln-letter]'),function(b){b.addEventListener('click',function(){letterFilter=letterFilter===b.getAttribute('data-ln-letter')?'':b.getAttribute('data-ln-letter');filter();});});}
   function filter() {
     var q = (($('ln-offline-search') && $('ln-offline-search').value) || '').trim().toLowerCase();
-    var source = lib.filter(function(s){return !q || [s.title,s.artist,s.album,s.storage].join(' ').toLowerCase().indexOf(q)!==-1;});
+    var source = lib.filter(function(s){var hay=[s.title,s.artist,s.album,s.storage].join(' ').toLowerCase();return (!q || hay.indexOf(q)!==-1) && (!letterFilter || String(s.title||'').toUpperCase().charAt(0)===letterFilter);});
+    renderAlphabet();
     if(category==='artists' || category==='albums' || category==='folders'){
       var field=category==='artists'?'artist':(category==='albums'?'album':'storage');
       if(!groupSelection){
@@ -116,7 +118,7 @@
       if (btn) { btn.disabled = false; btn.textContent = '⟳  Pindai Musik'; }
     });
   }
-  var remoteLocalSync = false, lastLocalRoomSync = 0;
+  var remoteLocalSync = false, lastLocalRoomSync = 0, sleepTimer = null, sleepTimerIndex = 0;
   function sendLocalRoomMessage(type, extra) {
     try {
       if (typeof isRoomConnected === 'undefined' || !isRoomConnected || typeof connections === 'undefined' || typeof isHost === 'undefined' || !isHost) return;
@@ -152,6 +154,8 @@
     renderQueue();
     if($('ln-np-artist'))$('ln-np-artist').textContent=state.active?(state.artist||'Artis tidak dikenal'):'Pilih lagu dari koleksi';
     if($('ln-np-toggle'))$('ln-np-toggle').textContent=state.playing?'Ⅱ':'▶';
+    if($('ln-np-repeat'))$('ln-np-repeat').classList.toggle('active',!!state.repeat);
+    if($('ln-np-shuffle'))$('ln-np-shuffle').classList.toggle('active',!!state.shuffle);
     if($('ln-np-pos'))$('ln-np-pos').textContent=fmt(state.pos);
     if($('ln-np-dur'))$('ln-np-dur').textContent=fmt(state.dur);
     if($('ln-np-seek')){$('ln-np-seek').max=Math.max(1,Number(state.dur)||1);if(!dragging)$('ln-np-seek').value=Math.min(Number(state.pos)||0,Number($('ln-np-seek').max));}
@@ -240,10 +244,10 @@
     var scanBtn = $('ln-offline-scan'); if (scanBtn) scanBtn.addEventListener('click', scan);
     var allBtn = $('ln-offline-playall'); if (allBtn) allBtn.addEventListener('click', function () { if (view.length) playIndex(0); else scan(); });
     var search = $('ln-offline-search'); if (search) search.addEventListener('input', filter);
-    var cats = document.querySelectorAll('[data-ln-category]'); Array.prototype.forEach.call(cats,function(btn){btn.addEventListener('click',function(){category=btn.getAttribute('data-ln-category');groupSelection='';Array.prototype.forEach.call(cats,function(b){b.classList.toggle('is-active',b===btn);});var titles={all:'Lagu',artists:'Artis',albums:'Album',folders:'Folder',favorites:'Favorit',playlists:'Daftar Putar'};if($('ln-library-title'))$('ln-library-title').textContent=titles[category]||'Lagu';if($('ln-list-heading'))$('ln-list-heading').textContent=category==='all'?'Semua lagu':titles[category];var side=$('ln-library-sidebar');if(side)side.classList.remove('open');filter();});});
+    var cats = document.querySelectorAll('[data-ln-category]'); Array.prototype.forEach.call(cats,function(btn){btn.addEventListener('click',function(){category=btn.getAttribute('data-ln-category');groupSelection='';letterFilter='';Array.prototype.forEach.call(cats,function(b){b.classList.toggle('is-active',b===btn);});var titles={all:'Lagu',artists:'Artis',albums:'Album',folders:'Folder',favorites:'Favorit',playlists:'Daftar Putar'};if($('ln-library-title'))$('ln-library-title').textContent=titles[category]||'Lagu';if($('ln-list-heading'))$('ln-list-heading').textContent=category==='all'?'Semua lagu':titles[category];var side=$('ln-library-sidebar');if(side)side.classList.remove('open');filter();});});
     var menu=$('ln-mobile-menu');if(menu)menu.addEventListener('click',function(){$('ln-library-sidebar').classList.toggle('open');});
     var scanSide=$('ln-sidebar-scan');if(scanSide)scanSide.addEventListener('click',scan);var libSide=$('ln-sidebar-library');if(libSide)libSide.addEventListener('click',function(){category='all';groupSelection='';filter();});
-    var sort=$('ln-sort-az');if(sort)sort.addEventListener('click',function(){view.sort(function(a,b){return String(a.name||a.title||'').localeCompare(String(b.name||b.title||''));});renderList();});
+    var sort=$('ln-sort-az');if(sort)sort.addEventListener('click',function(){letterFilter='';view.sort(function(a,b){return String(a.name||a.title||'').localeCompare(String(b.name||b.title||''));});renderList();renderAlphabet();});
     var lrc = $('ln-offline-lrc-file'); if(lrc) lrc.addEventListener('change',function(ev){var file=ev.target.files&&ev.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(){var key=lyricKey(state.title||file.name.replace(/\.lrc$/i,''),state.artist||'');lyricCache[key]=parseLrc(String(reader.result||''));localStorage.setItem('lnOfflineLyrics',JSON.stringify(lyricCache));renderLyrics(lyricCache[key]);if($('ln-np-lyrics'))$('ln-np-lyrics').innerHTML=$('ln-offline-lyrics').innerHTML;setStatus('Lirik LRC berhasil disimpan di perangkat.','success');};reader.readAsText(file);});
     var list = $('ln-offline-list'); if (list) list.addEventListener('scroll', function () { if (this.scrollTop + this.clientHeight >= this.scrollHeight - 180) renderMore(); });
     var npNext=$('ln-np-next');if(npNext)npNext.addEventListener('click',function(){if(queue.length)playQueueIndex(queueIndex+1);});var npPrev=$('ln-np-prev');if(npPrev)npPrev.addEventListener('click',function(){if(queue.length)playQueueIndex(queueIndex-1);});
@@ -289,7 +293,7 @@
       : 'Mode browser terdeteksi. Pemindaian musik perangkat hanya tersedia di APK Android.', 'error');
     var all = $('ln-offline-playall'); if (all) all.addEventListener('click', function () { if (view.length) playIndex(0); else scan(); });
   }
-  function setupNowPlaying(){if($('ln-now-playing'))return;var p=document.createElement('div');p.id='ln-now-playing';p.innerHTML='<button type="button" class="ln-np-close" id="ln-np-close">×</button><div class="ln-np-cover" id="ln-np-cover">♫</div><div class="ln-np-title" id="ln-np-title">Belum ada lagu diputar</div><div class="ln-np-artist" id="ln-np-artist">Pilih lagu dari koleksi</div><div class="ln-np-lyrics" id="ln-np-lyrics"><p>Lirik akan tampil di sini</p></div><button type="button" id="ln-np-show-queue" class="ln-np-queue-toggle">☷ Antrean berikutnya <span id="ln-np-queue-count">0 lagu</span></button><div id="ln-np-queue" class="ln-np-queue"></div><div class="ln-player-progress"><span id="ln-np-pos">0:00</span><input id="ln-np-seek" type="range" min="0" max="1" value="0"><span id="ln-np-dur">0:00</span></div><div class="ln-np-controls"><button id="ln-np-prev">|◀</button><button id="ln-np-toggle">▶</button><button id="ln-np-next">▶|</button></div>';document.body.appendChild(p);$('ln-player-expand').addEventListener('click',function(){p.classList.add('open');});$('ln-np-close').addEventListener('click',function(){p.classList.remove('open');});$('ln-np-show-queue').addEventListener('click',function(){$('ln-np-queue').classList.toggle('visible');});$('ln-np-toggle').addEventListener('click',function(){if(LM)LM.toggle();});$('ln-np-prev').addEventListener('click',function(){if(LM)LM.prev();});$('ln-np-next').addEventListener('click',function(){if(LM)LM.next();});$('ln-np-seek').addEventListener('input',function(){if(LM)LM.seek({position:Number(this.value)});});}
+  function setupNowPlaying(){if($('ln-now-playing'))return;var p=document.createElement('div');p.id='ln-now-playing';p.innerHTML='<button type="button" class="ln-np-close" id="ln-np-close" aria-label="Tutup">×</button><div class="ln-np-cover" id="ln-np-cover">♫</div><div class="ln-np-title" id="ln-np-title">Belum ada lagu diputar</div><div class="ln-np-artist" id="ln-np-artist">Pilih lagu dari koleksi</div><div class="ln-np-lyrics" id="ln-np-lyrics"><p>Lirik akan tampil di sini</p></div><button type="button" id="ln-np-show-queue" class="ln-np-queue-toggle">☷ Antrean berikutnya <span id="ln-np-queue-count">0 lagu</span></button><div id="ln-np-queue" class="ln-np-queue"></div><div class="ln-player-progress"><span id="ln-np-pos">0:00</span><input id="ln-np-seek" type="range" min="0" max="1" value="0"><span id="ln-np-dur">0:00</span></div><div class="ln-np-controls"><button id="ln-np-repeat" title="Ulangi">↻</button><button id="ln-np-timer" title="Timer tidur">◷</button><button id="ln-np-prev" title="Sebelumnya">|◀</button><button id="ln-np-toggle">▶</button><button id="ln-np-next" title="Berikutnya">▶|</button><button id="ln-np-shuffle" title="Acak">⤨</button></div><div class="ln-np-footnote" id="ln-np-timer-status"></div>';document.body.appendChild(p);$('ln-player-expand').addEventListener('click',function(){p.classList.add('open');});$('ln-np-close').addEventListener('click',function(){p.classList.remove('open');});$('ln-np-show-queue').addEventListener('click',function(){$('ln-np-queue').classList.toggle('visible');});$('ln-np-toggle').addEventListener('click',function(){if(LM)LM.toggle();});$('ln-np-prev').addEventListener('click',function(){if(queue.length)playQueueIndex(queueIndex-1);});$('ln-np-next').addEventListener('click',function(){if(queue.length)playQueueIndex(queueIndex+1);});$('ln-np-seek').addEventListener('change',function(){if(LM)LM.seek({ms:Number(this.value)||0});});$('ln-np-repeat').addEventListener('click',function(){if(LM)LM.setMode({shuffle:!!state.shuffle,repeat:((state.repeat||0)+1)%3});});$('ln-np-shuffle').addEventListener('click',function(){if(LM)LM.setMode({shuffle:!state.shuffle,repeat:state.repeat||0});});$('ln-np-timer').addEventListener('click',function(){var mins=[15,30,45,60];sleepTimerIndex=(sleepTimerIndex+1)%5;if(sleepTimer)clearTimeout(sleepTimer);if(!sleepTimerIndex){sleepTimer=null;$('ln-np-timer-status').textContent='Timer tidur dimatikan';return;}var m=mins[sleepTimerIndex-1];$('ln-np-timer-status').textContent='Musik berhenti dalam '+m+' menit';sleepTimer=setTimeout(function(){if(LM)LM.pause();$('ln-np-timer-status').textContent='Timer selesai · musik dijeda';sleepTimer=null;sleepTimerIndex=0;},m*60000);});}
   function init() {
     C = window.Capacitor || null;
     native = isNativeCapacitor();
