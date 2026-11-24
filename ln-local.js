@@ -108,6 +108,7 @@
       var s = view[index];
       state = Object.assign({}, state, { active: true, playing: true, id: s.id, title: s.title, artist: s.artist, dur: s.dur, pos: 0 });
       updatePlayer(state); renderList();
+      if (!remoteLocalSync) sendLocalRoomMessage('SYNC_LOCAL_TRACK', { title: s.title, artist: s.artist, pos: 0, playing: true });
     }).catch(function (err) { setStatus('Gagal memutar lagu: ' + ((err && err.message) || err), 'error'); });
   }
   function updatePlayer(s) {
@@ -200,8 +201,8 @@
     var lrc = $('ln-offline-lrc-file'); if(lrc) lrc.addEventListener('change',function(ev){var file=ev.target.files&&ev.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(){var key=lyricKey(state.title||file.name.replace(/\.lrc$/i,''),state.artist||'');lyricCache[key]=parseLrc(String(reader.result||''));localStorage.setItem('lnOfflineLyrics',JSON.stringify(lyricCache));renderLyrics(lyricCache[key]);setStatus('Lirik LRC berhasil disimpan di perangkat.','success');};reader.readAsText(file);});
     var list = $('ln-offline-list'); if (list) list.addEventListener('scroll', function () { if (this.scrollTop + this.clientHeight >= this.scrollHeight - 180) renderMore(); });
     var toggle = $('ln-offline-toggle'); if (toggle) toggle.addEventListener('click', function () { if (!LM) return; if (state.active) { var nextPlaying = !state.playing; LM.toggle().then(function(){ if(!remoteLocalSync) sendLocalRoomMessage('SYNC_LOCAL_STATE',{playing:nextPlaying}); }); } else if (view.length) playIndex(0); });
-    var prev = $('ln-offline-prev'); if (prev) prev.addEventListener('click', function () { if (LM) LM.prev(); });
-    var next = $('ln-offline-next'); if (next) next.addEventListener('click', function () { if (LM) LM.next(); });
+    var prev = $('ln-offline-prev'); if (prev) prev.addEventListener('click', function () { if (LM) LM.prev().then(function(){setTimeout(function(){LM.getState().then(function(x){state=x;sendLocalRoomMessage('SYNC_LOCAL_TRACK',{title:x.title,artist:x.artist,pos:x.pos,playing:x.playing});});},350);}); });
+    var next = $('ln-offline-next'); if (next) next.addEventListener('click', function () { if (LM) LM.next().then(function(){setTimeout(function(){LM.getState().then(function(x){state=x;sendLocalRoomMessage('SYNC_LOCAL_TRACK',{title:x.title,artist:x.artist,pos:x.pos,playing:x.playing});});},350);}); });
     var shuffle = $('ln-offline-shuffle'); if (shuffle) shuffle.addEventListener('click', function () { if (LM) LM.setMode({ shuffle: !state.shuffle, repeat: state.repeat || 0 }); });
     var repeat = $('ln-offline-repeat'); if (repeat) repeat.addEventListener('click', function () { if (LM) LM.setMode({ shuffle: !!state.shuffle, repeat: ((state.repeat || 0) + 1) % 3 }); });
     var seek = $('ln-offline-seek'); if (seek) { seek.addEventListener('input', function () { dragging = true; if ($('ln-offline-position')) $('ln-offline-position').textContent = fmt(this.value); }); seek.addEventListener('change', function () { dragging = false; if (LM) LM.seek({ ms: Number(this.value) || 0 }).then(function(){if(!remoteLocalSync)sendLocalRoomMessage('SYNC_LOCAL_STATE',{pos:Number(seek.value)||0});}); }); }
