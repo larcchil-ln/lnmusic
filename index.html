@@ -731,6 +731,54 @@
     .ln-lyrics-footnote{font-size:.65rem;color:#777b89}
   </style>
 
+<style id="ln-offline-layout-refinement">
+  /* LNMusic refinement: compact library, single unobstructed player surface */
+  .ln-offline-page{gap:12px!important;padding-bottom:calc(150px + env(safe-area-inset-bottom))!important}
+  .ln-offline-hero{padding:14px 16px!important;border-radius:20px!important}
+  .ln-offline-hero:after{font-size:76px!important;opacity:.45}
+  .ln-offline-hero-top{gap:10px!important}
+  .ln-offline-symbol{width:42px!important;height:42px!important;border-radius:13px!important;font-size:21px!important}
+  .ln-offline-heading h3{font-size:17px!important;margin:0 0 2px!important}
+  .ln-offline-heading p{font-size:10px!important;line-height:1.4!important}
+  .ln-storage-pills{margin-top:10px!important;gap:5px!important}
+  .ln-storage-pills span{font-size:9px!important;padding:5px 8px!important}
+  .ln-offline-actions{margin-top:10px!important;gap:7px!important}
+  .ln-offline-actions button{padding:9px 12px!important;font-size:10px!important;border-radius:11px!important}
+  .ln-status{margin-top:7px!important;font-size:9px!important;min-height:12px!important}
+  .ln-library-summary{gap:8px!important}
+  .ln-summary-card{padding:9px 10px!important;border-radius:13px!important;gap:8px!important}
+  .ln-summary-icon{width:30px!important;height:30px!important;border-radius:9px!important;font-size:14px!important}
+  .ln-summary-card b{font-size:14px!important}.ln-summary-card small{font-size:9px!important}
+  .ln-library-panel{border-radius:19px!important}
+  .ln-library-heading{padding:13px 14px 9px!important}
+  .ln-library-heading h3{font-size:15px!important}
+  .ln-search-wrap{height:39px!important;margin:0 12px 9px!important}
+  .ln-category-row{padding:3px 12px 10px!important}
+  .ln-category-row button{padding:7px 11px!important;font-size:10px!important}
+  .ln-offline-list{max-height:calc(100dvh - 390px)!important;min-height:180px}
+  .ln-song{padding:9px 12px!important;gap:9px!important;min-height:62px}
+  .ln-song-art{width:42px!important;height:42px!important;border-radius:11px!important}
+  .ln-song-info b{font-size:11px!important}.ln-song-info small{font-size:9px!important}
+  .ln-song-queue,.ln-song-fav{font-size:17px!important;padding:3px!important}
+  .ln-song-duration{font-size:9px!important}
+  .ln-lyrics-panel{padding:12px!important;border-radius:17px!important}
+  .ln-offline-player{position:static!important;display:none!important}
+  #ln-now-playing{box-sizing:border-box;gap:0;padding:calc(12px + env(safe-area-inset-top)) 18px calc(14px + env(safe-area-inset-bottom))!important;overflow:hidden!important}
+  #ln-now-playing .ln-np-close{flex:none;width:38px;height:38px}
+  #ln-now-playing .ln-np-cover{width:min(52vw,240px)!important;max-height:28dvh;aspect-ratio:1;margin:12px auto!important;border-radius:22px!important;flex:none}
+  #ln-now-playing .ln-np-title{font-size:18px!important;margin-top:3px}
+  #ln-now-playing .ln-np-artist{font-size:12px!important;margin-top:4px}
+  #ln-now-playing .ln-np-lyrics{flex:1;min-height:80px;max-height:none;margin:10px 0!important;overflow-y:auto;padding:8px 0}
+  #ln-now-playing .ln-np-queue-toggle{flex:none;padding:10px 12px!important;font-size:13px}
+  #ln-now-playing .ln-np-queue{flex:1;min-height:0;max-height:none!important;overflow-y:auto;margin:6px 0}
+  #ln-now-playing .ln-player-progress{flex:none;margin-top:8px!important}
+  #ln-now-playing .ln-np-controls{flex:none;margin:10px 0 0!important;padding-bottom:4px}
+  #ln-now-playing .ln-np-controls button{min-width:44px;min-height:44px}
+  #ln-now-playing .ln-np-controls #ln-np-toggle{width:58px;height:58px}
+  #ln-now-playing .ln-queue-item{min-height:54px}
+  @media(max-height:700px){#ln-now-playing .ln-np-cover{width:min(42vw,175px)!important;margin:7px auto!important}#ln-now-playing .ln-np-lyrics{margin:5px 0!important}}
+.ln-group-row{width:100%;text-align:left}.ln-group-back{display:block;width:calc(100% - 24px);margin:8px 12px;padding:9px 12px;text-align:left;border-radius:10px;background:rgba(255,255,255,.06);color:#f9a8d4;font-size:11px;font-weight:800}
+</style>
 </head>
 <body class="min-h-screen flex flex-col md:flex-row selection:bg-rose-500/30 selection:text-rose-200">
 
