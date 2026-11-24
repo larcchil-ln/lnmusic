@@ -96,7 +96,7 @@
   var remoteLocalSync = false, lastLocalRoomSync = 0;
   function sendLocalRoomMessage(type, extra) {
     try {
-      if (typeof isRoomConnected === 'undefined' || !isRoomConnected || typeof connections === 'undefined') return;
+      if (typeof isRoomConnected === 'undefined' || !isRoomConnected || typeof connections === 'undefined' || typeof isHost === 'undefined' || !isHost) return;
       var msg = Object.assign({ type: type, title: state.title || '', artist: state.artist || '', pos: Number(state.pos) || 0, playing: !!state.playing, sentAt: Date.now() }, extra || {});
       connections.forEach(function (c) { if (c && c.open) c.send(msg); });
     } catch (e) {}
@@ -139,7 +139,7 @@
     if (!LM) return;
     LM.getState().then(function (next) {
       updatePlayer(next);
-      if (!remoteLocalSync && next && next.active && typeof isRoomConnected !== 'undefined' && isRoomConnected && Date.now() - lastLocalRoomSync > 2500) {
+      if (!remoteLocalSync && next && next.active && typeof isRoomConnected !== 'undefined' && isRoomConnected && typeof isHost !== 'undefined' && isHost && Date.now() - lastLocalRoomSync > 2500) {
         lastLocalRoomSync = Date.now();
         sendLocalRoomMessage('SYNC_LOCAL_STATE', { title: next.title || '', artist: next.artist || '', pos: Number(next.pos) || 0, playing: !!next.playing });
       }
@@ -217,6 +217,9 @@
     LM = getPlugin('LocalMusic');
     BP = getPlugin('BackgroundPlay');
     bind();
+    hookRoomSync();
+    var roomSyncHookTimer = setInterval(function(){ if (hookRoomSync()) clearInterval(roomSyncHookTimer); }, 500);
+    setTimeout(function(){ clearInterval(roomSyncHookTimer); }, 15000);
     window.lnLocalMusicDiagnostics = { capacitor: !!C, native: native, localMusicPlugin: !!LM, backgroundPlugin: !!BP, platform: (C && C.getPlatform ? C.getPlatform() : 'unknown'), bridgeScriptLoaded: !!C, userAgent: navigator.userAgent || '' };
     if (!LM) { setStatus('Capacitor aktif, tetapi plugin LocalMusic belum terdaftar di APK. Build APK perlu diperiksa.', 'error'); return; }
     try { LM.addListener('state', updatePlayer); } catch (e) {}
