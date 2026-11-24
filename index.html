@@ -6003,19 +6003,28 @@
   <script src="./ln-game.js"></script>
   <script src="./ln-desktop.js"></script>
   <script src="./ln-trending.js"></script>
-  <!-- Capacitor bridge loader: halaman LNMusic di-host remote (server.url),
-       jadi bridge lokal APK perlu dimuat eksplisit dari Capacitor local server. -->
+  <!-- Capacitor bridge loader for the remote-hosted website inside the Android APK.
+       Do not depend on the optional "wv" user-agent token: some Android WebViews omit it. -->
   <script>
   (function () {
     var ua = navigator.userAgent || '';
-    var androidWebView = /Android/i.test(ua) && (/\bwv\b/i.test(ua) || /Version\/4\.0.*Chrome/i.test(ua));
-    if (androidWebView && !window.Capacitor) {
-      document.write('<script src="https://localhost/capacitor.js"><\/script>');
-    }
+    window.__lnCapacitorBridgeReady = new Promise(function (resolve) {
+      if (window.Capacitor) { resolve(true); return; }
+      if (!/Android/i.test(ua)) { resolve(false); return; }
+      var settled = false;
+      function finish(ok) { if (settled) return; settled = true; resolve(!!ok && !!window.Capacitor); }
+      var script = document.createElement('script');
+      script.src = 'https://localhost/capacitor.js';
+      script.async = false;
+      script.onload = function () { finish(true); };
+      script.onerror = function () { finish(false); };
+      document.head.appendChild(script);
+      setTimeout(function () { finish(false); }, 7000);
+    });
   })();
   </script>
   <script src="./ln-native.js"></script>
-  <script src="./ln-local.js?v=bridge3"></script>
+  <script src="./ln-local.js?v=bridge4"></script>
 <script>
 /* Hapus tombol emoji 📷 / 🎤 lama di bar chat (disuntik skrip eksternal) supaya kolom teks lebih lega */
 (function () {

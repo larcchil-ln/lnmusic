@@ -2,14 +2,14 @@
    Memindai koleksi musik internal + SD Card tanpa menyalin file audio ke IndexedDB/aplikasi. */
 (function () {
   'use strict';
-  var C = window.Capacitor || null;
+  var C = null;
   function isNativeCapacitor() {
     if (!C) return false;
     try { if (typeof C.isNativePlatform === 'function' && C.isNativePlatform()) return true; } catch (e) {}
     try { if (typeof C.getPlatform === 'function' && C.getPlatform() !== 'web') return true; } catch (e) {}
     return !!(C.Plugins && C.Plugins.LocalMusic);
   }
-  var native = isNativeCapacitor();
+  var native = false;
   var $ = function (id) { return document.getElementById(id); };
   var LM = null, BP = null;
   var lib = [], view = [], state = {}, scanned = false, busy = false, dragging = false;
@@ -141,7 +141,7 @@
     LM = getPlugin('LocalMusic');
     BP = getPlugin('BackgroundPlay');
     bind();
-    window.lnLocalMusicDiagnostics = { capacitor: !!C, native: native, localMusicPlugin: !!LM, backgroundPlugin: !!BP, platform: (C && C.getPlatform ? C.getPlatform() : 'unknown') };
+    window.lnLocalMusicDiagnostics = { capacitor: !!C, native: native, localMusicPlugin: !!LM, backgroundPlugin: !!BP, platform: (C && C.getPlatform ? C.getPlatform() : 'unknown'), bridgeScriptLoaded: !!C, userAgent: navigator.userAgent || '' };
     if (!LM) { setStatus('Capacitor aktif, tetapi plugin LocalMusic belum terdaftar di APK. Build APK perlu diperiksa.', 'error'); return; }
     try { LM.addListener('state', updatePlayer); } catch (e) {}
     var orig = window.switchTab;
@@ -156,11 +156,25 @@
   }
   function initWebFallback() {
     bind();
-    window.lnLocalMusicDiagnostics = { capacitor: !!C, native: false, localMusicPlugin: false, platform: (C && C.getPlatform ? C.getPlatform() : 'unavailable') };
-    setStatus('Mode browser terdeteksi. Jika ini APK Android, tutup aplikasi sepenuhnya lalu buka kembali agar jembatan Capacitor dimuat.', '');
+    window.lnLocalMusicDiagnostics = { capacitor: !!C, native: false, localMusicPlugin: false, platform: (C && C.getPlatform ? C.getPlatform() : 'unavailable'), bridgeScriptLoaded: !!C, bridgeUrl: 'https://localhost/capacitor.js', userAgent: navigator.userAgent || '' };
+    setStatus(/Android/i.test(navigator.userAgent || '')
+      ? 'Bridge Capacitor tidak berhasil dimuat dari APK. Kemungkinan APK belum membawa bridge native atau halaman remote tidak dapat mengakses https://localhost/capacitor.js.'
+      : 'Mode browser terdeteksi. Pemindaian musik perangkat hanya tersedia di APK Android.', 'error');
     var all = $('ln-offline-playall'); if (all) all.addEventListener('click', function () { if (view.length) playIndex(0); else scan(); });
   }
-  function init() { if (native) initNative(); else initWebFallback(); }
+  function init() {
+    C = window.Capacitor || null;
+    native = isNativeCapacitor();
+    if (native) initNative(); else initWebFallback();
+  }
+  function startWhenBridgeReady() {
+    var ready = window.__lnCapacitorBridgeReady;
+    if (ready && typeof ready.then === 'function') {
+      ready.then(function () { init(); }).catch(function () { init(); });
+    } else {
+      init();
+    }
+  }
   window.lnScanLocalMusic = scan;
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startWhenBridgeReady, { once: true }); else startWhenBridgeReady();
 })();

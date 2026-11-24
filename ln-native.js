@@ -1,6 +1,7 @@
 /* LNMusic — jembatan ke aplikasi Android (Capacitor).
    Di browser biasa file ini tidak melakukan apa-apa. */
 (function () {
+  function startNativeBridge() {
   var C = window.Capacitor;
   var native = !!(C && ((C.isNativePlatform && C.isNativePlatform()) || (C.getPlatform && C.getPlatform() !== 'web')));
   if (!native) return;
@@ -137,4 +138,8 @@
     return p;
   };
   try { window.Notification = NativeNotification; } catch (e) {}
+  }
+  var ready = window.__lnCapacitorBridgeReady;
+  if (ready && typeof ready.then === 'function') ready.then(startNativeBridge).catch(function () {});
+  else startNativeBridge();
 })();
