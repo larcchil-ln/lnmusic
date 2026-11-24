@@ -34,7 +34,7 @@
     var active = String(song.id) === String(state.id);
     var el = document.createElement('button');
     el.type = 'button'; el.className = 'ln-song' + (active ? ' is-active' : ''); el.setAttribute('data-id', String(song.id));
-    el.innerHTML = '<span class="ln-song-art">♫</span><span class="ln-song-info"><b>' + esc(song.title || 'Tanpa judul') + '</b><small>' + esc(song.artist || 'Artis tidak dikenal') + (song.album ? ' · ' + esc(song.album) : '') + '</small></span><span class="ln-song-duration">' + fmt(song.dur) + '</span><span class="ln-song-play">' + (active && state.playing ? 'Ⅱ' : '▶') + '</span>';
+    el.innerHTML = '<span class="ln-song-art">♫</span><span class="ln-song-info"><b>' + esc(song.title || 'Tanpa judul') + '</b><small>' + esc(song.artist || 'Artis tidak dikenal') + (song.album ? ' · ' + esc(song.album) : '') + (song.storage ? ' · ' + esc(song.storage) : '') + '</small></span><span class="ln-song-duration">' + fmt(song.dur) + '</span><span class="ln-song-play">' + (active && state.playing ? 'Ⅱ' : '▶') + '</span>';
     el.addEventListener('click', function () { playIndex(index); });
     return el;
   }
@@ -156,7 +156,7 @@
   }
   function initWebFallback() {
     bind();
-    window.lnLocalMusicDiagnostics = { capacitor: !!C, native: false, localMusicPlugin: false, platform: (C && C.getPlatform ? C.getPlatform() : 'unavailable'), bridgeScriptLoaded: !!C, bridgeUrl: 'https://localhost/capacitor.js', userAgent: navigator.userAgent || '' };
+    window.lnLocalMusicDiagnostics = { capacitor: !!C, native: false, localMusicPlugin: false, platform: (C && C.getPlatform ? C.getPlatform() : 'unavailable'), bridgeScriptLoaded: !!C, bridgeUrl: window.__lnCapacitorBridgeUrl || ((window.location && window.location.origin ? window.location.origin : 'https://localhost') + '/capacitor.js'), userAgent: navigator.userAgent || '' };
     setStatus(/Android/i.test(navigator.userAgent || '')
       ? 'Bridge Capacitor tidak berhasil dimuat dari APK. Kemungkinan APK belum membawa bridge native atau halaman remote tidak dapat mengakses https://localhost/capacitor.js.'
       : 'Mode browser terdeteksi. Pemindaian musik perangkat hanya tersedia di APK Android.', 'error');
