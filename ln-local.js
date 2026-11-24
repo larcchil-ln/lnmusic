@@ -39,6 +39,7 @@
     el.querySelector('.ln-song-queue').addEventListener('click',function(ev){ev.stopPropagation();enqueue(song);});
     el.querySelector('.ln-song-fav').addEventListener('click', function (ev) { ev.stopPropagation(); var id=String(song.id), at=favorites.indexOf(id); if(at<0) favorites.push(id); else favorites.splice(at,1); localStorage.setItem('lnOfflineFavorites',JSON.stringify(favorites)); filter(); });
     el.addEventListener('click', function () { playIndex(index); });
+    paintSongArtwork(song);
     return el;
   }
   function renderMore() {
@@ -144,8 +145,38 @@
   }
   function enqueue(song){if(!song)return;queue.push(song);renderQueue();setStatus('Ditambahkan ke antrean · '+song.title,'success');}
   function renderQueue(){var box=$('ln-np-queue');if(!box)return;box.innerHTML=queue.length?queue.map(function(s,i){return '<button type="button" class="ln-queue-item" data-queue-index="'+i+'"><span>'+(i===queueIndex?'▶':'♪')+'</span><span><b>'+esc(s.title)+'</b><small>'+esc(s.artist||'Artis tidak dikenal')+'</small></span><span>'+(i===queueIndex?'Diputar':'')+'</span></button>';}).join(''):'<p class="ln-queue-empty">Belum ada lagu dalam antrean</p>';Array.prototype.forEach.call(box.querySelectorAll('[data-queue-index]'),function(b){b.addEventListener('click',function(){playQueueIndex(Number(b.getAttribute('data-queue-index')));});});if($('ln-np-queue-count'))$('ln-np-queue-count').textContent=queue.length+' lagu';}
-  function loadArtwork(title,artist,album){var key=[title,artist,album].join('|').toLowerCase();if(artworkCache[key])return Promise.resolve(artworkCache[key]);return fetch('https://itunes.apple.com/search?term='+encodeURIComponent([artist,title,album].filter(Boolean).join(' '))+'&entity=song&limit=8').then(function(r){return r.json();}).then(function(d){var rows=d.results||[];var norm=function(x){return String(x||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();};var target=norm(title);rows.sort(function(a,b){return (norm(b.trackName)===target?3:0)+(norm(b.artistName)===norm(artist)?2:0)-(norm(a.trackName)===target?3:0)-(norm(a.artistName)===norm(artist)?2:0);});var art=rows[0]&&rows[0].artworkUrl100?rows[0].artworkUrl100.replace('100x100bb','600x600bb'):'';artworkCache[key]=art;return art;}).catch(function(){return '';});}
-  function paintArtwork(song){if(!song)return;loadArtwork(song.title,song.artist,song.album).then(function(url){if(!url)return;var selectors=['.ln-player-art','#ln-np-cover'];selectors.forEach(function(sel){var el=document.querySelector(sel);if(el){el.style.backgroundImage='url("'+url+'")';el.style.backgroundSize='cover';el.style.backgroundPosition='center';el.textContent='';}});var rows=document.querySelectorAll('.ln-song-art[data-art-for="'+CSS.escape(String(song.id))+'"]');Array.prototype.forEach.call(rows,function(el){el.style.backgroundImage='url("'+url+'")';el.style.backgroundSize='cover';el.style.backgroundPosition='center';el.textContent='';});});}
+  function loadArtwork(song){
+    var key=String(song.id||'')+'|'+[song.title,song.artist,song.album].join('|').toLowerCase();
+    if(artworkCache[key])return Promise.resolve(artworkCache[key]);
+    var local=LM&&typeof LM.getArtwork==='function'?LM.getArtwork({id:Number(song.id)}).then(function(r){return r&&r.dataUrl?r.dataUrl:'';}).catch(function(){return ''; }):Promise.resolve('');
+    return local.then(function(url){
+      if(url){artworkCache[key]=url;return url;}
+      return fetch('https://itunes.apple.com/search?term='+encodeURIComponent([song.artist,song.title,song.album].filter(Boolean).join(' '))+'&entity=song&limit=8').then(function(r){return r.json();}).then(function(d){
+        var rows=d.results||[],norm=function(x){return String(x||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();},target=norm(song.title);
+        rows.sort(function(a,b){return (norm(b.trackName)===target?3:0)+(norm(b.artistName)===norm(song.artist)?2:0)-(norm(a.trackName)===target?3:0)-(norm(a.artistName)===norm(song.artist)?2:0);});
+        var art=rows[0]&&rows[0].artworkUrl100?rows[0].artworkUrl100.replace('100x100bb','600x600bb'):'';
+        artworkCache[key]=art;return art;
+      }).catch(function(){return '';});
+    });
+  }
+  function applyArt(el,url){if(!el||!url)return;el.style.backgroundImage='url("'+url.replace(/["\\\\]/g,'')+'")';el.style.backgroundSize='cover';el.style.backgroundPosition='center';el.textContent='';}
+  function paintSongArtwork(song){
+    if(!song)return;
+    loadArtwork(song).then(function(url){
+      if(!url)return;
+      var rows=document.querySelectorAll('.ln-song-art[data-art-for="'+CSS.escape(String(song.id))+'"]');
+      Array.prototype.forEach.call(rows,function(el){applyArt(el,url);});
+    });
+  }
+  function paintArtwork(song){
+    if(!song)return;
+    loadArtwork(song).then(function(url){
+      if(!url)return;
+      applyArt(document.querySelector('.ln-player-art'),url);
+      applyArt($('ln-np-cover'),url);
+      paintSongArtwork(song);
+    });
+  }
   function updatePlayer(s) {
     state = s || {};
     if($('ln-np-title'))$('ln-np-title').textContent=state.active?state.title:'Belum ada lagu diputar';
