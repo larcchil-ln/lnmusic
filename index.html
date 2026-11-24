@@ -950,6 +950,7 @@
                   <h4 class="font-extrabold text-base text-white">Buat Room Baru / Gabung Kode</h4>
                   <p class="text-xs text-zinc-400 mt-0.5">Siapapun bisa bikin room sendiri atau gabung pakai kode room dari teman tanpa login.</p>
                 </div>
+                <div id="last-room-card" class="hidden"></div>
                 <div class="flex p-1 rounded-xl bg-zinc-950/90 border border-white/10 text-xs font-semibold">
                   <button type="button" id="croom-tab-create" onclick="switchCustomRoomTab('create')" class="flex-1 py-2 rounded-lg bg-gradient-to-r from-rose-600 to-violet-600 text-white transition">Buat Room</button>
                   <button type="button" id="croom-tab-join" onclick="switchCustomRoomTab('join')" class="flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition">Gabung Kode</button>
@@ -971,7 +972,7 @@
                   </button>
                 </form>
               </div>
-              <p class="text-[10px] text-zinc-500">Pembuat room otomatis menjadi Host (Admin) yang bisa mengatur antrean, video call, peserta, dan memberi izin play bareng ke tamu.</p>
+              <p class="text-[10px] text-zinc-500">Pembuat room otomatis menjadi Host (Admin): bisa mengganti nama room, mengatur antrean, video call, peserta, mute mic, memberi hak admin dan izin play bareng ke tamu. Kalau keluar, kamu bisa masuk lagi ke room yang sama.</p>
             </div>
 
             <!-- Card 2: Room Kita (Nuki & Nana + Tamu) -->
@@ -1011,6 +1012,7 @@
                 <div class="flex flex-wrap items-center gap-2 mt-0.5">
                   <span id="active-room-code" class="text-xl font-extrabold tracking-wider text-white">Nuki &amp; Nana</span>
                   <span id="active-room-id-badge" class="hidden px-2.5 py-0.5 rounded-lg bg-white/10 border border-white/15 text-[11px] font-mono font-bold text-rose-300"></span>
+                  <button type="button" id="btn-rename-room" onclick="openRoomRename()" title="Ubah nama room" class="hidden px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/15 text-[11px] font-bold text-white">✏️ Ubah nama</button>
                 </div>
               </div>
               <div class="flex flex-wrap items-center gap-2">
@@ -1023,7 +1025,7 @@
                 <button onclick="forceSyncNow()" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-semibold text-white flex items-center gap-1.5">
                   <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Sinkronkan Detik
                 </button>
-                <button onclick="logout()" class="px-3 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-xs font-semibold text-red-300">
+                <button id="btn-leave-room" onclick="logout()" class="px-3 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-xs font-semibold text-red-300">
                   Keluar Akun
                 </button>
               </div>
@@ -1044,6 +1046,10 @@
                   <div class="tg-mic">
                     <button onclick="toggleVoice()" class="voice-btn tg-mic-btn">Voice: Mati</button>
                     <p class="tg-hint">Pakai earphone supaya suara lagu tidak bocor ke mic.</p>
+                    <div id="admin-bar" class="hidden flex flex-wrap items-center justify-center gap-2 mt-2">
+                      <button type="button" onclick="adminDo('muteall',null,true)" class="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-[11px] font-semibold text-zinc-200">🔇 Mute semua tamu</button>
+                      <button type="button" onclick="adminDo('muteall',null,false)" class="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-[11px] font-semibold text-zinc-200">🎙️ Buka mute semua</button>
+                    </div>
                   </div>
                 </div>
                 <div class="tg-chat">
@@ -2202,7 +2208,7 @@
 
     let connectLoopTimer = null, pendingConn = null, pendingAt = 0;
     function teardownPeer() {
-      clearInterval(connectLoopTimer); pendingConn = null; pendingAt = 0;
+      clearInterval(connectLoopTimer); clearInterval(hbTimer); pendingConn = null; pendingAt = 0;
       const p = peer;
       const oldConns = connections.slice();
       peer = null; connections = [];
@@ -2357,8 +2363,8 @@
       const hostName = cleanName(rawName);
       const code = 'LN-' + Math.floor(1000 + Math.random() * 9000);
       const rawTitle = document.getElementById('croom-title').value.trim();
-      const title = rawTitle ? cleanName(rawTitle) : `Room ${hostName}`;
-      customRoom = { role: 'host', code, peerId: 'lnmusic-croom-' + code.toLowerCase(), title };
+      const title = rawTitle ? cleanRoomTitle(rawTitle) : `Room ${hostName}`;
+      customRoom = { role: 'host', origRole: 'host', code, peerId: 'lnmusic-croom-' + code.toLowerCase(), title, ownerUid: LN_UID };
       try {
         localStorage.setItem(SESSION_KEY, 'custom');
         localStorage.setItem('lnmusic_custom_room', JSON.stringify({ ...customRoom, name: hostName }));
@@ -2384,7 +2390,8 @@
       }
       errEl.classList.add('hidden');
       const guestName = cleanName(rawName);
-      customRoom = { role: 'guest', code: normCode, peerId: 'lnmusic-croom-' + normCode.toLowerCase(), title: `Room ${normCode}` };
+      const lr = lastRoomInfo(), sameLr = !!(lr && lr.code === normCode);
+      customRoom = { role: 'guest', origRole: 'guest', code: normCode, peerId: 'lnmusic-croom-' + normCode.toLowerCase(), title: (sameLr && lr.title) || `Room ${normCode}`, ownerUid: (sameLr && lr.ownerUid) || '' };
       try {
         localStorage.setItem(SESSION_KEY, 'custom');
         localStorage.setItem('lnmusic_custom_room', JSON.stringify({ ...customRoom, name: guestName }));
@@ -2521,6 +2528,9 @@
         myDisplayName = u === 'guest' ? cleanName(guestName) : USERS[u].name;
         currentRoomCode = ROOM_LABEL;
       }
+      usePeerFallback = false; tookOver = false; pendingSelf = null; voiceLocked = false; mutedByAdmin = false;
+      roomOwnerUid = (u === 'custom' && customRoom && customRoom.ownerUid) || '';
+      loadRoster();
       profiles = {}; myProfile = { name: '', bio: '', avatar: '' };
       chatLog = []; if (u === 'guest' || u === 'custom') roomQueue = [];
       renderChat();
@@ -2535,7 +2545,7 @@
     // ===== Izin "play bareng" untuk tamu =====
     // Admin (Host / Nuki / Nana) selalu boleh. Tamu hanya boleh setelah Admin memberi izin (members[id].ctl).
     function isGuestSession() { return session === 'guest' || (session === 'custom' && !isHost); }
-    function myPlayPerm() { return !!(peer && members[peer.id] && members[peer.id].ctl); }
+    function myPlayPerm() { const m = peer && members[peer.id]; return !!(m && (m.ctl || m.role === 'admin')); }
     function canPlayControl() { return !isRoomConnected || !isGuestSession() || myPlayPerm() || !partnerOnline(); }
     function guardPlayCtl() {
       if (canPlayControl()) return true;
@@ -2554,26 +2564,310 @@
       guardPlayCtl();
       return true;
     }
+    // ===== Identitas tetap, daftar peserta permanen, kontrol admin & ketahanan room =====
+    const LN_UID = (() => {
+      let u = ''; try { u = localStorage.getItem('ln_uid') || ''; } catch (e) {}
+      if (!/^[a-z0-9]{12,40}$/.test(u)) {
+        u = String((crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '') : (Math.random().toString(36).slice(2) + Date.now().toString(36) + Math.random().toString(36).slice(2)))).toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 24);
+        try { localStorage.setItem('ln_uid', u); } catch (e) {}
+      }
+      return u;
+    })();
+    let usePeerFallback = false, tookOver = false, pendingSelf = null, hbTimer = null;
+    let roomOwnerUid = '', roster = {};
+    let voiceLocked = false, mutedByAdmin = false;
+    const goodUid = u => (/^[a-z0-9]{8,40}$/.test(String(u || '')) ? String(u) : '');
+    const cleanRoomTitle = t => String(t == null ? '' : t).replace(/[\u0000-\u001f<>&"']/g, '').trim().slice(0, 28);
+
+    // ID peer tamu dibuat tetap (per perangkat) supaya saat keluar-masuk room, host mengenali orang yang sama
+    function guestPeerId() {
+      if (usePeerFallback) return null;
+      if (session === 'custom' && customRoom) return 'lnmusic-g-' + customRoom.code.toLowerCase() + '-' + LN_UID;
+      if (session === 'guest') return 'lnmusic-gu-' + LN_UID;
+      return null;
+    }
+
+    // Roster = ingatan host tentang peserta (peran, kursi, izin, status mute) walau mereka sedang keluar
+    const rosterKey = () => 'ln_roster_' + ((session === 'custom' && customRoom) ? customRoom.code : (session || 'x'));
+    function loadRoster() {
+      roster = {};
+      try { const r = JSON.parse(localStorage.getItem(rosterKey()) || '{}'); if (r && typeof r === 'object') roster = r; } catch (e) {}
+    }
+    function updateRoster() {
+      Object.values(members).forEach(m => {
+        if (m && m.uid) roster[m.uid] = { name: m.name, seat: m.seat, role: m.role, ctl: !!m.ctl, locked: !!m.locked, owner: !!m.owner, at: Date.now() };
+      });
+      const ks = Object.keys(roster);
+      if (ks.length > 60) ks.sort((a, b) => (roster[a].at || 0) - (roster[b].at || 0)).slice(0, ks.length - 60).forEach(k => delete roster[k]);
+      try { localStorage.setItem(rosterKey(), JSON.stringify(roster)); } catch (e) {}
+    }
+
+    // ===== Room terakhir (supaya bisa masuk lagi setelah keluar) =====
+    function lastRoomInfo() {
+      try {
+        const r = JSON.parse(localStorage.getItem('lnmusic_last_room') || 'null');
+        return (r && r.code && r.peerId && Date.now() - (r.at || 0) < 14 * 864e5) ? r : null;
+      } catch (e) { return null; }
+    }
+    function saveLastRoom() {
+      if (!(customRoom && customRoom.code)) return;
+      try {
+        localStorage.setItem('lnmusic_last_room', JSON.stringify({
+          code: customRoom.code, peerId: customRoom.peerId, title: customRoom.title,
+          role: customRoom.origRole || customRoom.role, ownerUid: roomOwnerUid || customRoom.ownerUid || '',
+          name: myDisplayName, at: Date.now()
+        }));
+      } catch (e) {}
+    }
+    function forgetLastRoom() { try { localStorage.removeItem('lnmusic_last_room'); } catch (e) {} renderLastRoom(); }
+    function renderLastRoom() {
+      const box = document.getElementById('last-room-card'); if (!box) return;
+      const r = lastRoomInfo();
+      if (!r || session) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+      box.classList.remove('hidden');
+      box.innerHTML = `<div class="flex items-center gap-3 p-3 rounded-xl bg-white/[0.06] border border-white/10">
+        <div class="min-w-0 flex-1">
+          <div class="text-[10px] uppercase tracking-wider text-zinc-400 font-bold">Room terakhir${r.role === 'host' ? ' (milikmu)' : ''}</div>
+          <div class="text-sm font-extrabold text-white truncate">${esc(r.title || r.code)}</div>
+          <div class="text-[11px] text-zinc-400 font-mono">${esc(r.code)}</div>
+        </div>
+        <button type="button" onclick="rejoinLastRoom()" class="px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white shrink-0">Masuk lagi</button>
+        <button type="button" onclick="forgetLastRoom()" title="Lupakan room ini" class="w-8 h-8 rounded-full bg-white/10 text-zinc-300 text-xs shrink-0">✕</button>
+      </div>`;
+    }
+    function rejoinLastRoom() {
+      const r = lastRoomInfo(); if (!r) return;
+      customRoom = { role: r.role === 'host' ? 'host' : 'guest', origRole: r.role === 'host' ? 'host' : 'guest', code: r.code, peerId: r.peerId, title: r.title || r.code, ownerUid: r.ownerUid || '' };
+      try {
+        localStorage.setItem(SESSION_KEY, 'custom');
+        localStorage.setItem('lnmusic_custom_room', JSON.stringify({ ...customRoom, name: r.name || 'Tamu' }));
+      } catch (e) {}
+      enterRoom('custom', r.name || 'Tamu');
+    }
+
+    // ===== Hak & kontrol admin =====
+    const myMember = () => (peer && members[peer.id]) || null;
+    function isAdminMe() {
+      if (!session) return false;
+      if (canManageRoom()) return true;
+      const m = myMember();
+      return !!(m && m.role === 'admin');
+    }
+    // "kuat" = pemilik room atau Nuki/Nana: boleh mencabut hak admin & mengeluarkan admin lain
+    function iAmStrong() { const m = myMember(); return !!(m && m.owner) || (!!peer && isAdminPeer(peer.id)); }
+    function canActOn(id) {
+      const t = members[id];
+      if (!t || !peer || id === peer.id || !isAdminMe()) return false;
+      if (t.owner || isAdminPeer(id)) return false;
+      if (t.role === 'admin' && !iAmStrong()) return false;
+      return true;
+    }
+    function refreshProfileModal() {
+      const m = document.getElementById('profile-modal');
+      if (m && !m.classList.contains('hidden') && !profileEditing) renderProfileModal();
+    }
+    function updateAdminUI() {
+      const adm = isAdminMe();
+      const rn = document.getElementById('btn-rename-room'); if (rn) rn.classList.toggle('hidden', !(adm && session === 'custom'));
+      const bar = document.getElementById('admin-bar'); if (bar) bar.classList.toggle('hidden', !adm);
+    }
+
+    // Admin biasa (tamu yang dijadikan admin) mengirim perintah ke host; host yang mengeksekusi
+    function adminDo(op, id, val) {
+      if (!isAdminMe() || !peer) return showToast('Hanya Admin yang bisa melakukan ini');
+      const tid = id == null ? '' : String(id);
+      if (canManageRoom()) return applyAdminOp(op, tid, val, peer.id);
+      const hub = connections.find(c => c.open);
+      if (!hub) return showToast('Belum terhubung ke room');
+      hub.send({ type: 'ADMIN', op, id: tid, val });
+    }
+
+    function applyAdminOp(op, id, val, byId) {
+      const by = members[byId];
+      if (!by || by.role !== 'admin') return;
+      const strong = !!by.owner || isAdminPeer(byId);
+      const say = txt => { connections.forEach(c => c.open && c.send({ type: 'NOTICE', text: txt })); appendSystemChat(txt); };
+      if (op === 'rename') return setRoomTitle(val, by.name);
+      if (op === 'muteall') {
+        const on = !!val;
+        Object.keys(members).forEach(k => {
+          const t = members[k];
+          if (!t || k === peer?.id || k === byId || t.role === 'admin' || t.owner) return;
+          t.locked = on; if (on && t.mic === 'on') t.mic = 'muted';
+          const c = connections.find(x => x.peer === k && x.open);
+          if (c) c.send({ type: 'FORCE_MUTE', on, by: by.name });
+        });
+        broadcastMembers();
+        say(on ? `🔇 ${by.name} me-mute semua tamu.` : `🎙️ ${by.name} membuka mute semua tamu.`);
+        return;
+      }
+      const t = members[id];
+      if (!t || id === byId || id === peer?.id) return;
+      if (t.owner || isAdminPeer(id)) return;
+      if (t.role === 'admin' && !strong) return;
+      if (op === 'mute') {
+        const on = !!val; t.locked = on; if (on && t.mic === 'on') t.mic = 'muted';
+        const c = connections.find(x => x.peer === id && x.open);
+        if (c) c.send({ type: 'FORCE_MUTE', on, by: by.name });
+        say(on ? `🔇 ${by.name} me-mute mic ${t.name}.` : `🎙️ ${by.name} mengaktifkan lagi mic ${t.name}.`);
+      } else if (op === 'perm') {
+        if (t.role === 'admin') return;
+        t.ctl = !t.ctl;
+        say(t.ctl ? `🎛️ ${t.name} diberi izin play bareng oleh Admin.` : `🎛️ Izin play bareng ${t.name} dicabut oleh Admin.`);
+      } else if (op === 'promote') {
+        if (t.role === 'admin') return;
+        t.role = 'admin';
+        say(`🛡️ ${t.name} dijadikan Admin oleh ${by.name}.`);
+      } else if (op === 'demote') {
+        if (!strong || t.role !== 'admin') return;
+        t.role = 'guest';
+        say(`🛡️ Hak Admin ${t.name} dicabut oleh ${by.name}.`);
+      } else if (op === 'kick') {
+        const conn = connections.find(c => c.peer === id);
+        if (conn && conn.open) {
+          conn._kicked = true;
+          try { conn.send({ type: 'KICK', targetId: id }); } catch (e) {}
+          setTimeout(() => { try { conn.close(); } catch (e) {} }, 250);
+        }
+        delete members[id]; dropVoice(id);
+        broadcastMembers();
+        connections.forEach(c => { if (c.open && c.peer !== id) c.send({ type: 'NOTICE', text: `🚫 ${t.name} dikeluarkan dari room oleh ${by.name}.` }); });
+        appendSystemChat(`🚫 ${t.name} dikeluarkan dari room.`);
+        return;
+      } else return;
+      broadcastMembers();
+    }
+
     function togglePlayPerm(id) {
-      if (!canManageRoom()) return showToast('Hanya Admin yang bisa memberi izin');
+      if (!isAdminMe()) return showToast('Hanya Admin yang bisa memberi izin');
       const m = members[id];
       if (!m || m.role === 'admin' || isAdminPeer(id)) return;
-      m.ctl = !m.ctl;
-      broadcastMembers();
-      const txt = m.ctl ? `🎛️ ${m.name} diberi izin play bareng oleh Admin.` : `🎛️ Izin play bareng ${m.name} dicabut oleh Admin.`;
+      adminDo('perm', id);
+    }
+
+    // ===== Ubah nama room (admin) =====
+    function applyRoomMeta(m) {
+      if (!(session === 'custom' && customRoom) || !m) return;
+      const t = cleanRoomTitle(m.title);
+      if (!t) return;
+      customRoom.title = t; currentRoomCode = t;
+      const el = document.getElementById('active-room-code'); if (el) el.textContent = t;
+      const fl = document.getElementById('fs-context-label'); if (fl) fl.textContent = 'Live Sync Room • ' + t;
+      try {
+        const raw = JSON.parse(localStorage.getItem('lnmusic_custom_room') || 'null');
+        if (raw) { raw.title = t; localStorage.setItem('lnmusic_custom_room', JSON.stringify(raw)); }
+      } catch (e) {}
+    }
+    function setRoomTitle(val, byName) {
+      const t = cleanRoomTitle(val);
+      if (!t || !(session === 'custom' && customRoom)) return;
+      applyRoomMeta({ title: t });
+      connections.forEach(c => c.open && c.send({ type: 'ROOM_META', title: t }));
+      const txt = `✏️ ${byName || 'Admin'} mengubah nama room menjadi "${t}".`;
       connections.forEach(c => c.open && c.send({ type: 'NOTICE', text: txt }));
       appendSystemChat(txt);
-      showToast(m.ctl ? `${m.name} sekarang boleh play bareng` : `Izin play bareng ${m.name} dicabut`);
-      if (!document.getElementById('profile-modal').classList.contains('hidden')) renderProfileModal();
     }
+    function openRoomRename() {
+      if (!(session === 'custom' && customRoom && isAdminMe())) return showToast('Hanya Admin yang bisa mengubah nama room');
+      document.getElementById('rn-modal')?.remove();
+      const d = document.createElement('div');
+      d.id = 'rn-modal';
+      d.className = 'fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm';
+      d.innerHTML = `<div class="w-full max-w-sm rounded-2xl bg-zinc-900 border border-white/10 p-5 space-y-3">
+        <h3 class="text-base font-extrabold text-white">Ubah Nama Room</h3>
+        <input id="rn-input" type="text" maxlength="28" value="${esc(customRoom.title)}" placeholder="Nama room (maks 28 huruf)" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-rose-500 focus:outline-none" />
+        <div class="flex gap-2">
+          <button type="button" onclick="closeRoomRename()" class="flex-1 py-2.5 rounded-xl bg-white/5 text-xs font-semibold text-zinc-300">Batal</button>
+          <button type="button" onclick="saveRoomRename()" class="flex-1 py-2.5 rounded-xl bg-rose-600 text-xs font-bold text-white">Simpan</button>
+        </div></div>`;
+      d.addEventListener('pointerdown', e => { if (e.target === d) closeRoomRename(); });
+      document.body.appendChild(d);
+      const inp = document.getElementById('rn-input');
+      if (inp) { inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); saveRoomRename(); } else if (e.key === 'Escape') closeRoomRename(); }); setTimeout(() => { inp.focus(); inp.select(); }, 50); }
+    }
+    function closeRoomRename() { document.getElementById('rn-modal')?.remove(); }
+    function saveRoomRename() {
+      const v = cleanRoomTitle(document.getElementById('rn-input')?.value);
+      if (v.length < 2) return showToast('Nama room minimal 2 huruf');
+      closeRoomRename();
+      adminDo('rename', null, v);
+    }
+
+    // ===== Mute oleh admin =====
+    const setMicTracks = en => { try { localStream && localStream.getAudioTracks().forEach(t => { t.enabled = en; }); } catch (e) {} };
+    function applyForceMute(on, by, quiet) {
+      on = !!on;
+      if (on === voiceLocked) return;
+      voiceLocked = on;
+      if (on) {
+        if (voiceOn && !voiceMuted) { voiceMuted = true; mutedByAdmin = true; setMicTracks(false); }
+        if (!quiet) showToast(`🔇 ${by || 'Admin'} me-mute mic kamu`);
+      } else {
+        if (voiceOn && voiceMuted && mutedByAdmin) { voiceMuted = false; setMicTracks(true); }
+        mutedByAdmin = false;
+        if (!quiet) showToast('🎙️ Mic kamu diaktifkan lagi oleh Admin');
+      }
+      updateVoiceUI();
+      try { if (vcOn) vcBtn('vc-b-mic', voiceMuted, 'mic-off', 'mic'); } catch (e) {}
+      announceMic();
+    }
+
+    // ===== Ketahanan: host terputus -> admin mengambil alih, host/tamu kembali -> dikenali lagi =====
+    function iCanTakeOver() {
+      const m = myMember();
+      return !!((m && m.role === 'admin') || (roomOwnerUid && roomOwnerUid === LN_UID) || (roster[LN_UID] && roster[LN_UID].role === 'admin'));
+    }
+    function becomeHost() {
+      if (!(session === 'custom' && customRoom) || isHost) return;
+      clearInterval(connectLoopTimer);
+      const oldId = peer && peer.id;
+      pendingSelf = (oldId && members[oldId]) ? { ...members[oldId] } : null;
+      if (oldId) delete members[oldId];
+      if (!roomOwnerUid) {
+        const ow = Object.values(members).find(m => m && m.owner && m.uid);
+        if (ow) roomOwnerUid = ow.uid;
+        else { const e = Object.entries(roster).find(([, r]) => r && r.owner); if (e) roomOwnerUid = e[0]; }
+      }
+      customRoom.role = 'host'; tookOver = true;
+      appendSystemChat('👑 Host terputus. Kamu (Admin) mengambil alih supaya room tetap jalan.');
+      showToast('Kamu menjadi host sementara');
+      startSession(0);
+    }
+    function demoteToGuest() {
+      if (!(session === 'custom' && customRoom)) return;
+      if (!tookOver) showToast('Room belum bisa diambil. Menyambung sebagai peserta dulu...');
+      customRoom.role = 'guest'; tookOver = false; pendingSelf = null; usePeerFallback = false;
+      startSession(0);
+    }
+    function reconcileMembers() {
+      if (!canManageRoom() || !peer) return;
+      let ch = false;
+      Object.keys(members).forEach(id => {
+        if (id !== peer.id && !connections.some(c => c.open && c.peer === id)) { delete members[id]; ch = true; }
+      });
+      if (ch) broadcastMembers();
+    }
+    function startHeartbeat() {
+      clearInterval(hbTimer);
+      hbTimer = setInterval(() => {
+        const now = Date.now();
+        connections.slice().forEach(c => {
+          if (!c.open) return;
+          try { c.send({ type: 'PING' }); } catch (e) {}
+          if (c._last && now - c._last > 40000 && !document.hidden) { try { c.close(); } catch (e) {} }
+        });
+      }, 6000);
+    }
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { const n = Date.now(); connections.forEach(c => { c._last = n; }); } });
+    window.addEventListener('online', () => { try { if (peer && !peer.destroyed && peer.disconnected) peer.reconnect(); } catch (e) {} });
 
     async function startSession(attempt = 0) {
       if (!session) return;
       teardownPeer();
       isHost = session === 'nuki' || (session === 'custom' && customRoom?.role === 'host');
       const desiredPeerId = session === 'custom'
-        ? (customRoom?.role === 'host' ? customRoom.peerId : null)
-        : (session === 'guest' ? null : USERS[session].peerId);
+        ? (customRoom?.role === 'host' ? customRoom.peerId : guestPeerId())
+        : (session === 'guest' ? guestPeerId() : USERS[session].peerId);
       const p = await newPeer(desiredPeerId);
       if (!session) { try { p.destroy(); } catch (e) {} return; }
       peer = p;
@@ -2581,15 +2875,24 @@
       keepSignalingAlive(p);
       isRoomConnected = true;
       activateRoomUI(currentRoomCode);
+      startHeartbeat();
 
       p.on('open', () => {
         if (peer !== p) return;
         if (isHost) {
-          if (p.id && !members[p.id]) {
-            members[p.id] = { name: myDisplayName, seat: 0, mic: 'off', role: 'admin' };
+          if (p.id) {
+            const prev = pendingSelf; pendingSelf = null;
+            const old = members[p.id];
+            members[p.id] = {
+              ...(prev || {}), name: myDisplayName,
+              seat: (prev && prev.seat >= 0) ? prev.seat : (old && old.seat >= 0 ? old.seat : 0),
+              mic: 'off', role: 'admin', uid: LN_UID
+            };
+            if (session === 'custom' && roomOwnerUid && roomOwnerUid === LN_UID) members[p.id].owner = true; else delete members[p.id].owner;
           }
           broadcastMembers();
           updatePartnerStatus();
+          if (tookOver) setTimeout(reconcileMembers, 15000);
         } else {
           if (session === 'nana' && p.id && !members[p.id]) {
             members[p.id] = { name: myDisplayName, seat: freeSeat(), mic: 'off', role: 'admin' };
@@ -2603,6 +2906,10 @@
         if (peer !== p) return;
         console.warn('PeerJS error:', err);
         if (err.type === 'unavailable-id') {
+          // Host room: ID room masih dipegang sesi lama / admin lain -> setelah beberapa kali coba, gabung sebagai peserta
+          if (session === 'custom' && customRoom && customRoom.role === 'host' && attempt >= (tookOver ? 1 : 5)) return demoteToGuest();
+          // Tamu: ID tetap masih dipegang sesi lama -> pakai ID acak, identitas tetap dijaga lewat uid
+          if (!isHost && (session === 'custom' || session === 'guest') && attempt >= 4 && !usePeerFallback) { usePeerFallback = true; return startSession(0); }
           if (attempt < 10) { setTimeout(() => { if (session) startSession(attempt + 1); }, 3000); }
           else showToast('ID Room atau akun ini sedang aktif di perangkat lain.');
           return;
@@ -2619,11 +2926,14 @@
       const targets = (session === 'custom' && customRoom)
         ? [customRoom.peerId]
         : (session === 'nana' ? [USERS.nuki.peerId] : [USERS.nuki.peerId, USERS.nana.peerId]);
-      let idx = 0;
+      let idx = 0, downSince = 0;
+      const wait = 7000 + Math.random() * 4000; // jeda acak supaya admin tidak berebut mengambil alih bersamaan
 
       const tick = () => {
         if (peer !== p || p.destroyed || !session) return clearInterval(connectLoopTimer);
-        if (partnerOnline()) return;
+        if (partnerOnline()) { downSince = 0; return; }
+        if (!downSince) downSince = Date.now();
+        if (session === 'custom' && customRoom && customRoom.role !== 'host' && !p.disconnected && Date.now() - downSince > wait && iCanTakeOver()) return becomeHost();
         if (p.disconnected) { try { p.reconnect(); } catch (e) {} return; }
         if (pendingConn && !pendingConn.open && Date.now() - pendingAt < 6000) return;
         try { pendingConn && pendingConn.close(); } catch (e) {}
@@ -2639,12 +2949,12 @@
 
     function setupPeerConnection(conn) {
       conn.on('open', () => {
-        conn._wasOpen = true;
+        conn._wasOpen = true; conn._last = Date.now();
         connections.filter(c => c !== conn && c.peer === conn.peer).forEach(c => { c._replaced = true; try { c.close(); } catch (e) {} });
         connections = connections.filter(c => !c._replaced);
         connections.push(conn);
         updatePartnerStatus();
-        conn.send({ type: 'HELLO', name: myDisplayName, profile: myProfile });
+        conn.send({ type: 'HELLO', name: myDisplayName, profile: myProfile, uid: LN_UID });
         if (canManageRoom()) broadcastMembers();
         if (session !== 'guest') {
           conn.send(buildState());
@@ -2655,15 +2965,17 @@
           conn.send({ type: 'SYNC_TRACK', track: slimTrack(currentTrack), time: curTime(), playing: true, at: trackAt });
         }
       });
-      conn.on('data', (data) => handleIncomingSyncData(data, conn));
+      conn.on('data', (data) => { conn._last = Date.now(); handleIncomingSyncData(data, conn); });
       conn.on('close', () => {
         if (conn._replaced || !conn._wasOpen) return;
         connections = connections.filter(c => c !== conn);
+        if (conn._kicked) { dropVoice(conn.peer); return; }
         const who = (members[conn.peer] && members[conn.peer].name) || partnerName();
         if (canManageRoom()) {
+          updateRoster(); // simpan peran/kursi/izin supaya kembali utuh saat orang ini masuk lagi
           delete members[conn.peer]; broadcastMembers();
           connections.forEach(c => c.open && c.send({ type: 'NOTICE', text: `${who} keluar dari room.` }));
-        } else { members = {}; renderSeats(); }
+        } else { renderSeats(); } // tamu: daftar peserta dipertahankan selagi menyambung ulang ke host
         dropVoice(conn.peer);
         if (session) { appendSystemChat(`${who} keluar dari room.`); updatePartnerStatus(); }
       });
@@ -2672,22 +2984,26 @@
 
     function handleIncomingSyncData(data, senderConn) {
       if (!data || typeof data !== 'object') return;
+      if (data.type === 'PING') return;
       const fromGuest = isHost && senderConn && (session === 'custom' || !isAdminPeer(senderConn.peer));
       if (fromGuest) {
-        const ctl = !!(members[senderConn.peer] && members[senderConn.peer].ctl);
-        const blocked = ctl ? /^(STATE|HISTORY|QUEUE_SET|LYR_|KICK|VC_STOP_ALL)/ : /^(SYNC_|STATE|HISTORY|QUEUE_SET|QUEUE_DEL|QUEUE_MOVE|LYR_|KICK|VC_STOP_ALL)/;
+        const sm = members[senderConn.peer] || {};
+        const ctl = !!sm.ctl || sm.role === 'admin';
+        const blocked = sm.role === 'admin'
+          ? /^(STATE|HISTORY|QUEUE_SET|LYR_|KICK|ROOM_META|FORCE_MUTE)/
+          : (ctl ? /^(STATE|HISTORY|QUEUE_SET|LYR_|KICK|VC_STOP_ALL|ROOM_META|FORCE_MUTE)/ : /^(SYNC_|STATE|HISTORY|QUEUE_SET|QUEUE_DEL|QUEUE_MOVE|LYR_|KICK|VC_STOP_ALL|ROOM_META|FORCE_MUTE)/);
         if (blocked.test(String(data.type))) return;
         // tamu berizin: hanya terima perintah putar yang bentuknya valid
         if (data.type === 'SYNC_TRACK' && !(data.track && data.track.type === 'youtube' && /^[\w-]{11}$/.test(String(data.track.id)))) return;
         if (data.type === 'SYNC_STATE' && !(['PLAY', 'PAUSE', 'SEEK'].includes(data.action) && Number.isFinite(+data.time))) return;
       }
-      if (isHost && !/^(QUEUE_|SEAT|MIC|MEMBERS|HELLO|STATE|HISTORY|PROFILE|EMOTE|NOTICE|KICK|VC_STOP_ALL)/.test(String(data.type))) {
+      if (isHost && !/^(QUEUE_|SEAT|MIC|MEMBERS|HELLO|STATE|HISTORY|PROFILE|EMOTE|NOTICE|KICK|VC_STOP_ALL|ADMIN|ROOM_META|FORCE_MUTE)/.test(String(data.type))) {
         connections.forEach(c => { if (c !== senderConn && c.open) c.send(data); });
       }
       if (data.type === 'KICK') {
         if (!data.targetId || data.targetId === peer?.id) {
           showToast('Kamu dikeluarkan dari room oleh Admin.');
-          logout();
+          logout({ kicked: true });
         }
         return;
       }
@@ -2710,8 +3026,13 @@
         const prof = cleanProfile(data.profile);
         if (canManageRoom() && senderConn) {
           if (!isAdminPeer(senderConn.peer) && /^(nuki|nana)$/i.test(nm)) nm += ' (tamu)';
-          addMember(senderConn.peer, nm);
+          addMember(senderConn.peer, nm, data.uid);
           profiles[senderConn.peer] = prof;
+          if (senderConn.open) {
+            if (session === 'custom' && customRoom) senderConn.send({ type: 'ROOM_META', title: customRoom.title });
+            const mm = members[senderConn.peer];
+            if (mm && mm.locked) senderConn.send({ type: 'FORCE_MUTE', on: true, by: 'Admin', quiet: true });
+          }
           connections.forEach(c => {
             if (c === senderConn || !c.open) return;
             c.send({ type: 'PROFILE', id: senderConn.peer, profile: prof });
@@ -2815,15 +3136,26 @@
         setSeat(senderConn.peer, data.seat);
       } else if (canManageRoom() && data.type === 'MIC' && senderConn) {
         setMic(senderConn.peer, data.state);
+      } else if (canManageRoom() && data.type === 'ADMIN' && senderConn) {
+        applyAdminOp(String(data.op || ''), String(data.id || ''), data.val, senderConn.peer);
+      } else if (!canManageRoom() && data.type === 'ROOM_META') {
+        applyRoomMeta(data);
+      } else if (!canManageRoom() && data.type === 'FORCE_MUTE') {
+        applyForceMute(!!data.on, data.by, !!data.quiet);
       } else if (data.type === 'GAME') {
         if (window.lnGameRecv) window.lnGameRecv(data, senderConn);
       } else if (data.type === 'LYR_OFFSET') {
         lyrApplyRemote(data.id, +data.offset);
       } else if (data.type === 'MEMBERS') {
-        const hadPerm = myPlayPerm();
+        const hadPerm = myPlayPerm(), wasAdm = isAdminMe();
         members = data.members || {};
-        if (isGuestSession() && myPlayPerm() !== hadPerm) showToast(hadPerm ? 'Izin play bareng kamu dicabut oleh Admin' : '🎛️ Admin memberi kamu izin play bareng!');
-        renderSeats();
+        if (data.roster && typeof data.roster === 'object') roster = data.roster;
+        const nowAdm = isAdminMe();
+        if (nowAdm !== wasAdm) showToast(nowAdm ? '🛡️ Kamu sekarang Admin di room ini' : 'Hak Admin kamu dicabut');
+        else if (isGuestSession() && myPlayPerm() !== hadPerm) showToast(hadPerm ? 'Izin play bareng kamu dicabut oleh Admin' : '🎛️ Admin memberi kamu izin play bareng!');
+        const mm = peer && members[peer.id];
+        if (mm && !!mm.locked !== voiceLocked) applyForceMute(!!mm.locked, 'Admin', true);
+        renderSeats(); refreshProfileModal();
         if (voiceOn) Object.keys(members).filter(id => id !== peer.id && !voiceCalls[id]).forEach(callPeer);
       }
     }
@@ -3112,7 +3444,7 @@
       const typeLbl = document.getElementById('active-room-type-label');
       const codeBadge = document.getElementById('active-room-id-badge');
       if (session === 'custom' && customRoom) {
-        if (typeLbl) typeLbl.textContent = customRoom.role === 'host' ? 'Room Kamu (Host):' : 'Room Publik:';
+        if (typeLbl) typeLbl.textContent = (customRoom.role === 'host' || roomOwnerUid === LN_UID) ? 'Room Kamu (Pemilik):' : 'Room Publik:';
         if (codeBadge) { codeBadge.textContent = 'Kode: ' + customRoom.code; codeBadge.classList.remove('hidden'); }
       } else {
         if (typeLbl) typeLbl.textContent = 'Room Pribadi:';
@@ -3120,12 +3452,17 @@
       }
       document.getElementById('sidebar-room-dot').classList.remove('hidden');
       document.getElementById('fs-context-label').textContent = 'Live Sync Room • ' + code;
+      const lb = document.getElementById('btn-leave-room'); if (lb) lb.textContent = session === 'custom' ? 'Keluar Room' : 'Keluar Akun';
+      try { updateAdminUI(); } catch (e) {}
       updatePartnerStatus();
       renderOnlineTracks();
     }
 
-    function logout() {
+    function logout(opts) {
       saveRoomState(); saveChat();
+      const wasCustom = session === 'custom';
+      if (opts && opts.kicked) { try { localStorage.removeItem('lnmusic_last_room'); } catch (e) {} }
+      else if (wasCustom && customRoom) saveLastRoom();
       session = null; customRoom = null; clearInterval(stateTimer);
       try { localStorage.removeItem(SESSION_KEY); localStorage.removeItem('lnmusic_custom_room'); } catch (e) {}
       DBX.flush(); DBX.reset();
@@ -3139,7 +3476,10 @@
       document.getElementById('sidebar-room-dot').classList.add('hidden');
       setRoomPill('Belum terhubung ke Room', false);
       document.getElementById('fs-context-label').textContent = 'feel your flow';
-      showToast('Keluar dari akun');
+      roomOwnerUid = ''; roster = {}; voiceLocked = false; mutedByAdmin = false; tookOver = false; pendingSelf = null; usePeerFallback = false;
+      clearInterval(hbTimer); closeRoomRename();
+      try { updateAdminUI(); renderLastRoom(); } catch (e) {}
+      showToast(wasCustom ? 'Keluar dari room' : 'Keluar dari akun');
     }
 
     // =========================================================================
@@ -3290,12 +3630,13 @@
       const key = own ? ((peer && peer.id) || '__me') : profileViewId;
       const m = members[key] || {};
       const name = own ? myDisplayName : (m.name || 'Pengguna');
-      const role = own ? (isGuestSession() ? 'guest' : 'admin') : (m.role || (isAdminPeer(key) ? 'admin' : 'guest'));
+      const role = own ? (isAdminMe() ? 'admin' : 'guest') : (m.role || (isAdminPeer(key) ? 'admin' : 'guest'));
       const prof = own ? myProfile : (profiles[key] || { bio: '', avatar: '' });
-      const badge = role === 'admin'
-        ? '<span class="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[10px] font-bold">Admin</span>'
-        : '<span class="px-2 py-0.5 rounded-full bg-white/10 text-zinc-300 text-[10px] font-bold">Tamu</span>' + (m.ctl ? ' <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 text-[10px] font-bold">Boleh Play</span>' : '');
-      const close = '<button onclick="closeProfile()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/10 text-zinc-300 text-sm">✕</button>';
+      const lockBadge = m.locked ? ' <span class="px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 text-[10px] font-bold">Dimute</span>' : '';
+      const badge = (role === 'admin'
+        ? '<span class="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[10px] font-bold">' + (m.owner ? 'Pemilik' : 'Admin') + '</span>'
+        : '<span class="px-2 py-0.5 rounded-full bg-white/10 text-zinc-300 text-[10px] font-bold">Tamu</span>' + (m.ctl ? ' <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 text-[10px] font-bold">Boleh Play</span>' : '')) + lockBadge;
+            const close = '<button onclick="closeProfile()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/10 text-zinc-300 text-sm">✕</button>';
 
       if (own && profileEditing) {
         body.innerHTML = `<div class="relative">${close}
@@ -3327,9 +3668,18 @@
       if (own) {
         extra = `<button onclick="startProfileEdit()" class="mt-4 w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white">✏️ Edit Nama, Foto &amp; Bio</button>${sfx}`;
       } else {
-        const kickBtn = canManageRoom() ? `<button onclick="kickUser('${esc(key)}')" class="mt-3 w-full py-2.5 rounded-xl bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-xs font-bold text-red-300 flex items-center justify-center gap-1.5"><i data-lucide="user-x" class="w-4 h-4"></i> Keluarkan dari Room</button>` : '';
-        const permBtn = (canManageRoom() && role !== 'admin') ? `<button onclick="togglePlayPerm('${esc(key)}')" class="mt-4 w-full py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 ${m.ctl ? 'bg-amber-500/20 border-amber-400/40 text-amber-200 hover:bg-amber-500/30' : 'bg-violet-600/20 border-violet-500/30 text-violet-200 hover:bg-violet-600/30'}"><i data-lucide="${m.ctl ? 'lock' : 'circle-play'}" class="w-4 h-4"></i> ${m.ctl ? 'Cabut Izin Play Bareng' : 'Beri Izin Play Bareng'}</button>` : '';
-        extra = `${permBtn}${kickBtn}<div class="mt-4 text-left"><div class="text-xs font-extrabold">Kirim emote ke ${esc(name)}</div>
+        const k = esc(key);
+        const abtn = (cls, fn, icon, label) => `<button onclick="${fn}" class="mt-2 w-full py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 ${cls}"><i data-lucide="${icon}" class="w-4 h-4"></i> ${label}</button>`;
+        let admBtns = '';
+        if (isAdminMe() && role !== 'admin' && !isAdminPeer(key)) admBtns += abtn(m.ctl ? 'bg-amber-500/20 border-amber-400/40 text-amber-200 hover:bg-amber-500/30' : 'bg-violet-600/20 border-violet-500/30 text-violet-200 hover:bg-violet-600/30', `togglePlayPerm('${k}')`, m.ctl ? 'lock' : 'circle-play', m.ctl ? 'Cabut Izin Play Bareng' : 'Beri Izin Play Bareng');
+        if (canActOn(key)) {
+          admBtns += abtn(m.locked ? 'bg-emerald-500/20 border-emerald-400/40 text-emerald-200 hover:bg-emerald-500/30' : 'bg-white/10 border-white/20 text-zinc-100 hover:bg-white/15', `adminDo('mute','${k}',${m.locked ? 'false' : 'true'})`, m.locked ? 'mic' : 'mic-off', m.locked ? 'Aktifkan Mic Kembali' : 'Mute Mic');
+          if (m.role !== 'admin') admBtns += abtn('bg-sky-500/20 border-sky-400/40 text-sky-200 hover:bg-sky-500/30', `adminDo('promote','${k}')`, 'shield-plus', 'Jadikan Admin');
+          else if (iAmStrong()) admBtns += abtn('bg-amber-500/20 border-amber-400/40 text-amber-200 hover:bg-amber-500/30', `adminDo('demote','${k}')`, 'shield-off', 'Cabut Hak Admin');
+          admBtns += abtn('bg-red-600/20 border-red-500/30 text-red-300 hover:bg-red-600/30', `kickUser('${k}')`, 'user-x', 'Keluarkan dari Room');
+        }
+        if (admBtns) admBtns = '<div class="mt-3">' + admBtns + '</div>';
+                extra = `${admBtns}<div class="mt-4 text-left"><div class="text-xs font-extrabold">Kirim emote ke ${esc(name)}</div>
           <label class="flex items-center gap-2 text-[11px] text-zinc-400 mt-1.5"><input type="checkbox" id="emote-all" /> Kirim ke semua orang di room</label>
           ${emoteGrid()}${sfx}</div>`;
       }
@@ -4090,12 +4440,14 @@
       if (!voiceOn) {
         try { localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
         catch (e) { return showToast('Izin mikrofon ditolak atau tidak tersedia'); }
-        voiceOn = true; voiceMuted = false;
+        voiceOn = true; voiceMuted = voiceLocked; mutedByAdmin = false;
+        if (voiceMuted) setMicTracks(false);
         watchLevel(peer.id, localStream);
         new Set([...Object.keys(members), ...connections.map(c => c.peer)]).forEach(id => id !== peer.id && callPeer(id));
         appendSystemChat(`🎙️ ${myDisplayName} menyalakan voice (pakai earphone biar suara lagu tidak masuk mic)`);
       } else {
-        voiceMuted = !voiceMuted;
+        if (voiceMuted && voiceLocked) return showToast('Mic kamu di-mute Admin. Minta Admin membukanya ya 🔇');
+        voiceMuted = !voiceMuted; mutedByAdmin = false;
         localStream.getAudioTracks().forEach(t => t.enabled = !voiceMuted);
       }
       updateVoiceUI(); announceMic();
@@ -4408,6 +4760,7 @@
       try { s.getVideoTracks().forEach(t => { t.contentHint = 'motion'; }); } catch (e) {}
       if (voiceOn) _stopVoice();
       vcRaw = s; localStream = new MediaStream([...s.getAudioTracks(), ...s.getVideoTracks()]); voiceOn = true; voiceMuted = false; vcOn = true;
+      if (voiceLocked) { voiceMuted = true; mutedByAdmin = false; setMicTracks(false); try { vcBtn('vc-b-mic', true, 'mic-off', 'mic'); } catch (e) {} }
       const sv = document.getElementById('vc-self'); sv.srcObject = localStream; vcFacing = 'user'; vcMirUI(); vcFxUI(); vcApply();
       watchLevel(peer.id, s);
       const targets = Array.from(new Set([...Object.keys(members), ...connections.map(c => c.peer)])).filter(id => id !== peer.id).slice(0, VC_MAX_USERS - 1);
@@ -4486,7 +4839,7 @@
       });
     }
     function vcMin() { switchTab(vcPrev === 'videocall' ? 'together' : vcPrev); }
-    function vcMic() { if (!localStream) return; voiceMuted = !voiceMuted; localStream.getAudioTracks().forEach(t => t.enabled = !voiceMuted); vcBtn('vc-b-mic', voiceMuted, 'mic-off', 'mic'); updateVoiceUI(); announceMic(); }
+    function vcMic() { if (!localStream) return; if (voiceMuted && voiceLocked) return showToast('Mic kamu di-mute Admin. Minta Admin membukanya ya 🔇'); voiceMuted = !voiceMuted; mutedByAdmin = false; localStream.getAudioTracks().forEach(t => t.enabled = !voiceMuted); vcBtn('vc-b-mic', voiceMuted, 'mic-off', 'mic'); updateVoiceUI(); announceMic(); }
     function vcCamT() { if (!localStream) return; const t = localStream.getVideoTracks()[0]; if (!t) return; const on = !t.enabled; t.enabled = on; vcRaw?.getVideoTracks().forEach(x => x.enabled = on); vcBtn('vc-b-cam', !on, 'video-off', 'video'); }
     function vcBtn(id, off, a, b) { const el = document.getElementById(id); el.classList.toggle('off', off); el.innerHTML = '<i data-lucide="' + (off ? a : b) + '"></i>'; lucide.createIcons(); }
     function vcLayout() {
@@ -4941,16 +5294,58 @@
     let members = {};
     const vsLevels = {}; let vsCtx = null;
     function freeSeat() { const used = new Set(Object.values(members).map(m => m.seat)); for (let i = 0; i < SEAT_N; i++) if (!used.has(i)) return i; return -1; }
-    function addMember(id, name) { if (!members[id]) members[id] = { name, seat: freeSeat(), mic: 'off', role: isAdminPeer(id) ? 'admin' : 'guest' }; else members[id].name = name; broadcastMembers(); }
+    function addMember(id, name, uid) {
+      uid = goodUid(uid);
+      if (uid) {
+        // sesi lama orang yang sama (misal ID berganti) dipindah ke ID baru, kursi & peran ikut
+        Object.keys(members).forEach(k => {
+          if (k === id || k === peer?.id || members[k].uid !== uid) return;
+          if (!members[id]) members[id] = members[k];
+          delete members[k];
+          const oc = connections.find(c => c.peer === k);
+          if (oc) { oc._replaced = true; try { oc.close(); } catch (e) {} connections = connections.filter(c => c !== oc); }
+          dropVoice(k);
+        });
+      }
+      if (!members[id]) {
+        const r = uid && roster[uid];
+        const seatOk = r && r.seat >= 0 && r.seat < SEAT_N && !Object.values(members).some(m => m.seat === r.seat);
+        members[id] = { name, seat: seatOk ? r.seat : freeSeat(), mic: 'off', role: (isAdminPeer(id) || (r && r.role === 'admin')) ? 'admin' : 'guest' };
+        if (r && r.ctl) members[id].ctl = true;
+        if (r && r.locked) members[id].locked = true;
+      } else members[id].name = name;
+      if (uid) members[id].uid = uid;
+      if (uid && roomOwnerUid && uid === roomOwnerUid) { members[id].role = 'admin'; members[id].owner = true; }
+      broadcastMembers();
+    }
     function broadcastMembers() {
       if (peer?.id && !members[peer.id]) {
-        members[peer.id] = { name: myDisplayName, seat: freeSeat(), mic: 'off', role: session === 'guest' ? 'guest' : 'admin' };
+        members[peer.id] = { name: myDisplayName, seat: freeSeat(), mic: 'off', role: session === 'guest' ? 'guest' : 'admin', uid: LN_UID };
       }
-      renderSeats();
-      if (canManageRoom()) connections.forEach(c => c.open && c.send({ type: 'MEMBERS', members }));
+      const hub = canManageRoom();
+      if (hub && peer?.id && members[peer.id] && session === 'custom' && roomOwnerUid && roomOwnerUid === LN_UID) { members[peer.id].owner = true; members[peer.id].uid = LN_UID; }
+      if (hub) updateRoster();
+      renderSeats(); refreshProfileModal();
+      if (!hub) return;
+      // uid peserta hanya dikirim ke admin (uid dipakai sebagai kunci identitas, jangan bocor ke tamu biasa)
+      const pub = {};
+      Object.entries(members).forEach(([k, m]) => { const { uid, ...rest } = m; pub[k] = rest; });
+      connections.forEach(c => {
+        if (!c.open) return;
+        const adm = members[c.peer] && members[c.peer].role === 'admin';
+        c.send(adm ? { type: 'MEMBERS', members, roster } : { type: 'MEMBERS', members: pub });
+      });
     }
     function setSeat(id, n) { if (n < 0 || n >= SEAT_N || Object.values(members).some(m => m.seat === n)) return; if (members[id]) { members[id].seat = n; broadcastMembers(); } }
-    function setMic(id, state) { if (members[id]) { members[id].mic = state; broadcastMembers(); } }
+    function setMic(id, state) {
+      const m = members[id]; if (!m) return;
+      if (m.locked && state === 'on') { // dimute admin: tidak boleh membuka sendiri
+        state = 'muted';
+        const c = connections.find(x => x.peer === id && x.open);
+        if (c) c.send({ type: 'FORCE_MUTE', on: true, by: 'Admin', quiet: true });
+      }
+      m.mic = state; broadcastMembers();
+    }
     function moveSeat(n) { if (!peer) return; if (canManageRoom()) setSeat(peer.id, n); else connections.forEach(c => c.open && c.send({ type: 'SEAT', seat: n })); }
     function announceMic() { if (!peer) return; const s = !voiceOn ? 'off' : (voiceMuted ? 'muted' : 'on'); if (canManageRoom()) setMic(peer.id, s); else connections.forEach(c => c.open && c.send({ type: 'MIC', state: s })); }
 
@@ -4975,37 +5370,31 @@
 
     const avatarGrad = n => { let h = 0; for (const c of String(n)) h = (h * 31 + c.charCodeAt(0)) % 360; return `linear-gradient(135deg,hsl(${h} 85% 62%),hsl(${(h + 55) % 360} 85% 55%))`; };
     function kickUser(id) {
-      if (!canManageRoom()) return showToast('Hanya admin yang bisa mengeluarkan peserta');
+      if (!isAdminMe()) return showToast('Hanya admin yang bisa mengeluarkan peserta');
       if (!id || id === peer?.id) return;
       const nm = (members[id] && members[id].name) || 'Peserta';
       if (!confirm(`Keluarkan ${nm} dari room?`)) return;
-      const conn = connections.find(c => c.peer === id);
-      if (conn && conn.open) {
-        try { conn.send({ type: 'KICK', targetId: id }); } catch (e) {}
-        setTimeout(() => { try { conn.close(); } catch (e) {} }, 250);
-      }
-      delete members[id];
-      dropVoice(id);
-      broadcastMembers();
-      connections.forEach(c => { if (c.open && c.peer !== id) c.send({ type: 'NOTICE', text: `🚫 ${nm} dikeluarkan dari room oleh Admin.` }); });
-      appendSystemChat(`🚫 ${nm} dikeluarkan dari room.`);
       closeProfile();
-      showToast(`${nm} telah dikeluarkan`);
+      adminDo('kick', id);
     }
 
     function seatHTML(m, i, c) {
-      const sz = c ? 'w-11 h-11' : 'w-16 h-16', mic = m.mic === 'on' ? '🎙️' : '🔇';
-      const canKick = !c && canManageRoom() && m.id !== peer?.id;
-      return `<div data-seat-id="${esc(m.id)}" onclick="openProfile('${esc(m.id)}')" class="seat flex flex-col items-center gap-1 shrink-0 cursor-pointer active:scale-95 transition">
+      const sz = c ? 'w-11 h-11' : 'w-16 h-16', mic = m.locked ? '🔒' : (m.mic === 'on' ? '🎙️' : '🔇');
+      const canAct = !c && canActOn(m.id);
+      const kid = esc(m.id);
+      const lbl = m.owner ? 'pemilik room' : (m.role === 'admin' ? (isAdminPeer(m.id) ? '' : 'admin') : 'tamu' + (m.ctl ? ' • bisa play' : ''));
+      const lbl2 = lbl + (m.locked ? (lbl ? ' • ' : '') + 'dimute' : '');
+      return `<div data-seat-id="${kid}" onclick="openProfile('${kid}')" class="seat flex flex-col items-center gap-1 shrink-0 cursor-pointer active:scale-95 transition">
         <div class="ring relative ${sz} rounded-full p-[3px]" style="background:${avatarGrad(m.name)}">
           <div class="w-full h-full rounded-full bg-zinc-950/40 overflow-hidden flex items-center justify-center ${c ? 'text-base' : 'text-xl'} font-extrabold text-white">${avatarInner(m.id, m.name)}</div>
           ${i === 0 ? '<span class="absolute -top-2.5 left-1/2 -translate-x-1/2 text-sm">👑</span>' : ''}
-          ${canKick ? `<button type="button" onclick="event.stopPropagation();kickUser('${esc(m.id)}')" title="Keluarkan ${esc(m.name)}" class="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-red-600 hover:bg-red-500 text-white border border-zinc-950 shadow-lg flex items-center justify-center transition"><i data-lucide="user-x" class="w-3.5 h-3.5"></i></button>` : ''}
+          ${canAct ? `<button type="button" onclick="event.stopPropagation();kickUser('${kid}')" title="Keluarkan ${esc(m.name)}" class="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-red-600 hover:bg-red-500 text-white border border-zinc-950 shadow-lg flex items-center justify-center transition"><i data-lucide="user-x" class="w-3.5 h-3.5"></i></button>` : ''}
+          ${canAct ? `<button type="button" onclick="event.stopPropagation();adminDo('mute','${kid}',${m.locked ? 'false' : 'true'})" title="${m.locked ? 'Aktifkan mic' : 'Mute mic'} ${esc(m.name)}" class="absolute -bottom-1 -left-1 w-6 h-6 rounded-full ${m.locked ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-zinc-700 hover:bg-zinc-600'} text-white border border-zinc-950 shadow-lg flex items-center justify-center text-[11px] transition">${m.locked ? '🎙️' : '🔇'}</button>` : ''}
           ${m.ctl ? '<span title="Boleh play bareng" class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-500 border border-zinc-950 text-[10px] flex items-center justify-center">🎛️</span>' : ''}
           <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-zinc-900 border border-white/20 text-[10px] flex items-center justify-center">${mic}</span>
         </div>
         <div class="text-[11px] font-semibold text-white truncate max-w-[76px]">${esc(m.name)}${m.id === peer?.id ? ' (kamu)' : ''}</div>
-        ${m.role === 'guest' ? `<div class="text-[9px] text-zinc-400 -mt-0.5">tamu${m.ctl ? ' • bisa play' : ''}</div>` : ''}
+        ${lbl2 ? `<div class="text-[9px] text-zinc-400 -mt-0.5">${lbl2}</div>` : ''}
       </div>`;
     }
     const emptySeatHTML = (i, c) => `<button onclick="moveSeat(${i})" class="flex flex-col items-center gap-1 shrink-0"><div class="${c ? 'w-11 h-11' : 'w-16 h-16'} rounded-full border-2 border-dashed border-white/20 flex items-center justify-center text-xl text-zinc-500">+</div><div class="text-[11px] text-zinc-500">Kursi ${i + 1}</div></button>`;
@@ -5017,6 +5406,7 @@
       const main = document.getElementById('voice-seats-main'), fs = document.getElementById('voice-seats-fs');
       if (main) main.innerHTML = make(false);
       if (fs) fs.innerHTML = isRoomConnected ? make(true) : '';
+      try { updateAdminUI(); } catch (e) {}
       const cnt = document.getElementById('voice-count'); if (cnt) cnt.textContent = `${by.filter(Boolean).length}/${SEAT_N}`;
       try { lucide.createIcons(); } catch (e) {}
     }
@@ -5412,7 +5802,7 @@
         try {
           const saved = JSON.parse(localStorage.getItem('lnmusic_custom_room') || 'null');
           if (saved && saved.code && saved.peerId && saved.name) {
-            customRoom = { role: saved.role, code: saved.code, peerId: saved.peerId, title: saved.title || saved.code };
+            customRoom = { role: saved.role, origRole: saved.origRole || saved.role, code: saved.code, peerId: saved.peerId, title: saved.title || saved.code, ownerUid: saved.ownerUid || '' };
             enterRoom('custom', saved.name);
           }
         } catch (e) {}
@@ -5420,6 +5810,7 @@
         let n = ''; try { n = localStorage.getItem('lnmusic_guest_name') || ''; } catch (e) {}
         if (n) enterRoom('guest', n);
       } else if (u && USERS[u]) enterRoom(u);
+      try { renderLastRoom(); } catch (e) {}
     })();
 
     // Mobile Swipe-Down Gesture to Minimize Fullscreen Player (prevents accidental pull-to-refresh)
