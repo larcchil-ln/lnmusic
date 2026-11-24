@@ -59,7 +59,7 @@
   function renderList() {
     var list = $('ln-offline-list'); if (!list) return;
     list.innerHTML = ''; rendered = 0; paintCount();
-    if(groupSelection && (category==='artists'||category==='albums')){
+    if(groupSelection && (category==='artists'||category==='albums'||category==='folders')){
       var back=document.createElement('button');back.type='button';back.className='ln-group-back';back.textContent='‹  Kembali ke '+(category==='artists'?'Artis':(category==='albums'?'Album':'Folder'));
       back.addEventListener('click',function(){groupSelection='';filter();});list.appendChild(back);
     }
@@ -72,7 +72,8 @@
   function renderAlphabet(){var box=$('ln-alphabet');if(!box)return;var letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ#'.split('');box.innerHTML=letters.map(function(ch){return '<button type="button" data-ln-letter="'+ch+'" class="'+(letterFilter===ch?'active':'')+'">'+ch+'</button>';}).join('');Array.prototype.forEach.call(box.querySelectorAll('[data-ln-letter]'),function(b){b.addEventListener('click',function(){letterFilter=letterFilter===b.getAttribute('data-ln-letter')?'':b.getAttribute('data-ln-letter');filter();});});}
   function filter() {
     var q = (($('ln-offline-search') && $('ln-offline-search').value) || '').trim().toLowerCase();
-    var source = lib.filter(function(s){var hay=[s.title,s.artist,s.album,s.storage].join(' ').toLowerCase();return (!q || hay.indexOf(q)!==-1) && (!letterFilter || String(s.title||'').toUpperCase().charAt(0)===letterFilter);});
+    var letterField=category==='artists'?'artist':(category==='albums'?'album':(category==='folders'?'storage':'title'));
+    var source = lib.filter(function(s){var hay=[s.title,s.artist,s.album,s.storage].join(' ').toLowerCase();var letterValue=String(s[letterField]||'').trim().toUpperCase();var first=letterValue.charAt(0);if(first&&!/[A-Z]/.test(first))first='#';return (!q || hay.indexOf(q)!==-1) && (!letterFilter || first===letterFilter);});
     renderAlphabet();
     if(category==='artists' || category==='albums' || category==='folders'){
       var field=category==='artists'?'artist':(category==='albums'?'album':'storage');
