@@ -658,9 +658,6 @@
           <span class="flex items-center gap-3"><i data-lucide="video" class="w-4 h-4 text-violet-400"></i> Video Call</span>
           <span id="vc-nav-dot" class="hidden w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
         </button>
-        <button onclick="switchTab('anatomy')" id="nav-anatomy" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition">
-          <span class="flex items-center gap-3"><i data-lucide="scan-face" class="w-4 h-4 text-sky-400"></i> Anatomi</span>
-        </button>
         <button onclick="switchTab('playlists')" id="nav-playlists" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition">
           <span class="flex items-center gap-3"><i data-lucide="list-music" class="w-4 h-4"></i> Playlist</span>
         </button>
@@ -916,7 +913,6 @@
                 <form id="form-create-custom-room" onsubmit="doCreateCustomRoom(event)" class="space-y-2.5">
                   <input id="croom-host-name" type="text" maxlength="20" placeholder="Nama kamu (Host)" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-none" />
                   <input id="croom-title" type="text" maxlength="28" placeholder="Nama Room (opsional, misal: Nobar Santai)" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-none" />
-                  <input id="croom-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="new-password" placeholder="PIN Host 4-8 angka (untuk masuk lagi dari perangkat lain)" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-rose-500 focus:outline-none" />
                   <p id="croom-create-error" class="hidden text-xs text-rose-400"></p>
                   <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-rose-600 to-violet-600 hover:opacity-95 text-xs font-bold text-white transition shadow-lg shadow-rose-600/25 flex items-center justify-center gap-1.5">
                     <i data-lucide="plus-circle" class="w-4 h-4"></i> Buat &amp; Masuk Room Baru
@@ -925,7 +921,6 @@
                 <form id="form-join-custom-room" onsubmit="doJoinCustomRoom(event)" class="hidden space-y-2.5">
                   <input id="jroom-guest-name" type="text" maxlength="20" placeholder="Nama kamu" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-violet-500 focus:outline-none" />
                   <input id="jroom-code" type="text" maxlength="20" autocapitalize="characters" placeholder="Kode Room (contoh: LN-8492)" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white uppercase tracking-wider focus:border-violet-500 focus:outline-none" />
-                  <input id="jroom-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" placeholder="PIN Host (isi hanya jika kamu pembuat room ini)" class="w-full bg-zinc-950 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-violet-500 focus:outline-none" />
                   <p id="croom-join-error" class="hidden text-xs text-rose-400"></p>
                   <button type="submit" class="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white transition shadow-lg shadow-violet-600/25 flex items-center justify-center gap-1.5">
                     <i data-lucide="log-in" class="w-4 h-4"></i> Gabung ke Room
@@ -1079,8 +1074,6 @@
 
       <!-- TAB: VIDEO CALL -->
       <section id="tab-game" class="hidden space-y-4"><div id="lg-root"></div></section>
-
-      <section id="tab-anatomy" class="hidden space-y-5"></section>
 
       <section id="tab-videocall" class="hidden space-y-5">
         <div class="glass rounded-3xl p-7 text-center space-y-4 border border-white/10">
@@ -1358,13 +1351,12 @@
     </aside>
   </div>
 
-  <nav id="ln-mnav" class="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-white/10 grid grid-cols-6 py-2 z-40" style="padding-bottom:max(8px,env(safe-area-inset-bottom))">
+  <nav id="ln-mnav" class="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-white/10 grid grid-cols-5 py-2 z-40" style="padding-bottom:max(8px,env(safe-area-inset-bottom))">
         <button onclick="switchTab('online')" id="mob-nav-online" class="mnav flex flex-col items-center gap-1 text-rose-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 3.8l8.5 7.2"/><path d="M5.5 9.7V20h13V9.7"/><path d="M10 20v-5.5h4V20"/></svg><span>Beranda</span></button>
         <button onclick="switchTab('together')" id="mob-nav-together" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.2" r="3.2"/><path d="M3.3 19.5c.6-3.3 2.9-5.2 5.7-5.2s5.1 1.9 5.7 5.2"/><circle cx="17.2" cy="9" r="2.4"/><path d="M16.6 14.4c2.3.2 3.8 1.7 4.2 4.4"/></svg><span>Bareng</span></button>
         <button onclick="switchTab('videocall')" id="mob-nav-videocall" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6.5" width="12" height="11" rx="3.2"/><path d="m15 10.6 5.5-3.1v9L15 13.4"/></svg><span>Call</span></button>
         <button onclick="switchTab('playlists')" id="mob-nav-playlists" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h11M4 11.5h11M4 16.5h6"/><circle cx="17.5" cy="17" r="2.6"/><path d="M20.1 17V7.8l-3-1"/></svg><span>Playlist</span></button>
         <button onclick="switchTab('offline')" id="mob-nav-offline" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4.5 20h15"/></svg><span>Offline</span></button>
-        <button onclick="switchTab('anatomy')" id="mob-nav-anatomy" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.2a2.4 2.4 0 1 0 0 .01"/><path d="M12 9v6.5M6.5 11.5 12 10l5.5 1.5M9.3 21l2.7-5.5 2.7 5.5"/><path d="M3.5 8V5.5A2 2 0 0 1 5.5 3.5H8M16 3.5h2.5a2 2 0 0 1 2 2V8M20.5 16v2.5a2 2 0 0 1-2 2H16M8 20.5H5.5a2 2 0 0 1-2-2V16"/></svg><span>Anatomi</span></button>
       </nav>
 
   <!-- ===================================================================== -->
@@ -2309,90 +2301,52 @@
       if (tJ) tJ.className = !isCreate ? 'flex-1 py-2 rounded-lg bg-violet-600 text-white transition' : 'flex-1 py-2 rounded-lg text-zinc-400 hover:text-white transition';
     }
 
-    async function croomApi(action, payload) {
-      try {
-        const r = await fetch('/api/store', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action, ...payload })
-        });
-        const j = await r.json().catch(() => ({}));
-        return { status: r.status, ok: r.ok, data: j };
-      } catch (err) { return { status: 0, ok: false, data: {} }; }
-    }
-
-    function showCroomErr(id, msg) {
-      const el = document.getElementById(id);
-      el.textContent = msg; el.classList.toggle('hidden', !msg);
-    }
-
-    function startCustomRoom(role, code, title, name) {
-      customRoom = { role, code, peerId: 'lnmusic-croom-' + code.toLowerCase(), title };
+    function doCreateCustomRoom(e) {
+      if (e) e.preventDefault();
+      const errEl = document.getElementById('croom-create-error');
+      const rawName = document.getElementById('croom-host-name').value.trim();
+      if (rawName.length < 2) {
+        errEl.textContent = 'Isi nama kamu minimal 2 huruf';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      errEl.classList.add('hidden');
+      const hostName = cleanName(rawName);
+      const code = 'LN-' + Math.floor(1000 + Math.random() * 9000);
+      const rawTitle = document.getElementById('croom-title').value.trim();
+      const title = rawTitle ? cleanName(rawTitle) : `Room ${hostName}`;
+      customRoom = { role: 'host', code, peerId: 'lnmusic-croom-' + code.toLowerCase(), title };
       try {
         localStorage.setItem(SESSION_KEY, 'custom');
-        localStorage.setItem('lnmusic_custom_room', JSON.stringify({ ...customRoom, name }));
+        localStorage.setItem('lnmusic_custom_room', JSON.stringify({ ...customRoom, name: hostName }));
       } catch (err) {}
-      enterRoom('custom', name);
+      enterRoom('custom', hostName);
     }
 
-    let croomBusy = false;
-    async function doCreateCustomRoom(e) {
+    function doJoinCustomRoom(e) {
       if (e) e.preventDefault();
-      if (croomBusy) return;
-      const rawName = document.getElementById('croom-host-name').value.trim();
-      const pin = document.getElementById('croom-pin').value.trim();
-      if (rawName.length < 2) return showCroomErr('croom-create-error', 'Isi nama kamu minimal 2 huruf');
-      if (!/^\d{4,8}$/.test(pin)) return showCroomErr('croom-create-error', 'PIN Host harus 4-8 angka');
-      showCroomErr('croom-create-error', '');
-      croomBusy = true;
-      try {
-        const hostName = cleanName(rawName);
-        const rawTitle = document.getElementById('croom-title').value.trim();
-        const title = rawTitle ? cleanName(rawTitle) : `Room ${hostName}`;
-        let code = '', saved = false;
-        for (let i = 0; i < 6 && !saved; i++) {
-          code = 'LN-' + Math.floor(1000 + Math.random() * 9000);
-          const r = await croomApi('croom_create', { code, pin, title, hostName });
-          if (r.ok) saved = true;
-          else if (r.status === 409) continue;
-          else if (r.status === 429) return showCroomErr('croom-create-error', 'Terlalu banyak percobaan. Coba lagi beberapa menit.');
-          else if (r.status === 400) return showCroomErr('croom-create-error', r.data.error || 'Data tidak valid');
-          else break; // server tidak tersedia -> tetap bisa dipakai di perangkat ini saja
-        }
-        if (!saved) {
-          code = 'LN-' + Math.floor(1000 + Math.random() * 9000);
-          showToast('Server tidak terjangkau: room hanya tersimpan di perangkat ini.');
-        }
-        document.getElementById('croom-pin').value = '';
-        startCustomRoom('host', code, title, hostName);
-        if (saved) showToast(`Room ${code} dibuat. Ingat PIN-mu untuk masuk lagi dari perangkat lain.`);
-      } finally { croomBusy = false; }
-    }
-
-    async function doJoinCustomRoom(e) {
-      if (e) e.preventDefault();
-      if (croomBusy) return;
+      const errEl = document.getElementById('croom-join-error');
       const rawName = document.getElementById('jroom-guest-name').value.trim();
       const rawCode = document.getElementById('jroom-code').value.trim().toUpperCase();
-      const pin = document.getElementById('jroom-pin').value.trim();
-      if (rawName.length < 2) return showCroomErr('croom-join-error', 'Isi nama kamu minimal 2 huruf');
+      if (rawName.length < 2) {
+        errEl.textContent = 'Isi nama kamu minimal 2 huruf';
+        errEl.classList.remove('hidden');
+        return;
+      }
       const normCode = rawCode.startsWith('LN-') ? rawCode : ('LN-' + rawCode.replace(/[^A-Z0-9]/g, ''));
-      if (!/^LN-[A-Z0-9]{4,8}$/.test(normCode)) return showCroomErr('croom-join-error', 'Masukkan kode room yang valid (contoh: LN-8492)');
-      if (pin && !/^\d{4,8}$/.test(pin)) return showCroomErr('croom-join-error', 'PIN Host harus 4-8 angka');
-      showCroomErr('croom-join-error', '');
+      if (!/^LN-[A-Z0-9]{4,8}$/.test(normCode)) {
+        errEl.textContent = 'Masukkan kode room yang valid (contoh: LN-8492)';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      errEl.classList.add('hidden');
       const guestName = cleanName(rawName);
-      if (!pin) return startCustomRoom('guest', normCode, `Room ${normCode}`, guestName);
-      // ada PIN -> klaim kembali sebagai Host
-      croomBusy = true;
+      customRoom = { role: 'guest', code: normCode, peerId: 'lnmusic-croom-' + normCode.toLowerCase(), title: `Room ${normCode}` };
       try {
-        const r = await croomApi('croom_claim', { code: normCode, pin });
-        if (r.status === 401) return showCroomErr('croom-join-error', 'Kode atau PIN salah');
-        if (r.status === 429) return showCroomErr('croom-join-error', 'Terlalu banyak percobaan. Coba lagi beberapa menit.');
-        if (!r.ok) return showCroomErr('croom-join-error', 'Server tidak bisa dihubungi. Coba lagi.');
-        document.getElementById('jroom-pin').value = '';
-        const hostName = cleanName(guestName || r.data.hostName);
-        startCustomRoom('host', normCode, r.data.title || `Room ${normCode}`, hostName);
-        showToast('Berhasil masuk kembali sebagai Host 👑');
-      } finally { croomBusy = false; }
+        localStorage.setItem(SESSION_KEY, 'custom');
+        localStorage.setItem('lnmusic_custom_room', JSON.stringify({ ...customRoom, name: guestName }));
+      } catch (err) {}
+      enterRoom('custom', guestName);
     }
 
     const slimTrack = t => ({ id: t.id, title: t.title, artist: t.artist, thumb: t.thumb, type: t.type, isVideo: !!t.isVideo });
@@ -2570,17 +2524,15 @@
       if (!document.getElementById('profile-modal').classList.contains('hidden')) renderProfileModal();
     }
 
-    let sessionToken = 0;
     async function startSession(attempt = 0) {
       if (!session) return;
-      const myToken = ++sessionToken;
       teardownPeer();
       isHost = session === 'nuki' || (session === 'custom' && customRoom?.role === 'host');
       const desiredPeerId = session === 'custom'
         ? (customRoom?.role === 'host' ? customRoom.peerId : null)
         : (session === 'guest' ? null : USERS[session].peerId);
       const p = await newPeer(desiredPeerId);
-      if (!session || myToken !== sessionToken) { try { p.destroy(); } catch (e) {} return; }
+      if (!session) { try { p.destroy(); } catch (e) {} return; }
       peer = p;
       bindVoice(p);
       keepSignalingAlive(p);
@@ -2608,16 +2560,13 @@
         if (peer !== p) return;
         console.warn('PeerJS error:', err);
         if (err.type === 'unavailable-id') {
-          // ID masih "nyangkut" di server dari sesi lamamu sendiri: coba terus sampai dilepas server, jangan menyerah.
-          const wait = Math.min(2000 + attempt * 500, 8000);
-          setRoomPill('Menyambungkan kembali ke room…', false);
-          if (attempt === 3) showToast('Menyambungkan ulang ke room, tunggu sebentar…');
-          setTimeout(() => { if (session && myToken === sessionToken) startSession(attempt + 1); }, wait);
+          if (attempt < 10) { setTimeout(() => { if (session) startSession(attempt + 1); }, 3000); }
+          else showToast('ID Room atau akun ini sedang aktif di perangkat lain.');
           return;
         }
         if (err.type === 'peer-unavailable') return;
         if (['network', 'server-error', 'socket-error', 'socket-closed', 'webrtc'].includes(err.type)) {
-          setTimeout(() => { if (session && peer === p && myToken === sessionToken) startSession(0); }, 5000);
+          setTimeout(() => { if (session && peer === p) startSession(0); }, 5000);
         }
       });
     }
@@ -5297,7 +5246,7 @@
     function switchTab(tab) {
       if (tab === 'videocall' && curTab !== 'videocall') vcPrev = curTab;
       curTab = tab;
-      ['online', 'offline', 'playlists', 'together', 'game', 'videocall', 'anatomy'].forEach(t => {
+      ['online', 'offline', 'playlists', 'together', 'game', 'videocall'].forEach(t => {
         document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
         const deskBtn = document.getElementById('nav-' + t);
         const mobBtn = document.getElementById('mob-nav-' + t);
@@ -5478,27 +5427,13 @@
       fs.addEventListener('touchcancel', finishSwipe, { passive: true });
     })();
 
-    // Lepas ID peer segera saat tab/app ditutup (sesi tetap tersimpan, jadi otomatis masuk lagi saat dibuka)
-    window.addEventListener('pagehide', () => {
-      saveRoomState(); saveChat(); DBX.flush();
-      try { if (session) { sessionToken++; teardownPeer(); } } catch (e) {}
-    });
-    // Halaman dipulihkan dari cache (bfcache) -> sambungkan lagi
-    window.addEventListener('pageshow', (e) => { if (e.persisted && session) startSession(0); });
-    // Pastikan selalu tersambung ke room: dipanggil saat tab aktif lagi / internet kembali
-    function ensureRoomConnected() {
-      if (!session) return;
-      if (!peer || peer.destroyed) { startSession(0); return; }
-      if (peer.disconnected) { try { peer.reconnect(); } catch (e) {} }
-      if (!isHost && !partnerOnline()) { try { guestConnectLoop(peer); } catch (e) {} }
-    }
-    window.addEventListener('online', ensureRoomConnected);
+    window.addEventListener('pagehide', () => { saveRoomState(); saveChat(); DBX.flush(); });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         saveRoomState();
         saveChat();
-      } else {
-        ensureRoomConnected();
+      } else if (peer && !peer.destroyed && peer.disconnected) {
+        try { peer.reconnect(); } catch (e) {}
       }
     });
 
@@ -5598,7 +5533,6 @@
   <script src="./ln-game.js"></script>
   <script src="./ln-desktop.js"></script>
   <script src="./ln-trending.js"></script>
-  <script src="./ln-anatomy.js"></script>
   <script src="./ln-native.js"></script>
 <script>
 /* Hapus tombol emoji 📷 / 🎤 lama di bar chat (disuntik skrip eksternal) supaya kolom teks lebih lega */
