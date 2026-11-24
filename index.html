@@ -6003,8 +6003,8 @@
   <script src="./ln-game.js"></script>
   <script src="./ln-desktop.js"></script>
   <script src="./ln-trending.js"></script>
-  <!-- Capacitor bridge loader for the remote-hosted website inside the Android APK.
-       Do not depend on the optional "wv" user-agent token: some Android WebViews omit it. -->
+  <!-- Capacitor bridge loader. In the APK the website is bundled locally, so
+       location.origin is https://localhost and the native bridge is served by Capacitor. -->
   <script>
   (function () {
     var ua = navigator.userAgent || '';
@@ -6014,7 +6014,9 @@
       var settled = false;
       function finish(ok) { if (settled) return; settled = true; resolve(!!ok && !!window.Capacitor); }
       var script = document.createElement('script');
-      script.src = 'https://localhost/capacitor.js';
+      var origin = window.location && window.location.origin;
+      script.src = (origin && origin !== 'null' ? origin : 'https://localhost') + '/capacitor.js';
+      window.__lnCapacitorBridgeUrl = script.src;
       script.async = false;
       script.onload = function () { finish(true); };
       script.onerror = function () { finish(false); };
@@ -6024,7 +6026,7 @@
   })();
   </script>
   <script src="./ln-native.js"></script>
-  <script src="./ln-local.js?v=bridge4"></script>
+  <script src="./ln-local.js?v=bridge5"></script>
 <script>
 /* Hapus tombol emoji 📷 / 🎤 lama di bar chat (disuntik skrip eksternal) supaya kolom teks lebih lega */
 (function () {
