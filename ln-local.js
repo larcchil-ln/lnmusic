@@ -113,6 +113,12 @@
   }
   function updatePlayer(s) {
     state = s || {};
+    if($('ln-np-title'))$('ln-np-title').textContent=state.active?state.title:'Belum ada lagu diputar';
+    if($('ln-np-artist'))$('ln-np-artist').textContent=state.active?(state.artist||'Artis tidak dikenal'):'Pilih lagu dari koleksi';
+    if($('ln-np-toggle'))$('ln-np-toggle').textContent=state.playing?'Ⅱ':'▶';
+    if($('ln-np-pos'))$('ln-np-pos').textContent=fmt(state.pos);
+    if($('ln-np-dur'))$('ln-np-dur').textContent=fmt(state.dur);
+    if($('ln-np-seek')){$('ln-np-seek').max=Math.max(1,Number(state.dur)||1);if(!dragging)$('ln-np-seek').value=Math.min(Number(state.pos)||0,Number($('ln-np-seek').max));}
     if ($('ln-offline-now')) $('ln-offline-now').textContent = state.active && state.title ? state.title : 'Belum ada lagu diputar';
     if ($('ln-offline-artist')) $('ln-offline-artist').textContent = state.active ? (state.artist || 'Artis tidak dikenal') : 'Pilih lagu dari daftar';
     if (state.active && state.title) showLyrics(state.title, state.artist || '');
@@ -133,7 +139,7 @@
   }
   function lyricKey(title,artist){return (String(title||'').toLowerCase().trim()+'|'+String(artist||'').toLowerCase().trim()).replace(/\s+/g,' ');}
   function parseLrc(raw){var out=[],re=/\[(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?\]([^\r\n]*)/g,m;while((m=re.exec(raw))){var frac=String(m[3]||'0');out.push({time:(Number(m[1])*60+Number(m[2]))*1000+Number((frac+'00').slice(0,3)),text:(m[4]||'').trim()});}return out.sort(function(a,b){return a.time-b.time;});}
-  function renderLyrics(lines){var box=$('ln-offline-lyrics');if(!box)return;lyricLines=lines||[];box.innerHTML=lyricLines.length?lyricLines.map(function(l,i){return '<p data-lyric-index="'+i+'">'+esc(l.text||'♪')+'</p>';}).join(''):'<p class="ln-lyrics-empty">Lirik belum tersedia. Impor file .LRC atau coba cari online.</p>';}
+  function renderLyrics(lines){var box=$('ln-offline-lyrics');if(!box)return;lines=lines||[];var sig=JSON.stringify(lines);if(box.getAttribute('data-lyrics-signature')===sig)return;lyricLines=lines;box.setAttribute('data-lyrics-signature',sig);box.innerHTML=lyricLines.length?lyricLines.map(function(l,i){return '<p data-lyric-index="'+i+'">'+esc(l.text||'♪')+'</p>';}).join(''):'<p class="ln-lyrics-empty">Lirik belum tersedia. Impor file .LRC atau coba cari online.</p>';}
   function showLyrics(title,artist){var key=lyricKey(title,artist);if(lyricCache[key]){renderLyrics(lyricCache[key]);return;}if(showLyrics.last===key)return;showLyrics.last=key;fetch('https://lrclib.net/api/get?'+new URLSearchParams({track_name:title,artist_name:artist}).toString()).then(function(r){if(!r.ok)throw new Error('not found');return r.json();}).then(function(data){var lines=parseLrc(data.syncedLyrics||'');if(!lines.length&&data.plainLyrics)lines=String(data.plainLyrics).split(/\r?\n/).map(function(t){return {time:0,text:t};});if(lines.length){lyricCache[key]=lines;localStorage.setItem('lnOfflineLyrics',JSON.stringify(lyricCache));renderLyrics(lines);}else renderLyrics([]);}).catch(function(){renderLyrics([]);});}
   function poll() {
     if (!LM) return;
@@ -217,6 +223,7 @@
     LM = getPlugin('LocalMusic');
     BP = getPlugin('BackgroundPlay');
     bind();
+    setupNowPlaying();
     hookRoomSync();
     var roomSyncHookTimer = setInterval(function(){ if (hookRoomSync()) clearInterval(roomSyncHookTimer); }, 500);
     setTimeout(function(){ clearInterval(roomSyncHookTimer); }, 15000);
@@ -241,6 +248,7 @@
       : 'Mode browser terdeteksi. Pemindaian musik perangkat hanya tersedia di APK Android.', 'error');
     var all = $('ln-offline-playall'); if (all) all.addEventListener('click', function () { if (view.length) playIndex(0); else scan(); });
   }
+  function setupNowPlaying(){if($('ln-now-playing'))return;var p=document.createElement('div');p.id='ln-now-playing';p.innerHTML='<button type="button" class="ln-np-close" id="ln-np-close">×</button><div class="ln-np-cover">♫</div><div class="ln-np-title" id="ln-np-title">Belum ada lagu diputar</div><div class="ln-np-artist" id="ln-np-artist">Pilih lagu dari koleksi</div><div class="ln-np-lyrics" id="ln-now-playing-lyrics"><p>Lirik akan tampil di sini</p></div><div class="ln-player-progress"><span id="ln-np-pos">0:00</span><input id="ln-np-seek" type="range" min="0" max="1" value="0"><span id="ln-np-dur">0:00</span></div><div class="ln-np-controls"><button id="ln-np-prev">|◀</button><button id="ln-np-toggle">▶</button><button id="ln-np-next">▶|</button></div>';document.body.appendChild(p);$('ln-player-expand').addEventListener('click',function(){p.classList.add('open');});$('ln-np-close').addEventListener('click',function(){p.classList.remove('open');});$('ln-np-toggle').addEventListener('click',function(){if(LM)LM.toggle();});$('ln-np-prev').addEventListener('click',function(){if(LM)LM.prev();});$('ln-np-next').addEventListener('click',function(){if(LM)LM.next();});$('ln-np-seek').addEventListener('input',function(){if(LM)LM.seek({position:Number(this.value)});});}
   function init() {
     C = window.Capacitor || null;
     native = isNativeCapacitor();
