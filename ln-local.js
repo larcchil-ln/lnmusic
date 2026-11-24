@@ -93,6 +93,14 @@
       if (btn) { btn.disabled = false; btn.textContent = '⟳  Pindai Musik'; }
     });
   }
+  var remoteLocalSync = false, lastLocalRoomSync = 0;
+  function sendLocalRoomMessage(type, extra) {
+    try {
+      if (typeof isRoomConnected === 'undefined' || !isRoomConnected || typeof connections === 'undefined') return;
+      var msg = Object.assign({ type: type, title: state.title || '', artist: state.artist || '', pos: Number(state.pos) || 0, playing: !!state.playing, sentAt: Date.now() }, extra || {});
+      connections.forEach(function (c) { if (c && c.open) c.send(msg); });
+    } catch (e) {}
+  }
   function playIndex(index) {
     if (!LM || !view.length) return;
     pauseWebPlayers();
@@ -126,7 +134,64 @@
   function parseLrc(raw){var out=[],re=/\[(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?\]([^\r\n]*)/g,m;while((m=re.exec(raw))){var frac=String(m[3]||'0');out.push({time:(Number(m[1])*60+Number(m[2]))*1000+Number((frac+'00').slice(0,3)),text:(m[4]||'').trim()});}return out.sort(function(a,b){return a.time-b.time;});}
   function renderLyrics(lines){var box=$('ln-offline-lyrics');if(!box)return;lyricLines=lines||[];box.innerHTML=lyricLines.length?lyricLines.map(function(l,i){return '<p data-lyric-index="'+i+'">'+esc(l.text||'♪')+'</p>';}).join(''):'<p class="ln-lyrics-empty">Lirik belum tersedia. Impor file .LRC atau coba cari online.</p>';}
   function showLyrics(title,artist){var key=lyricKey(title,artist);if(lyricCache[key]){renderLyrics(lyricCache[key]);return;}if(showLyrics.last===key)return;showLyrics.last=key;fetch('https://lrclib.net/api/get?'+new URLSearchParams({track_name:title,artist_name:artist}).toString()).then(function(r){if(!r.ok)throw new Error('not found');return r.json();}).then(function(data){var lines=parseLrc(data.syncedLyrics||'');if(!lines.length&&data.plainLyrics)lines=String(data.plainLyrics).split(/\r?\n/).map(function(t){return {time:0,text:t};});if(lines.length){lyricCache[key]=lines;localStorage.setItem('lnOfflineLyrics',JSON.stringify(lyricCache));renderLyrics(lines);}else renderLyrics([]);}).catch(function(){renderLyrics([]);});}
-  function poll() { if (LM && $('tab-offline') && !$('tab-offline').classList.contains('hidden')) LM.getState().then(updatePlayer).catch(function () {}); }
+  function poll() {
+    if (!LM || !$('tab-offline') || $('tab-offline').classList.contains('hidden')) return;
+    LM.getState().then(function (next) {
+      updatePlayer(next);
+      if (!remoteLocalSync && next && next.active && typeof isRoomConnected !== 'undefined' && isRoomConnected && Date.now() - lastLocalRoomSync > 2500) {
+        lastLocalRoomSync = Date.now();
+        sendLocalRoomMessage('SYNC_LOCAL_STATE', { title: next.title || '', artist: next.artist || '', pos: Number(next.pos) || 0, playing: !!next.playing });
+      }
+    }).catch(function () {});
+  }
+  function matchLocalSong(title, artist) {
+    function norm(v) { return String(v || '').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); }
+    var t = norm(title), a = norm(artist);
+    var exact = lib.filter(function (x) { return norm(x.title) === t && norm(x.artist) === a; });
+    if (exact.length === 1) return exact[0];
+    if (exact.length > 1) return exact[0];
+    var byTitle = lib.filter(function (x) { return norm(x.title) === t; });
+    return byTitle.length === 1 ? byTitle[0] : null;
+  }
+  function applyRemoteLocal(data) {
+    if (!LM || !data || typeof data.title !== 'string' || data.title.length > 200) return;
+    var song = matchLocalSong(data.title, data.artist);
+    if (!song) {
+      setStatus('Lagu pasangan tidak ditemukan di perangkat ini. Kedua HP perlu memiliki file lagu yang sama.', 'error');
+      return;
+    }
+    remoteLocalSync = true;
+    var currentMatches = state.active && String(state.id) === String(song.id);
+    var action = currentMatches ? Promise.resolve() : LM.play({ ids: [song.id], index: 0 });
+    action.then(function () {
+      return new Promise(function (resolve) { setTimeout(resolve, currentMatches ? 80 : 450); });
+    }).then(function () {
+      if (Number.isFinite(Number(data.pos)) && Number(data.pos) >= 0) return LM.seek({ ms: Math.round(Number(data.pos)) });
+    }).then(function () {
+      if (data.playing === false) return LM.pause();
+      if (data.playing === true) return LM.resume();
+    }).then(function () {
+      setStatus('Listening Together aktif · menyamakan lagu lokal', 'success');
+    }).catch(function (err) {
+      setStatus('Gagal menyinkronkan lagu: ' + ((err && err.message) || err), 'error');
+    }).finally(function () {
+      setTimeout(function () { remoteLocalSync = false; }, 900);
+    });
+  }
+  function hookRoomSync() {
+    var original = window.handleIncomingSyncData;
+    if (typeof original !== 'function' || original.__lnLocalSync) return false;
+    var wrapped = function (data, senderConn) {
+      if (data && (data.type === 'SYNC_LOCAL_TRACK' || data.type === 'SYNC_LOCAL_STATE')) {
+        applyRemoteLocal(data);
+        return;
+      }
+      return original.apply(this, arguments);
+    };
+    wrapped.__lnLocalSync = true;
+    window.handleIncomingSyncData = wrapped;
+    return true;
+  }
   function bind() {
     var scanBtn = $('ln-offline-scan'); if (scanBtn) scanBtn.addEventListener('click', scan);
     var allBtn = $('ln-offline-playall'); if (allBtn) allBtn.addEventListener('click', function () { if (view.length) playIndex(0); else scan(); });
@@ -134,12 +199,12 @@
     var cats = document.querySelectorAll('[data-ln-category]'); Array.prototype.forEach.call(cats,function(btn){btn.addEventListener('click',function(){category=btn.getAttribute('data-ln-category');Array.prototype.forEach.call(cats,function(b){b.classList.toggle('is-active',b===btn);});filter();});});
     var lrc = $('ln-offline-lrc-file'); if(lrc) lrc.addEventListener('change',function(ev){var file=ev.target.files&&ev.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(){var key=lyricKey(state.title||file.name.replace(/\.lrc$/i,''),state.artist||'');lyricCache[key]=parseLrc(String(reader.result||''));localStorage.setItem('lnOfflineLyrics',JSON.stringify(lyricCache));renderLyrics(lyricCache[key]);setStatus('Lirik LRC berhasil disimpan di perangkat.','success');};reader.readAsText(file);});
     var list = $('ln-offline-list'); if (list) list.addEventListener('scroll', function () { if (this.scrollTop + this.clientHeight >= this.scrollHeight - 180) renderMore(); });
-    var toggle = $('ln-offline-toggle'); if (toggle) toggle.addEventListener('click', function () { if (!LM) return; if (state.active) LM.toggle(); else if (view.length) playIndex(0); });
+    var toggle = $('ln-offline-toggle'); if (toggle) toggle.addEventListener('click', function () { if (!LM) return; if (state.active) { var nextPlaying = !state.playing; LM.toggle().then(function(){ if(!remoteLocalSync) sendLocalRoomMessage('SYNC_LOCAL_STATE',{playing:nextPlaying}); }); } else if (view.length) playIndex(0); });
     var prev = $('ln-offline-prev'); if (prev) prev.addEventListener('click', function () { if (LM) LM.prev(); });
     var next = $('ln-offline-next'); if (next) next.addEventListener('click', function () { if (LM) LM.next(); });
     var shuffle = $('ln-offline-shuffle'); if (shuffle) shuffle.addEventListener('click', function () { if (LM) LM.setMode({ shuffle: !state.shuffle, repeat: state.repeat || 0 }); });
     var repeat = $('ln-offline-repeat'); if (repeat) repeat.addEventListener('click', function () { if (LM) LM.setMode({ shuffle: !!state.shuffle, repeat: ((state.repeat || 0) + 1) % 3 }); });
-    var seek = $('ln-offline-seek'); if (seek) { seek.addEventListener('input', function () { dragging = true; if ($('ln-offline-position')) $('ln-offline-position').textContent = fmt(this.value); }); seek.addEventListener('change', function () { dragging = false; if (LM) LM.seek({ ms: Number(this.value) || 0 }); }); }
+    var seek = $('ln-offline-seek'); if (seek) { seek.addEventListener('input', function () { dragging = true; if ($('ln-offline-position')) $('ln-offline-position').textContent = fmt(this.value); }); seek.addEventListener('change', function () { dragging = false; if (LM) LM.seek({ ms: Number(this.value) || 0 }).then(function(){if(!remoteLocalSync)sendLocalRoomMessage('SYNC_LOCAL_STATE',{pos:Number(seek.value)||0});}); }); }
   }
   function openTab() { if (!scanned && !busy) scan(); poll(); }
   function getPlugin(name) {
