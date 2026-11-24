@@ -13,7 +13,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var LM = null, BP = null;
   var lib = [], view = [], state = {}, scanned = false, busy = false, dragging = false;
-  var PAGE = 60, rendered = 0, timer = null;
+  var PAGE = 60, rendered = 0, timer = null, category = 'all', favorites = JSON.parse(localStorage.getItem('lnOfflineFavorites') || '[]'), lyricCache = JSON.parse(localStorage.getItem('lnOfflineLyrics') || '{}'), lyricLines = [];
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }); }
   function fmt(ms) { var n = Math.max(0, Math.floor((Number(ms) || 0) / 1000)); return Math.floor(n / 60) + ':' + ('0' + (n % 60)).slice(-2); }
   function setStatus(msg, kind) {
@@ -30,11 +30,13 @@
     var list = $('ln-offline-list'); if (!list) return;
     list.innerHTML = '<div class="ln-empty"><div class="ln-empty-icon">♫</div><b>' + esc(msg) + '</b><span>File musik tetap berada di penyimpanan perangkat dan tidak disalin ke aplikasi.</span></div>';
   }
+  function isFav(song) { return favorites.indexOf(String(song.id)) !== -1; }
   function row(song, index) {
     var active = String(song.id) === String(state.id);
     var el = document.createElement('button');
     el.type = 'button'; el.className = 'ln-song' + (active ? ' is-active' : ''); el.setAttribute('data-id', String(song.id));
-    el.innerHTML = '<span class="ln-song-art">♫</span><span class="ln-song-info"><b>' + esc(song.title || 'Tanpa judul') + '</b><small>' + esc(song.artist || 'Artis tidak dikenal') + (song.album ? ' · ' + esc(song.album) : '') + (song.storage ? ' · ' + esc(song.storage) : '') + '</small></span><span class="ln-song-duration">' + fmt(song.dur) + '</span><span class="ln-song-play">' + (active && state.playing ? 'Ⅱ' : '▶') + '</span>';
+    el.innerHTML = '<span class="ln-song-art">♫</span><span class="ln-song-info"><b>' + esc(song.title || 'Tanpa judul') + '</b><small>' + esc(song.artist || 'Artis tidak dikenal') + (song.album ? ' · ' + esc(song.album) : '') + (song.storage ? ' · ' + esc(song.storage) : '') + '</small></span><button type="button" class="ln-song-fav" aria-label="Favorit">' + (isFav(song) ? '♥' : '♡') + '</button><span class="ln-song-duration">' + fmt(song.dur) + '</span><span class="ln-song-play">' + (active && state.playing ? 'Ⅱ' : '▶') + '</span>';
+    el.querySelector('.ln-song-fav').addEventListener('click', function (ev) { ev.stopPropagation(); var id=String(song.id), at=favorites.indexOf(id); if(at<0) favorites.push(id); else favorites.splice(at,1); localStorage.setItem('lnOfflineFavorites',JSON.stringify(favorites)); filter(); });
     el.addEventListener('click', function () { playIndex(index); });
     return el;
   }
@@ -55,7 +57,7 @@
   }
   function filter() {
     var q = (($('ln-offline-search') && $('ln-offline-search').value) || '').trim().toLowerCase();
-    view = q ? lib.filter(function (s) { return [s.title, s.artist, s.album].join(' ').toLowerCase().indexOf(q) !== -1; }) : lib.slice();
+    view = lib.filter(function (s) { var match = !q || [s.title, s.artist, s.album, s.storage].join(' ').toLowerCase().indexOf(q) !== -1; if (!match) return false; if (category === 'favorites') return isFav(s); if (category === 'artists') return !!s.artist; if (category === 'albums') return !!s.album; if (category === 'folders') return !!s.storage; return true; });
     renderList();
   }
   function pauseWebPlayers() {
@@ -104,6 +106,7 @@
     state = s || {};
     if ($('ln-offline-now')) $('ln-offline-now').textContent = state.active && state.title ? state.title : 'Belum ada lagu diputar';
     if ($('ln-offline-artist')) $('ln-offline-artist').textContent = state.active ? (state.artist || 'Artis tidak dikenal') : 'Pilih lagu dari daftar';
+    if (state.active && state.title) showLyrics(state.title, state.artist || '');
     if ($('ln-offline-toggle')) $('ln-offline-toggle').textContent = state.playing ? 'Ⅱ' : '▶';
     if ($('ln-offline-position') && !dragging) $('ln-offline-position').textContent = fmt(state.pos);
     if ($('ln-offline-duration')) $('ln-offline-duration').textContent = fmt(state.dur);
@@ -111,6 +114,7 @@
     if (seek && !dragging) { seek.max = Math.max(1, Number(state.dur) || 1); seek.value = Math.min(Number(state.pos) || 0, Number(seek.max)); }
     if ($('ln-offline-shuffle')) $('ln-offline-shuffle').classList.toggle('active', !!state.shuffle);
     if ($('ln-offline-repeat')) { $('ln-offline-repeat').classList.toggle('active', !!state.repeat); $('ln-offline-repeat').textContent = state.repeat === 2 ? '↻²' : '↻'; }
+    if(lyricLines.length && $('ln-offline-lyrics')){var activeLine=-1;for(var li=0;li<lyricLines.length;li++){if(Number(state.pos||0)>=lyricLines[li].time)activeLine=li;else break;}var lyricEls=$('ln-offline-lyrics').querySelectorAll('[data-lyric-index]');Array.prototype.forEach.call(lyricEls,function(el,i){el.classList.toggle('is-current',i===activeLine);});}
     var rows = $('ln-offline-list') ? $('ln-offline-list').querySelectorAll('.ln-song') : [];
     Array.prototype.forEach.call(rows, function (el) {
       var on = String(el.getAttribute('data-id')) === String(state.id) && !!state.active;
@@ -118,11 +122,17 @@
       var mark = el.querySelector('.ln-song-play'); if (mark) mark.textContent = el.classList.contains('is-active') && state.playing ? 'Ⅱ' : '▶';
     });
   }
+  function lyricKey(title,artist){return (String(title||'').toLowerCase().trim()+'|'+String(artist||'').toLowerCase().trim()).replace(/\\s+/g,' ');}
+  function parseLrc(raw){var out=[],re=/\\[(\\d{1,2}):(\\d{2})(?:[.:](\\d{1,3}))?\\]([^\\r\\n]*)/g,m;while((m=re.exec(raw))){var frac=String(m[3]||'0');out.push({time:(Number(m[1])*60+Number(m[2]))*1000+Number((frac+'00').slice(0,2))*10,text:(m[4]||'').trim()});}return out.sort(function(a,b){return a.time-b.time;});}
+  function renderLyrics(lines){var box=$('ln-offline-lyrics');if(!box)return;lyricLines=lines||[];box.innerHTML=lyricLines.length?lyricLines.map(function(l,i){return '<p data-lyric-index="'+i+'">'+esc(l.text||'♪')+'</p>';}).join(''):'<p class="ln-lyrics-empty">Lirik belum tersedia. Impor file .LRC atau coba cari online.</p>';}
+  function showLyrics(title,artist){var key=lyricKey(title,artist);if(lyricCache[key]){renderLyrics(lyricCache[key]);return;}if(showLyrics.last===key)return;showLyrics.last=key;fetch('https://lrclib.net/api/get?'+new URLSearchParams({track_name:title,artist_name:artist}).toString()).then(function(r){if(!r.ok)throw new Error('not found');return r.json();}).then(function(data){var lines=parseLrc(data.syncedLyrics||'');if(!lines.length&&data.plainLyrics)lines=String(data.plainLyrics).split(/\\r?\\n/).map(function(t){return {time:0,text:t};});if(lines.length){lyricCache[key]=lines;localStorage.setItem('lnOfflineLyrics',JSON.stringify(lyricCache));renderLyrics(lines);}else renderLyrics([]);}).catch(function(){renderLyrics([]);});}
   function poll() { if (LM && $('tab-offline') && !$('tab-offline').classList.contains('hidden')) LM.getState().then(updatePlayer).catch(function () {}); }
   function bind() {
     var scanBtn = $('ln-offline-scan'); if (scanBtn) scanBtn.addEventListener('click', scan);
     var allBtn = $('ln-offline-playall'); if (allBtn) allBtn.addEventListener('click', function () { if (view.length) playIndex(0); else scan(); });
     var search = $('ln-offline-search'); if (search) search.addEventListener('input', filter);
+    var cats = document.querySelectorAll('[data-ln-category]'); Array.prototype.forEach.call(cats,function(btn){btn.addEventListener('click',function(){category=btn.getAttribute('data-ln-category');Array.prototype.forEach.call(cats,function(b){b.classList.toggle('is-active',b===btn);});filter();});});
+    var lrc = $('ln-offline-lrc-file'); if(lrc) lrc.addEventListener('change',function(ev){var file=ev.target.files&&ev.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(){var key=lyricKey(state.title||file.name.replace(/\\.lrc$/i,''),state.artist||'');lyricCache[key]=parseLrc(String(reader.result||''));localStorage.setItem('lnOfflineLyrics',JSON.stringify(lyricCache));renderLyrics(lyricCache[key]);setStatus('Lirik LRC berhasil disimpan di perangkat.','success');};reader.readAsText(file);});
     var list = $('ln-offline-list'); if (list) list.addEventListener('scroll', function () { if (this.scrollTop + this.clientHeight >= this.scrollHeight - 180) renderMore(); });
     var toggle = $('ln-offline-toggle'); if (toggle) toggle.addEventListener('click', function () { if (!LM) return; if (state.active) LM.toggle(); else if (view.length) playIndex(0); });
     var prev = $('ln-offline-prev'); if (prev) prev.addEventListener('click', function () { if (LM) LM.prev(); });
