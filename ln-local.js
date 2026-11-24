@@ -2,8 +2,14 @@
    Memindai koleksi musik internal + SD Card tanpa menyalin file audio ke IndexedDB/aplikasi. */
 (function () {
   'use strict';
-  var C = window.Capacitor;
-  var native = !!(C && ((C.isNativePlatform && C.isNativePlatform()) || (C.getPlatform && C.getPlatform() !== 'web')));
+  var C = window.Capacitor || null;
+  function isNativeCapacitor() {
+    if (!C) return false;
+    try { if (typeof C.isNativePlatform === 'function' && C.isNativePlatform()) return true; } catch (e) {}
+    try { if (typeof C.getPlatform === 'function' && C.getPlatform() !== 'web') return true; } catch (e) {}
+    return !!(C.Plugins && C.Plugins.LocalMusic);
+  }
+  var native = isNativeCapacitor();
   var $ = function (id) { return document.getElementById(id); };
   var LM = null, BP = null;
   var lib = [], view = [], state = {}, scanned = false, busy = false, dragging = false;
@@ -57,7 +63,17 @@
     try { if (typeof htmlAudio !== 'undefined' && htmlAudio) htmlAudio.pause(); } catch (e) {}
   }
   function scan() {
-    if (!native || !LM || busy) return;
+    if (busy) return;
+    if (!native) {
+      setStatus(/Android/i.test(navigator.userAgent || '')
+        ? 'Jembatan Capacitor Android belum termuat. Tutup LNMusic sepenuhnya, buka lagi, lalu coba pindai.'
+        : 'Pemindaian penyimpanan perangkat hanya tersedia di aplikasi LNMusic Android.', 'error');
+      return;
+    }
+    if (!LM) {
+      setStatus('Plugin LocalMusic belum terhubung ke APK. Periksa registrasi plugin Android dan build APK.', 'error');
+      return;
+    }
     busy = true;
     var btn = $('ln-offline-scan'); if (btn) { btn.disabled = true; btn.textContent = 'Memindai…'; }
     setStatus('Memindai penyimpanan internal dan SD Card…', 'loading');
@@ -116,11 +132,17 @@
     var seek = $('ln-offline-seek'); if (seek) { seek.addEventListener('input', function () { dragging = true; if ($('ln-offline-position')) $('ln-offline-position').textContent = fmt(this.value); }); seek.addEventListener('change', function () { dragging = false; if (LM) LM.seek({ ms: Number(this.value) || 0 }); }); }
   }
   function openTab() { if (!scanned && !busy) scan(); poll(); }
+  function getPlugin(name) {
+    try { if (C && C.Plugins && C.Plugins[name]) return C.Plugins[name]; } catch (e) {}
+    try { if (C && typeof C.registerPlugin === 'function') return C.registerPlugin(name); } catch (e) {}
+    return null;
+  }
   function initNative() {
-    try { LM = (C.Plugins && C.Plugins.LocalMusic) || C.registerPlugin('LocalMusic'); } catch (e) {}
-    try { BP = (C.Plugins && C.Plugins.BackgroundPlay) || C.registerPlugin('BackgroundPlay'); } catch (e) {}
+    LM = getPlugin('LocalMusic');
+    BP = getPlugin('BackgroundPlay');
     bind();
-    if (!LM) { setStatus('Pemindai native belum tersedia. Pastikan APK dibangun dengan LocalMusicPlugin.', 'error'); return; }
+    window.lnLocalMusicDiagnostics = { capacitor: !!C, native: native, localMusicPlugin: !!LM, backgroundPlugin: !!BP, platform: (C && C.getPlatform ? C.getPlatform() : 'unknown') };
+    if (!LM) { setStatus('Capacitor aktif, tetapi plugin LocalMusic belum terdaftar di APK. Build APK perlu diperiksa.', 'error'); return; }
     try { LM.addListener('state', updatePlayer); } catch (e) {}
     var orig = window.switchTab;
     if (typeof orig === 'function' && !orig.__lnOfflineHook) {
@@ -134,9 +156,9 @@
   }
   function initWebFallback() {
     bind();
-    setStatus('Pemindaian seluruh penyimpanan tersedia di aplikasi Android LNMusic.', '');
-    var btn = $('ln-offline-scan'); if (btn) btn.addEventListener('click', function () { setStatus('Buka LNMusic versi APK Android untuk memindai memori internal dan SD Card.', ''); });
-    var all = $('ln-offline-playall'); if (all) all.addEventListener('click', function () { setStatus('Pemutar koleksi perangkat tersedia di aplikasi Android LNMusic.', ''); });
+    window.lnLocalMusicDiagnostics = { capacitor: !!C, native: false, localMusicPlugin: false, platform: (C && C.getPlatform ? C.getPlatform() : 'unavailable') };
+    setStatus('Mode browser terdeteksi. Jika ini APK Android, tutup aplikasi sepenuhnya lalu buka kembali agar jembatan Capacitor dimuat.', '');
+    var all = $('ln-offline-playall'); if (all) all.addEventListener('click', function () { if (view.length) playIndex(0); else scan(); });
   }
   function init() { if (native) initNative(); else initWebFallback(); }
   window.lnScanLocalMusic = scan;

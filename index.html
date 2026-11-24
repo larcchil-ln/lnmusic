@@ -6003,8 +6003,19 @@
   <script src="./ln-game.js"></script>
   <script src="./ln-desktop.js"></script>
   <script src="./ln-trending.js"></script>
+  <!-- Capacitor bridge loader: halaman LNMusic di-host remote (server.url),
+       jadi bridge lokal APK perlu dimuat eksplisit dari Capacitor local server. -->
+  <script>
+  (function () {
+    var ua = navigator.userAgent || '';
+    var androidWebView = /Android/i.test(ua) && (/\bwv\b/i.test(ua) || /Version\/4\.0.*Chrome/i.test(ua));
+    if (androidWebView && !window.Capacitor) {
+      document.write('<script src="https://localhost/capacitor.js"><\/script>');
+    }
+  })();
+  </script>
   <script src="./ln-native.js"></script>
-  <script src="./ln-local.js"></script>
+  <script src="./ln-local.js?v=bridge3"></script>
 <script>
 /* Hapus tombol emoji 📷 / 🎤 lama di bar chat (disuntik skrip eksternal) supaya kolom teks lebih lega */
 (function () {
