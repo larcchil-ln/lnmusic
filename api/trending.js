@@ -82,7 +82,7 @@ async function fromDataApi(region) {
 module.exports = async function handler(req, res) {
   const q = String((req.query && req.query.region) || 'ID').toUpperCase();
   const region = /^[A-Z]{2}$/.test(q) ? q : 'ID';
-  res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
+  res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=120'); // segar tiap 10 menit
   for (const [source, fn] of [['apple-music', fromApple], ['ytmusic', fromYTMusic], ['youtube-music-category', fromDataApi]]) {
     try { return res.status(200).json({ source, region, items: await fn(region) }); } catch (e) {}
   }
