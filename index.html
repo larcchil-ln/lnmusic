@@ -1151,7 +1151,7 @@
         </button>
         <div class="text-center">
           <span class="text-[10px] uppercase tracking-[0.2em] text-rose-300 font-bold block">Sedang Diputar di LNMusic</span>
-          <span id="fs-context-label" class="text-xs text-zinc-300 font-medium">Create by X</span>
+          <span id="fs-context-label" class="text-xs text-zinc-300 font-medium">Create by Oel</span>
         </div>
         <button onclick="openAddToPlaylistModal(currentTrack)" class="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-rose-400 transition" title="Simpan ke Playlist">
           <i data-lucide="heart-plus" class="w-5 h-5"></i>
@@ -1474,7 +1474,6 @@
         <p id="install-hint" class="text-[11px] text-zinc-400 leading-relaxed"></p>
         <button id="install-btn" onclick="installApp()" class="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-semibold text-white">Pasang LNMusic</button>
       </div>
-      <button onclick="closeModals();LNExtras.openConfigModal()" class="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-semibold text-white">Atur Ultah &amp; Cloud</button>
       <div class="flex justify-end gap-2 pt-2">
         <button onclick="closeModals()" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-semibold text-white">Tutup</button>
       </div>
@@ -1492,7 +1491,7 @@
   <div id="splash" class="fixed inset-0 z-[100] bg-zinc-950 flex flex-col items-center justify-center gap-4 p-6 text-center">
     <img id="splash-logo" data-ln-logo alt="LNMusic" class="w-24 h-24 rounded-3xl border border-white/15 shadow-2xl" />
     <h1 class="text-2xl font-extrabold">LNMusic</h1>
-    <p class="text-xs text-zinc-400 max-w-xs">Create by X For N</p>
+    <p class="text-xs text-zinc-400 max-w-xs">Create by Oel</p>
     <button onclick="enterFullscreen()" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-violet-600 text-sm font-bold text-white shadow-lg shadow-rose-600/30">Mulai • Layar Penuh</button>
     <p id="splash-hint" class="text-[11px] text-zinc-500 max-w-xs"></p>
   </div>
@@ -4146,7 +4145,7 @@
     const playTop = i => playTrackFromList(topList(), i, true);
     async function fetchChart(region, q) {
       try {
-        const d = await (await fetch(`/api/trending?region=${region}`)).json();
+        const d = await (await fetch(`/api/trending?region=${region}&b=${Math.floor(Date.now() / 6e5)}`)).json(); // b = jendela 10 menit supaya cache edge tidak basi
         if (d.items?.length) return d.items;
       } catch (e) {}
       try {
@@ -4157,11 +4156,13 @@
       const seen = new Set(); return rs.flat().filter(t => t && t.id && !seen.has(t.id) && seen.add(t.id)).slice(0, 50);
     }
     async function loadTop50() {
-      try { const c = JSON.parse(localStorage.getItem('lnmusic_top50v3') || 'null'); if (c && Date.now() - c.t < 30 * 60e3 && c.d.id.length) { top50 = c.d; return renderShelves(); } } catch (e) {}
+      try { const c = JSON.parse(localStorage.getItem('lnmusic_top50v3') || 'null'); if (c && Date.now() - c.t < 10 * 60e3 && c.d.id.length) { top50 = c.d; return renderShelves(); } } catch (e) {}
       const [a, b] = await Promise.all([fetchChart('ID', 'lagu trending indonesia'), fetchChart('US', 'global trending songs')]);
       top50 = { id: a, west: b }; renderShelves();
       if (a.length) { try { localStorage.setItem('lnmusic_top50v3', JSON.stringify({ t: Date.now(), d: top50 })); } catch (e) {} }
     }
+    // kembali ke aplikasi setelah >10 menit: ambil tangga lagu terbaru lagi
+    document.addEventListener('visibilitychange', () => { if (document.hidden) return; try { const c = JSON.parse(localStorage.getItem('lnmusic_top50v3') || 'null'); if (!c || Date.now() - c.t >= 10 * 60e3) loadTop50(); } catch (e) {} });
     // Rak horizontal: tombol panah kiri/kanan + tarik dengan mouse (khusus desktop)
     function enhanceHScroll(root) {
       (root || document).querySelectorAll('.hscroll:not([data-hs])').forEach(el => {
