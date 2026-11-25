@@ -2244,6 +2244,7 @@
     }
 
     function playNext() {
+      if (!queue.length && roomQueue.length) { const n = roomQueue[0]; playTrack(n, false); return queueRemove(n.qid); }
       if (!queue.length) return;
       currentIndex = isShuffle ? Math.floor(Math.random() * queue.length) : (currentIndex + 1) % queue.length;
       playTrack(queue[currentIndex], false);
@@ -2339,6 +2340,15 @@
     let myDisplayName = 'Leo';
     let currentRoomCode = '';
     let isRemoteAction = false;
+    // FIX SYNC: beberapa setTimeout yang saling menimpa membuat flag ini ke-reset terlalu cepat
+    // sehingga event pemutar penerima ter-"echo" balik ke pengirim. Sekarang pakai satu timer.
+    let _remoteTimer = null, _remoteUntil = 0, trackSwitchUntil = 0, deferredState = null;
+    function holdRemote(ms) {
+      isRemoteAction = true;
+      _remoteUntil = Math.max(_remoteUntil, Date.now() + ms);
+      clearTimeout(_remoteTimer);
+      _remoteTimer = setTimeout(() => { isRemoteAction = false; _remoteUntil = 0; }, Math.max(0, _remoteUntil - Date.now()));
+    }
     let pendingRoomSync = null;
     let roomPlaying = null, lastRevert = 0; // keadaan play/pause terakhir dari room (untuk tamu tanpa izin)
 
@@ -2673,7 +2683,7 @@
 
     function applyRemoteTrack(track, time, playing, at) {
       whenYtReady(() => {
-        isRemoteAction = true;
+        holdRemote(3500);
         roomPlaying = playing !== false;
         playTrack({ ...track }, false);
         trackAt = at || Date.now();
@@ -2682,7 +2692,7 @@
             ytPlayer.seekTo(time || 0, true);
             if (playing === false) { ytPlayer.pauseVideo(); setPlayingUI(false); }
           } catch (e) {}
-          setTimeout(() => { isRemoteAction = false; saveRoomState(); }, 600);
+          holdRemote(800); setTimeout(saveRoomState, 900);
         }, 1200);
       });
     }
@@ -2698,15 +2708,25 @@
 
       if (data.type === 'SYNC_TRACK') {
         if (!data.track || data.track.type !== 'youtube' || !/^[\w-]{11}$/.test(String(data.track.id || ''))) return;
-        isRemoteAction = true;
+        holdRemote(3500);
+        trackSwitchUntil = Date.now() + 3300;
         roomPlaying = data.playing !== false;
+        // FIX UTAMA: ikut antrean/urutan pengirim supaya Next/Prev & lagu berikutnya jalan di kedua sisi
+        if (Array.isArray(data.list) && data.list.length) {
+          const l = data.list.filter(t => t && t.type === 'youtube' && /^[\w-]{11}$/.test(String(t.id)));
+          const ix = l.findIndex(t => t.id === data.track.id);
+          if (ix >= 0) { queue = l; currentIndex = ix; }
+        } else {
+          const ix = queue.findIndex(t => t.id === data.track.id);
+          if (ix >= 0) currentIndex = ix;
+        }
         playTrack(data.track, false);
         if (data.at) trackAt = data.at;
         // Tunggu IFrame menerima video baru sebelum seek/play; Android WebView
         // sering membutuhkan waktu lebih lama daripada browser desktop.
         setTimeout(() => {
           try {
-            if (!ytReady || !ytPlayer) { pendingRoomSync = data; isRemoteAction = false; return; }
+            if (!ytReady || !ytPlayer) { pendingRoomSync = data; return; }
             ytPlayer.seekTo(Math.max(0, Number(data.time) || 0), true);
             if (data.playing === false) {
               ytPlayer.pauseVideo();
@@ -2718,7 +2738,9 @@
           } catch (e) {
             pendingRoomSync = data;
           }
-          setTimeout(() => { isRemoteAction = false; }, 900);
+          holdRemote(900);
+          trackSwitchUntil = 0;
+          if (deferredState) { const d = deferredState; deferredState = null; if (!d.vid || d.vid === data.track.id) applyIncomingRoomSync(d); }
         }, 1600);
         appendSystemChat(`🎵 Memutar bersama: ${data.track.title || 'YouTube'}`);
         return;
@@ -2729,7 +2751,9 @@
         pendingRoomSync = data;
         return;
       }
-      isRemoteAction = true;
+      if (data.vid && currentTrack.id !== data.vid) return; // perintah untuk video lain, tunggu SYNC_TRACK
+      if (Date.now() < trackSwitchUntil) { deferredState = data; return; }
+      holdRemote(900);
       try {
         if (data.action === 'PLAY') {
           if (Math.abs(ytPlayer.getCurrentTime() - data.time) > 1.8) ytPlayer.seekTo(data.time, true);
@@ -2747,7 +2771,6 @@
       } catch (e) {
         pendingRoomSync = data;
       }
-      setTimeout(() => { isRemoteAction = false; }, 900);
     }
 
     function restoreRoomState() {
@@ -2844,10 +2867,9 @@
       if (canPlayControl() || roomPlaying === null || roomPlaying === playingNow) return false;
       if (Date.now() - lastRevert < 1500) return true;
       lastRevert = Date.now();
-      isRemoteAction = true;
+      holdRemote(900);
       try { roomPlaying ? ytPlayer.playVideo() : ytPlayer.pauseVideo(); } catch (e) {}
       setPlayingUI(!!roomPlaying);
-      setTimeout(() => { isRemoteAction = false; }, 900);
       guardPlayCtl();
       return true;
     }
@@ -3249,7 +3271,7 @@
         }
         if (voiceOn) callPeer(conn.peer);
         if (isHost && isPlaying && currentTrack && currentTrack.type === 'youtube') {
-          conn.send({ type: 'SYNC_TRACK', track: slimTrack(currentTrack), time: curTime(), playing: true, at: trackAt });
+          conn.send({ type: 'SYNC_TRACK', track: slimTrack(currentTrack), time: curTime(), playing: true, at: trackAt, list: queue.filter(t => t && t.type === 'youtube').slice(0, 60).map(slimTrack), idx: currentIndex });
         }
       });
       conn.on('data', (data) => { conn._last = Date.now(); handleIncomingSyncData(data, conn); });
@@ -3425,8 +3447,9 @@
       if (!canPlayControl()) return; // tamu tanpa izin tidak mengirim perintah putar
       if (action === 'PLAY' || action === 'TRACK') roomPlaying = true; else if (action === 'PAUSE') roomPlaying = false;
       const payload = action === 'TRACK'
-        ? { type: 'SYNC_TRACK', track: slimTrack(track), time, playing: true, at: trackAt }
-        : { type: 'SYNC_STATE', action, time };
+        ? { type: 'SYNC_TRACK', track: slimTrack(track), time, playing: true, at: trackAt,
+            list: queue.filter(t => t && t.type === 'youtube').slice(0, 60).map(slimTrack), idx: currentIndex }
+        : { type: 'SYNC_STATE', action, time, vid: currentTrack && currentTrack.id };
       connections.forEach(c => { if (c.open) c.send(payload); });
     }
 
