@@ -2166,9 +2166,12 @@
       }
 
       htmlAudio.pause();
-      if (ytReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
 
       if (track.type === 'offline') {
+        // Hentikan YouTube hanya saat benar-benar berpindah ke file offline.
+        // Jangan stopVideo() sebelum loadVideoById() untuk track YouTube:
+        // pada beberapa WebView event stop lama dapat beradu dengan pemuatan track baru.
+        if (ytReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
         let blob = track.blob;
         if (!blob) {
           const found = offlineTracks.find(o => o.id === track.id);
@@ -2717,17 +2720,11 @@
         // Perbarui metadata/UI seperti pemutaran lokal, lalu paksa IFrame
         // menerima ID target secara eksplisit. Pada sebagian WebView, urutan
         // stopVideo() -> loadVideoById() dari playTrack bisa meninggalkan video lama.
+        // playTrack memuat ID YouTube tepat satu kali. Hindari loadVideoById
+        // kedua secara langsung karena dua perintah berurutan dapat saling
+        // membatalkan pada sebagian Android WebView.
         playTrack({ ...track }, false);
         if (data.at) trackAt = Number(data.at) || Date.now();
-        try {
-          ytPlayer.loadVideoById({
-            videoId: targetId,
-            startSeconds: targetTime,
-            suggestedQuality: 'hd1080'
-          });
-        } catch (e) {
-          console.warn('Gagal memuat video room, mencoba ulang:', e);
-        }
 
         let attempts = 0;
         const finishTrackSync = () => {
