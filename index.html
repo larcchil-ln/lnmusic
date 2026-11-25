@@ -2192,21 +2192,22 @@
         }
       }
 
-      if (autoOpenFull) openFullscreenPlayer();
-      updateMediaSession(track);
-      updateVocalUI();
-      if (fsVisualMode === 'lyrics') loadLyrics(track);
-      startProgressTracker();
-      renderOnlineTracks();
-      renderOfflineTracks();
-      renderFullscreenQueue();
-
+      // FIX SYNC: kirim ke room DULU, sebelum update UI. Error di fungsi UI tidak boleh lagi memutus sinkron.
       if (!isRemoteAction && track.type === 'youtube') {
-        saveRoomState();
+        try { saveRoomState(); } catch (e) { lnSyncLog('ERR', 'saveRoomState: ' + (e && e.message)); }
         broadcastSync('TRACK', 0, track);
       } else if (track.type === 'youtube') {
         lnSyncLog('INFO', 'playTrack ' + track.id + ' TIDAK dibroadcast (isRemoteAction=' + isRemoteAction + ')');
       }
+      const uiStep = (name, fn) => { try { fn(); } catch (e) { lnSyncLog('ERR', 'playTrack/' + name + ': ' + (e && e.message)); console.error('playTrack/' + name, e); } };
+      if (autoOpenFull) uiStep('openFullscreenPlayer', openFullscreenPlayer);
+      uiStep('updateMediaSession', () => updateMediaSession(track));
+      uiStep('updateVocalUI', updateVocalUI);
+      if (fsVisualMode === 'lyrics') uiStep('loadLyrics', () => loadLyrics(track));
+      uiStep('startProgressTracker', startProgressTracker);
+      uiStep('renderOnlineTracks', renderOnlineTracks);
+      uiStep('renderOfflineTracks', renderOfflineTracks);
+      uiStep('renderFullscreenQueue', renderFullscreenQueue);
     }
 
     function togglePlay() {
@@ -2646,7 +2647,7 @@
     const netTrack = t => ({ id: t.id, title: String(t.title || '').slice(0, 80), artist: String(t.artist || '').slice(0, 40), type: t.type, isVideo: !!t.isVideo });
     const netList = () => queue.filter(t => t && t.type === 'youtube').slice(0, 20).map(netTrack);
     // ===== DEBUG SINKRON (sementara). Ubah LN_SYNC_DEBUG ke false untuk menyembunyikan panel =====
-    var LN_BUILD = 'sync-debug-1', LN_SYNC_DEBUG = true, lnSyncLogs = [], lnSyncPanel = null, lnSyncBtn = null;
+    var LN_BUILD = 'sync-debug-2', LN_SYNC_DEBUG = true, lnSyncLogs = [], lnSyncPanel = null, lnSyncBtn = null;
     function lnSyncLog(dir, msg) {
       if (!LN_SYNC_DEBUG) return;
       try {
@@ -2665,6 +2666,8 @@
         if (lnSyncPanel.style.display !== 'none') lnSyncRender();
       } catch (e) {}
     }
+    window.addEventListener('error', function (e) { try { lnSyncLog('JS-ERR', (e.message || 'error') + ' @ ' + String(e.filename || '').split('/').pop() + ':' + (e.lineno || 0)); } catch (x) {} });
+    window.addEventListener('unhandledrejection', function (e) { try { lnSyncLog('JS-ERR', 'promise: ' + String((e.reason && (e.reason.message || e.reason)) || '').slice(0, 120)); } catch (x) {} });
     function lnSyncRender() {
       try {
         const open = connections.filter(c => c.open).length;
@@ -5904,8 +5907,11 @@
     }
 
     function renderOfflineTracks() {
-      document.getElementById('offline-count').textContent = offlineTracks.length;
+      // FIX SYNC: elemen lama ini sudah diganti redesign tab Offline (ln-offline-*). Dulu null.textContent melempar error
+      // di tengah playTrack() sehingga SYNC_TRACK tidak pernah terkirim ke room.
+      const oc = document.getElementById('offline-count'); if (oc) oc.textContent = offlineTracks.length;
       const list = document.getElementById('offline-tracks-list');
+      if (!list) return;
       if (!offlineTracks.length) {
         list.innerHTML = `<p class="text-center text-xs text-zinc-500 py-8">Belum ada lagu offline. Upload file MP3 di atas agar bisa didengarkan tanpa kuota!</p>`;
         return;
