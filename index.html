@@ -2695,20 +2695,25 @@
     function applyIncomingRoomSync(data) {
       if (!data || !['SYNC_TRACK', 'SYNC_STATE'].includes(data.type)) return;
       if (!ytReady || !ytPlayer) {
+        // Simpan hanya perintah terbaru agar track lama tidak menimpa pilihan terbaru.
         pendingRoomSync = data;
         return;
       }
 
       if (data.type === 'SYNC_TRACK') {
         const track = data.track;
-        if (!track || track.type !== 'youtube' || !/^[\w-]{11}$/.test(String(track.id || ''))) return;
+        if (!track || track.type !== 'youtube' || !/^[\\w-]{11}$/.test(String(track.id || ''))) return;
 
         const token = ++roomSyncToken;
         const targetId = String(track.id);
         const targetTime = Math.max(0, Number(data.time) || 0);
         const shouldPlay = data.playing !== false;
+
+        // Tandai sebagai aksi remote sebelum memuat video supaya event PLAY/PAUSE
+        // dari YouTube tidak memantul kembali menjadi perintah baru ke room.
         isRemoteAction = true;
         roomPlaying = shouldPlay;
+        pendingRoomSync = null;
         playTrack({ ...track }, false);
         if (data.at) trackAt = Number(data.at) || Date.now();
 
@@ -2720,22 +2725,27 @@
             isRemoteAction = false;
             return;
           }
+
           let loadedId = '';
           try {
             const videoData = ytPlayer.getVideoData && ytPlayer.getVideoData();
             loadedId = videoData && videoData.video_id ? String(videoData.video_id) : '';
           } catch (_) {}
-          if (loadedId !== targetId && attempts++ < 24) {
+
+          // IFrame API kadang masih melaporkan ID video sebelumnya saat buffering.
+          // Tunggu lebih lama; jangan menyerah setelah 6 detik pada koneksi lambat.
+          if (loadedId !== targetId && attempts++ < 120) {
             setTimeout(finishTrackSync, 250);
             return;
           }
           if (loadedId !== targetId) {
-            pendingRoomSync = data;
             isRemoteAction = false;
+            showToast('Video pasangan belum berhasil dimuat. Coba kirim ulang dari perangkat pemutar.');
             return;
           }
+
           try {
-            ytPlayer.seekTo(targetTime, true);
+            if (targetTime > 0.5) ytPlayer.seekTo(targetTime, true);
             if (shouldPlay) {
               ytPlayer.playVideo();
               setPlayingUI(true);
@@ -2743,14 +2753,17 @@
               ytPlayer.pauseVideo();
               setPlayingUI(false);
             }
+            roomPlaying = shouldPlay;
           } catch (e) {
-            pendingRoomSync = data;
+            console.warn('Gagal menerapkan track room:', e);
           }
           setTimeout(() => {
             if (token === roomSyncToken) isRemoteAction = false;
-          }, 1800);
+          }, 2200);
         };
-        setTimeout(finishTrackSync, 250);
+
+        // Beri waktu IFrame untuk memproses loadVideoById sebelum memeriksa ID.
+        setTimeout(finishTrackSync, 400);
         appendSystemChat(`🎵 Memutar bersama: ${track.title || 'YouTube'}`);
         return;
       }
