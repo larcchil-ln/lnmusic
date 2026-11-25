@@ -69,5 +69,3 @@ window.addEventListener('DOMContentLoaded', () => {
     // Update Ikon Lucide
     if (window.lucide) lucide.createIcons();
 });
-```
-
