@@ -2689,6 +2689,9 @@
 
     // Terapkan perintah room setelah YouTube IFrame siap. Di Android WebView,
     // event room bisa tiba lebih cepat daripada player selesai dibuat/dimuat.
+    // Sinkronisasi YouTube room: tunggu sampai IFrame benar-benar memuat video
+    // sebelum seek/play. Ini menghindari race condition yang sering muncul di Android WebView.
+    let roomSyncToken = 0;
     function applyIncomingRoomSync(data) {
       if (!data || !['SYNC_TRACK', 'SYNC_STATE'].includes(data.type)) return;
       if (!ytReady || !ytPlayer) {
@@ -2697,57 +2700,90 @@
       }
 
       if (data.type === 'SYNC_TRACK') {
-        if (!data.track || data.track.type !== 'youtube' || !/^[\w-]{11}$/.test(String(data.track.id || ''))) return;
+        const track = data.track;
+        if (!track || track.type !== 'youtube' || !/^[\\w-]{11}$/.test(String(track.id || ''))) return;
+
+        const token = ++roomSyncToken;
+        const targetId = String(track.id);
+        const targetTime = Math.max(0, Number(data.time) || 0);
+        const shouldPlay = data.playing !== false;
         isRemoteAction = true;
-        roomPlaying = data.playing !== false;
-        playTrack(data.track, false);
-        if (data.at) trackAt = data.at;
-        // Tunggu IFrame menerima video baru sebelum seek/play; Android WebView
-        // sering membutuhkan waktu lebih lama daripada browser desktop.
-        setTimeout(() => {
+        roomPlaying = shouldPlay;
+        playTrack({ ...track }, false);
+        if (data.at) trackAt = Number(data.at) || Date.now();
+
+        let attempts = 0;
+        const finishTrackSync = () => {
+          if (token !== roomSyncToken) return;
+          if (!ytReady || !ytPlayer) {
+            pendingRoomSync = data;
+            isRemoteAction = false;
+            return;
+          }
+          let loadedId = '';
           try {
-            if (!ytReady || !ytPlayer) { pendingRoomSync = data; isRemoteAction = false; return; }
-            ytPlayer.seekTo(Math.max(0, Number(data.time) || 0), true);
-            if (data.playing === false) {
-              ytPlayer.pauseVideo();
-              setPlayingUI(false);
-            } else {
+            const videoData = ytPlayer.getVideoData && ytPlayer.getVideoData();
+            loadedId = videoData && videoData.video_id ? String(videoData.video_id) : '';
+          } catch (_) {}
+          if (loadedId !== targetId && attempts++ < 24) {
+            setTimeout(finishTrackSync, 250);
+            return;
+          }
+          if (loadedId !== targetId) {
+            pendingRoomSync = data;
+            isRemoteAction = false;
+            return;
+          }
+          try {
+            ytPlayer.seekTo(targetTime, true);
+            if (shouldPlay) {
               ytPlayer.playVideo();
               setPlayingUI(true);
+            } else {
+              ytPlayer.pauseVideo();
+              setPlayingUI(false);
             }
           } catch (e) {
             pendingRoomSync = data;
           }
-          setTimeout(() => { isRemoteAction = false; }, 900);
-        }, 1600);
-        appendSystemChat(`🎵 Memutar bersama: ${data.track.title || 'YouTube'}`);
+          setTimeout(() => {
+            if (token === roomSyncToken) isRemoteAction = false;
+          }, 1800);
+        };
+        setTimeout(finishTrackSync, 250);
+        appendSystemChat(`🎵 Memutar bersama: ${track.title || 'YouTube'}`);
         return;
       }
 
-      if (!['PLAY', 'PAUSE', 'SEEK'].includes(data.action) || !Number.isFinite(+data.time)) return;
+      if (!['PLAY', 'PAUSE', 'SEEK'].includes(data.action) || !Number.isFinite(Number(data.time))) return;
       if (!currentTrack || currentTrack.type !== 'youtube') {
         pendingRoomSync = data;
         return;
       }
+      const token = ++roomSyncToken;
       isRemoteAction = true;
+      const targetTime = Math.max(0, Number(data.time) || 0);
       try {
         if (data.action === 'PLAY') {
-          if (Math.abs(ytPlayer.getCurrentTime() - data.time) > 1.8) ytPlayer.seekTo(data.time, true);
+          const currentTime = ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0;
+          if (Math.abs(currentTime - targetTime) > 1.25) ytPlayer.seekTo(targetTime, true);
           ytPlayer.playVideo();
           setPlayingUI(true);
           roomPlaying = true;
         } else if (data.action === 'PAUSE') {
-          ytPlayer.seekTo(data.time, true);
+          ytPlayer.seekTo(targetTime, true);
           ytPlayer.pauseVideo();
           setPlayingUI(false);
           roomPlaying = false;
         } else {
-          ytPlayer.seekTo(data.time, true);
+          ytPlayer.seekTo(targetTime, true);
         }
       } catch (e) {
         pendingRoomSync = data;
       }
-      setTimeout(() => { isRemoteAction = false; }, 900);
+      setTimeout(() => {
+        if (token === roomSyncToken) isRemoteAction = false;
+      }, 1400);
     }
 
     function restoreRoomState() {
@@ -3248,8 +3284,10 @@
           if (!(isHost && !isAdminPeer(conn.peer))) sendHistory(conn);
         }
         if (voiceOn) callPeer(conn.peer);
-        if (isHost && isPlaying && currentTrack && currentTrack.type === 'youtube') {
-          conn.send({ type: 'SYNC_TRACK', track: slimTrack(currentTrack), time: curTime(), playing: true, at: trackAt });
+        // Kirim snapshot track meskipun sedang pause agar anggota yang baru masuk
+        // tidak tertinggal sampai host menekan play lagi.
+        if (isHost && currentTrack && currentTrack.type === 'youtube') {
+          conn.send({ type: 'SYNC_TRACK', track: slimTrack(currentTrack), time: curTime(), playing: !!isPlaying, at: trackAt, sentAt: Date.now() });
         }
       });
       conn.on('data', (data) => { conn._last = Date.now(); handleIncomingSyncData(data, conn); });
@@ -3420,20 +3458,21 @@
       }
     }
 
-    function broadcastSync(action, time = 0, track = null) {
+    function broadcastSync(action, time = 0, track = null, playing = true) {
       if (!isRoomConnected || !connections.length) return;
       if (!canPlayControl()) return; // tamu tanpa izin tidak mengirim perintah putar
-      if (action === 'PLAY' || action === 'TRACK') roomPlaying = true; else if (action === 'PAUSE') roomPlaying = false;
+      if (action === 'PLAY' || (action === 'TRACK' && playing)) roomPlaying = true;
+      else if (action === 'PAUSE' || action === 'TRACK') roomPlaying = false;
       const payload = action === 'TRACK'
-        ? { type: 'SYNC_TRACK', track: slimTrack(track), time, playing: true, at: trackAt }
-        : { type: 'SYNC_STATE', action, time };
-      connections.forEach(c => { if (c.open) c.send(payload); });
+        ? { type: 'SYNC_TRACK', track: slimTrack(track), time: Math.max(0, Number(time) || 0), playing: !!playing, at: trackAt, sentAt: Date.now() }
+        : { type: 'SYNC_STATE', action, time: Math.max(0, Number(time) || 0), sentAt: Date.now() };
+      connections.forEach(c => { if (c.open) { try { c.send(payload); } catch (e) { console.warn('Gagal mengirim sinkronisasi room:', e); } } });
     }
 
     function forceSyncNow() {
       if (!currentTrack || currentTrack.type !== 'youtube') return showToast('Putar lagu/film YouTube dulu');
       const time = (ytReady && ytPlayer) ? ytPlayer.getCurrentTime() : 0;
-      broadcastSync('TRACK', time, currentTrack);
+      broadcastSync('TRACK', time, currentTrack, !!isPlaying);
       showToast('Posisi detik dikirim ke pasangan!');
     }
 
