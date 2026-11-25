@@ -2634,6 +2634,10 @@
     }
 
     const slimTrack = t => ({ id: t.id, title: t.title, artist: t.artist, thumb: t.thumb, type: t.type, isVideo: !!t.isVideo });
+    // FIX SYNC: payload ke peer dibuat kecil (koneksi pakai serialization 'json' yang tidak memecah pesan besar).
+    const netTrack = t => ({ id: t.id, title: String(t.title || '').slice(0, 80), artist: String(t.artist || '').slice(0, 40), type: t.type, isVideo: !!t.isVideo });
+    const netList = () => queue.filter(t => t && t.type === 'youtube').slice(0, 20).map(netTrack);
+    const fillThumb = t => (t && !t.thumb && t.id) ? Object.assign({}, t, { thumb: 'https://i.ytimg.com/vi/' + t.id + '/hqdefault.jpg' }) : t;
     const slimChat = () => chatLog.filter(m => !m.sys && !m.viewOnce && (m.kind || 'text') === 'text').slice(-200).map(m => ({
       id: m.id, ts: m.ts, sender: m.sender, text: m.text || '', kind: 'text'
     }));
@@ -2712,8 +2716,9 @@
         trackSwitchUntil = Date.now() + 3300;
         roomPlaying = data.playing !== false;
         // FIX UTAMA: ikut antrean/urutan pengirim supaya Next/Prev & lagu berikutnya jalan di kedua sisi
+        data.track = fillThumb(data.track);
         if (Array.isArray(data.list) && data.list.length) {
-          const l = data.list.filter(t => t && t.type === 'youtube' && /^[\w-]{11}$/.test(String(t.id)));
+          const l = data.list.filter(t => t && t.type === 'youtube' && /^[\w-]{11}$/.test(String(t.id))).map(fillThumb);
           const ix = l.findIndex(t => t.id === data.track.id);
           if (ix >= 0) { queue = l; currentIndex = ix; }
         } else {
@@ -3271,7 +3276,7 @@
         }
         if (voiceOn) callPeer(conn.peer);
         if (isHost && isPlaying && currentTrack && currentTrack.type === 'youtube') {
-          conn.send({ type: 'SYNC_TRACK', track: slimTrack(currentTrack), time: curTime(), playing: true, at: trackAt, list: queue.filter(t => t && t.type === 'youtube').slice(0, 60).map(slimTrack), idx: currentIndex });
+          try { conn.send({ type: 'SYNC_TRACK', track: netTrack(currentTrack), time: curTime(), playing: true, at: trackAt, list: netList(), idx: currentIndex }); } catch (e) { console.warn('LN sync join gagal:', e); }
         }
       });
       conn.on('data', (data) => { conn._last = Date.now(); handleIncomingSyncData(data, conn); });
@@ -3447,10 +3452,10 @@
       if (!canPlayControl()) return; // tamu tanpa izin tidak mengirim perintah putar
       if (action === 'PLAY' || action === 'TRACK') roomPlaying = true; else if (action === 'PAUSE') roomPlaying = false;
       const payload = action === 'TRACK'
-        ? { type: 'SYNC_TRACK', track: slimTrack(track), time, playing: true, at: trackAt,
-            list: queue.filter(t => t && t.type === 'youtube').slice(0, 60).map(slimTrack), idx: currentIndex }
+        ? { type: 'SYNC_TRACK', track: netTrack(track), time, playing: true, at: trackAt,
+            list: netList(), idx: currentIndex }
         : { type: 'SYNC_STATE', action, time, vid: currentTrack && currentTrack.id };
-      connections.forEach(c => { if (c.open) c.send(payload); });
+      connections.forEach(c => { if (c.open) { try { c.send(payload); } catch (e) { console.warn('LN sync send gagal:', action, e); } } });
     }
 
     function forceSyncNow() {
