@@ -2417,14 +2417,19 @@
     }
     async function getIceServers() {
       if (iceCache && Date.now() < iceCache.exp) return iceCache.list;
-      let list = BASE_ICE.slice(), ok = false;
-      for (let i = 0; i < 2 && !ok; i++) {
-        try { const j = await fetchTurn(); list = j.concat(BASE_ICE); ok = true; iceInfo = { src: 'cloudflare', msg: j.length + ' entri' }; }
-        catch (e) { iceInfo = { src: 'cadangan', msg: e.message || String(e) }; console.warn('Gagal ambil TURN', e); }
-      }
-      // kegagalan tidak disimpan lama supaya dicoba lagi di sesi berikutnya
-      iceCache = { list, exp: Date.now() + (ok ? 20 * 60e3 : 30e3) };
-      return list;
+      // FIX LOGIN: ambil TURN di latar, tapi masuk room jangan menunggu lebih dari 6 detik (pakai STUN cadangan dulu).
+      const full = (async () => {
+        let list = BASE_ICE.slice(), ok = false;
+        for (let i = 0; i < 2 && !ok; i++) {
+          try { const j = await fetchTurn(); list = j.concat(BASE_ICE); ok = true; iceInfo = { src: 'cloudflare', msg: j.length + ' entri' }; }
+          catch (e) { iceInfo = { src: 'cadangan', msg: e.message || String(e) }; console.warn('Gagal ambil TURN', e); }
+        }
+        // kegagalan tidak disimpan lama supaya dicoba lagi di sesi berikutnya
+        iceCache = { list, exp: Date.now() + (ok ? 20 * 60e3 : 30e3) };
+        return list;
+      })();
+      const got = await Promise.race([full, new Promise(r => setTimeout(() => r(null), 6000))]);
+      return got || BASE_ICE.slice();
     }
 
     async function newPeer(id) {
@@ -2509,9 +2514,10 @@
     const dbPrivate = () => (session === 'nuki' || session === 'nana') && !!DBX.tok;
     async function dbHydrate() {
       if (!dbPrivate()) return;
+      const hydSession = session;
       const t = new Promise(r => setTimeout(() => r(null), 7000));
       const got = await Promise.race([Promise.all([DBX.get('chat'), DBX.get('state'), DBX.get('profile:' + session), DBX.get('playlists')]), t]);
-      if (!got) return;
+      if (!got || session !== hydSession) return;
       const [c, st, pr, pl] = got;
       if (c !== undefined) DBX.ready = true;
       if (pr) { myProfile = cleanProfile(pr); if (myProfile.name) myDisplayName = myProfile.name; }
@@ -2783,7 +2789,9 @@
       if (!st) return;
       roomQueue = Array.isArray(st.queue) ? st.queue : []; queueAt = st.queueAt || 0; trackAt = st.trackAt || 0;
       renderRoomSearch();
-      if (st.track && !currentTrack) applyRemoteTrack(st.track, st.time, false, st.trackAt);
+      // FIX LOGIN: video/lagu terakhir tidak diputar otomatis lagi saat login (ubah ke true kalau mau dipulihkan)
+      const LN_RESTORE_LAST_TRACK = false;
+      if (LN_RESTORE_LAST_TRACK && st.track && !currentTrack) applyRemoteTrack(st.track, st.time, false, st.trackAt);
     }
 
     function buildState() {
@@ -2849,7 +2857,8 @@
       profiles = {}; myProfile = { name: '', bio: '', avatar: '' };
       chatLog = []; if (u === 'guest' || u === 'custom') roomQueue = [];
       renderChat();
-      await dbHydrate();
+      // FIX LOGIN: jangan biarkan database yang lambat menahan masuk room (maks 2,5 detik; sisanya lanjut di latar)
+      await Promise.race([dbHydrate(), new Promise(r => setTimeout(r, 2500))]);
       if (session !== u) return; // sudah logout selama memuat
       clearInterval(stateTimer); stateTimer = setInterval(saveRoomState, 4000);
       startSession();
