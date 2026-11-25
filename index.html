@@ -1876,6 +1876,11 @@
             ytReady = true;
             ytPlayer.setVolume(document.getElementById('volume-bar').value);
             enforceHDAudioVideo();
+            if (pendingRoomSync) {
+              const pending = pendingRoomSync;
+              pendingRoomSync = null;
+              setTimeout(() => applyIncomingRoomSync(pending), 250);
+            }
           },
           onStateChange: (event) => {
             if (event.data === YT.PlayerState.BUFFERING || event.data === YT.PlayerState.PLAYING) {
@@ -2334,6 +2339,7 @@
     let myDisplayName = 'Leo';
     let currentRoomCode = '';
     let isRemoteAction = false;
+    let pendingRoomSync = null;
     let roomPlaying = null, lastRevert = 0; // keadaan play/pause terakhir dari room (untuk tamu tanpa izin)
 
     // TURN dari Cloudflare: kredensial sementara dibuat oleh fungsi /api/turn (token rahasia ada di Vercel)
@@ -2657,6 +2663,69 @@
           setTimeout(() => { isRemoteAction = false; saveRoomState(); }, 600);
         }, 1200);
       });
+    }
+
+    // Terapkan perintah room setelah YouTube IFrame siap. Di Android WebView,
+    // event room bisa tiba lebih cepat daripada player selesai dibuat/dimuat.
+    function applyIncomingRoomSync(data) {
+      if (!data || !['SYNC_TRACK', 'SYNC_STATE'].includes(data.type)) return;
+      if (!ytReady || !ytPlayer) {
+        pendingRoomSync = data;
+        return;
+      }
+
+      if (data.type === 'SYNC_TRACK') {
+        if (!data.track || data.track.type !== 'youtube' || !/^[\w-]{11}$/.test(String(data.track.id || ''))) return;
+        isRemoteAction = true;
+        roomPlaying = data.playing !== false;
+        playTrack(data.track, false);
+        if (data.at) trackAt = data.at;
+        // Tunggu IFrame menerima video baru sebelum seek/play; Android WebView
+        // sering membutuhkan waktu lebih lama daripada browser desktop.
+        setTimeout(() => {
+          try {
+            if (!ytReady || !ytPlayer) { pendingRoomSync = data; isRemoteAction = false; return; }
+            ytPlayer.seekTo(Math.max(0, Number(data.time) || 0), true);
+            if (data.playing === false) {
+              ytPlayer.pauseVideo();
+              setPlayingUI(false);
+            } else {
+              ytPlayer.playVideo();
+              setPlayingUI(true);
+            }
+          } catch (e) {
+            pendingRoomSync = data;
+          }
+          setTimeout(() => { isRemoteAction = false; }, 900);
+        }, 1600);
+        appendSystemChat(\`🎵 Memutar bersama: \${data.track.title || 'YouTube'}\`);
+        return;
+      }
+
+      if (!['PLAY', 'PAUSE', 'SEEK'].includes(data.action) || !Number.isFinite(+data.time)) return;
+      if (!currentTrack || currentTrack.type !== 'youtube') {
+        pendingRoomSync = data;
+        return;
+      }
+      isRemoteAction = true;
+      try {
+        if (data.action === 'PLAY') {
+          if (Math.abs(ytPlayer.getCurrentTime() - data.time) > 1.8) ytPlayer.seekTo(data.time, true);
+          ytPlayer.playVideo();
+          setPlayingUI(true);
+          roomPlaying = true;
+        } else if (data.action === 'PAUSE') {
+          ytPlayer.seekTo(data.time, true);
+          ytPlayer.pauseVideo();
+          setPlayingUI(false);
+          roomPlaying = false;
+        } else {
+          ytPlayer.seekTo(data.time, true);
+        }
+      } catch (e) {
+        pendingRoomSync = data;
+      }
+      setTimeout(() => { isRemoteAction = false; }, 900);
     }
 
     function restoreRoomState() {
@@ -3239,35 +3308,8 @@
         appendSystemChat(`✨ ${nm} bergabung ke room!`);
         showToast(`${nm} bergabung!`);
         renderSeats();
-      } else if (data.type === 'SYNC_TRACK') {
-        isRemoteAction = true;
-        roomPlaying = data.playing !== false;
-        playTrack(data.track, true);
-        if (data.at) trackAt = data.at;
-        setTimeout(() => {
-          if (ytReady && ytPlayer) {
-            ytPlayer.seekTo(data.time || 0, true);
-            if (data.playing === false) ytPlayer.pauseVideo();
-          }
-          isRemoteAction = false;
-        }, 1200);
-        appendSystemChat(`🎵 Memutar bersama: ${data.track.title}`);
-      } else if (data.type === 'SYNC_STATE') {
-        if (data.action === 'PLAY') roomPlaying = true; else if (data.action === 'PAUSE') roomPlaying = false;
-        if (!ytReady || !ytPlayer) return;
-        isRemoteAction = true;
-        if (data.action === 'PLAY') {
-          if (Math.abs(ytPlayer.getCurrentTime() - data.time) > 1.8) ytPlayer.seekTo(data.time, true);
-          ytPlayer.playVideo();
-          setPlayingUI(true);
-        } else if (data.action === 'PAUSE') {
-          ytPlayer.seekTo(data.time, true);
-          ytPlayer.pauseVideo();
-          setPlayingUI(false);
-        } else if (data.action === 'SEEK') {
-          ytPlayer.seekTo(data.time, true);
-        }
-        setTimeout(() => { isRemoteAction = false; }, 600);
+      } else if (data.type === 'SYNC_TRACK' || data.type === 'SYNC_STATE') {
+        applyIncomingRoomSync(data);
       } else if (data.type === 'NOTICE') {
         appendSystemChat(String(data.text || '').slice(0, 120));
       } else if (data.type === 'HISTORY') {
