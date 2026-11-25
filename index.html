@@ -2730,7 +2730,8 @@
       whenYtReady(() => {
         holdRemote(3500);
         roomPlaying = playing !== false;
-        playTrack({ ...track }, false);
+        const isNewTrack = !currentTrack || currentTrack.id !== track.id;
+        playTrack({ ...track }, isNewTrack && playing !== false && isRoomConnected);
         trackAt = at || Date.now();
         setTimeout(() => {
           try {
@@ -2767,7 +2768,9 @@
           const ix = queue.findIndex(t => t.id === data.track.id);
           if (ix >= 0) currentIndex = ix;
         }
-        playTrack(data.track, false);
+        // Lagu baru dari pasangan: buka pemutar supaya langsung terlihat apa yang diputar
+        const isNewTrack = !currentTrack || currentTrack.id !== data.track.id;
+        playTrack(data.track, isNewTrack && data.playing !== false);
         if (data.at) trackAt = data.at;
         // Tunggu IFrame menerima video baru sebelum seek/play; Android WebView
         // sering membutuhkan waktu lebih lama daripada browser desktop.
