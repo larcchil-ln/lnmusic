@@ -2357,7 +2357,7 @@
         (typeof cap.getPlatform === 'function' && cap.getPlatform() !== 'web')));
       const localApp = native || host === 'localhost' || host === '127.0.0.1' ||
         location.protocol === 'capacitor:' || location.protocol === 'file:';
-      return localApp ? 'https://lnmusic.web.id/api/turn' : new URL('/api/turn', location.href).href;
+      return localApp ? 'https://www.lnmusic.web.id/api/turn' : new URL('/api/turn', location.href).href;
     }
     async function fetchTurn() {
       const url = lnTurnApiUrl();
