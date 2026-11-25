@@ -796,6 +796,11 @@
 .ln-mobile-menu{display:none}
 @media(max-width:700px){.ln-library-shell{display:block}.ln-library-sidebar{display:none;position:fixed;z-index:90;left:10px;top:calc(10px + env(safe-area-inset-top));bottom:calc(10px + env(safe-area-inset-bottom));width:min(270px,82vw);min-height:0;overflow:auto;box-shadow:0 20px 70px #000b}.ln-library-sidebar.open{display:block}.ln-mobile-menu{display:grid;flex:none}.ln-library-toolbar{justify-content:flex-start;gap:10px}.ln-library-toolbar>div:nth-child(2){flex:1;min-width:0}.ln-library-toolbar h2{font-size:19px}.ln-toolbar-actions{flex:1;justify-content:flex-end}.ln-search-wrap{width:min(44vw,220px);height:38px}.ln-library-overview{gap:8px;padding:11px}.ln-library-overview>div b{font-size:18px}.ln-library-overview p{font-size:9px}.ln-primary-button{padding:9px;font-size:10px;white-space:nowrap}.ln-offline-list{max-height:calc(100dvh - 340px)}.ln-song{min-height:65px;padding:9px 12px!important}.ln-song-art{width:44px!important;height:44px!important;flex-basis:44px}.ln-offline-player{left:8px;right:8px;bottom:calc(78px + env(safe-area-inset-bottom))}}
 @media(min-width:701px){.ln-offline-player{left:250px;right:24px;bottom:18px;max-width:850px;margin:auto}}
+/* Fix: tampilkan mini player aktif; aturan lama display:none!important menutupnya. */
+#ln-offline-player.active{display:block!important;visibility:visible!important;opacity:1!important}
+/* Pastikan pemutar layar penuh tampil di atas seluruh antarmuka aplikasi. */
+#ln-now-playing.open{display:flex!important;visibility:visible!important;pointer-events:auto!important}
+#ln-offline-player .ln-player-art,#ln-now-playing .ln-np-cover{background-repeat:no-repeat!important;background-size:cover!important;background-position:center!important}
 </style>
 
 </head>
