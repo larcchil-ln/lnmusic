@@ -2279,13 +2279,16 @@
       nuki: { name: 'Nuki', partner: 'nana', hash: '969a8ff0c04cacdbf3b1571fda2369c022cd11b8f20cd75feda6895df99e6043', peerId: 'lnmusic-nuki-' + ID_SUFFIX },
       nana: { name: 'Nana', partner: 'nuki', hash: 'c4314da79256da8fe80faa6e33c7ffb7bb26869ffe46e93e85c4040bf7bd0c77', peerId: 'lnmusic-nana-' + ID_SUFFIX }
     };
+    // Native APK harus memakai domain produksi terbaru; web browser tetap memakai origin situsnya.
+    const LN_API_BASE = (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ? 'https://lnmusic.web.id' : '';
+    const lnApiUrl = path => LN_API_BASE + path;
     // ===== Database Upstash via Vercel (/api/store) — pengganti localStorage untuk chat, state room, playlist & profil =====
     const DBX = {
       tok: (() => { try { return localStorage.getItem('ln_dbtoken') || ''; } catch (e) { return ''; } })(),
       ready: false, mem: {}, pend: {}, timers: {}, last: {}, warned: false,
       async call(body, keep) {
         try {
-          const r = await fetch('/api/store', { method: 'POST', keepalive: !!keep, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, token: this.tok }) });
+          const r = await fetch(lnApiUrl('/api/store'), { method: 'POST', keepalive: !!keep, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, token: this.tok }) });
           if (r.status === 401 && body.action !== 'auth' && !this.warned) { this.warned = true; showToast('Sesi database habis, silakan login ulang'); }
           return r.ok ? await r.json() : null;
         } catch (e) { return null; }
@@ -2338,7 +2341,7 @@
 
     async function verifyLoginOnServer(u, pw) {
       try {
-        const r = await fetch('/api/login', {
+        const r = await fetch(lnApiUrl('/api/login'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user: u, pass: pw })
