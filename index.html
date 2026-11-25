@@ -2204,6 +2204,8 @@
       if (!isRemoteAction && track.type === 'youtube') {
         saveRoomState();
         broadcastSync('TRACK', 0, track);
+      } else if (track.type === 'youtube') {
+        lnSyncLog('INFO', 'playTrack ' + track.id + ' TIDAK dibroadcast (isRemoteAction=' + isRemoteAction + ')');
       }
     }
 
@@ -2643,6 +2645,34 @@
     // FIX SYNC: payload ke peer dibuat kecil (koneksi pakai serialization 'json' yang tidak memecah pesan besar).
     const netTrack = t => ({ id: t.id, title: String(t.title || '').slice(0, 80), artist: String(t.artist || '').slice(0, 40), type: t.type, isVideo: !!t.isVideo });
     const netList = () => queue.filter(t => t && t.type === 'youtube').slice(0, 20).map(netTrack);
+    // ===== DEBUG SINKRON (sementara). Ubah LN_SYNC_DEBUG ke false untuk menyembunyikan panel =====
+    var LN_BUILD = 'sync-debug-1', LN_SYNC_DEBUG = true, lnSyncLogs = [], lnSyncPanel = null, lnSyncBtn = null;
+    function lnSyncLog(dir, msg) {
+      if (!LN_SYNC_DEBUG) return;
+      try {
+        const d = new Date(), t = d.toTimeString().slice(0, 8);
+        lnSyncLogs.push(t + ' ' + dir + ' ' + msg); if (lnSyncLogs.length > 40) lnSyncLogs.shift();
+        console.log('[LNSYNC]', dir, msg);
+        if (!document.body) return;
+        if (!lnSyncBtn) {
+          lnSyncBtn = document.createElement('button'); lnSyncBtn.type = 'button'; lnSyncBtn.textContent = 'SYNC';
+          lnSyncBtn.style.cssText = 'position:fixed;left:8px;bottom:84px;z-index:2147483000;padding:6px 9px;border:1px solid #22d3ee;border-radius:9px;background:#08222a;color:#fff;font:11px system-ui';
+          lnSyncPanel = document.createElement('pre');
+          lnSyncPanel.style.cssText = 'display:none;position:fixed;left:8px;right:8px;top:48px;bottom:130px;z-index:2147482999;overflow:auto;white-space:pre-wrap;word-break:break-word;padding:10px;border:1px solid #22d3ee;border-radius:10px;background:rgba(5,15,20,.96);color:#d1fae5;font:11px/1.35 ui-monospace,monospace';
+          lnSyncBtn.onclick = () => { lnSyncPanel.style.display = lnSyncPanel.style.display === 'none' ? 'block' : 'none'; lnSyncRender(); };
+          document.body.appendChild(lnSyncPanel); document.body.appendChild(lnSyncBtn);
+        }
+        if (lnSyncPanel.style.display !== 'none') lnSyncRender();
+      } catch (e) {}
+    }
+    function lnSyncRender() {
+      try {
+        const open = connections.filter(c => c.open).length;
+        const head = 'BUILD ' + LN_BUILD + ' | sesi=' + session + ' host=' + isHost + ' | koneksi ' + open + '/' + connections.length +
+          ' | ytReady=' + !!ytReady + ' | lagu=' + (currentTrack ? currentTrack.id : '-') + '\n' + '-'.repeat(30) + '\n';
+        lnSyncPanel.textContent = head + lnSyncLogs.slice().reverse().join('\n');
+      } catch (e) {}
+    }
     const fillThumb = t => (t && !t.thumb && t.id) ? Object.assign({}, t, { thumb: 'https://i.ytimg.com/vi/' + t.id + '/hqdefault.jpg' }) : t;
     const slimChat = () => chatLog.filter(m => !m.sys && !m.viewOnce && (m.kind || 'text') === 'text').slice(-200).map(m => ({
       id: m.id, ts: m.ts, sender: m.sender, text: m.text || '', kind: 'text'
@@ -2712,12 +2742,14 @@
     function applyIncomingRoomSync(data) {
       if (!data || !['SYNC_TRACK', 'SYNC_STATE'].includes(data.type)) return;
       if (!ytReady || !ytPlayer) {
+        lnSyncLog('IN-WAIT', data.type + ' ditunda: pemutar YouTube belum siap');
         pendingRoomSync = data;
         return;
       }
 
       if (data.type === 'SYNC_TRACK') {
-        if (!data.track || data.track.type !== 'youtube' || !/^[\w-]{11}$/.test(String(data.track.id || ''))) return;
+        if (!data.track || data.track.type !== 'youtube' || !/^[\w-]{11}$/.test(String(data.track.id || ''))) { lnSyncLog('IN-DROP', 'SYNC_TRACK ditolak: track tidak valid'); return; }
+        lnSyncLog('IN-OK', 'ganti lagu -> ' + data.track.id);
         holdRemote(3500);
         trackSwitchUntil = Date.now() + 3300;
         roomPlaying = data.playing !== false;
@@ -2759,11 +2791,13 @@
 
       if (!['PLAY', 'PAUSE', 'SEEK'].includes(data.action) || !Number.isFinite(+data.time)) return;
       if (!currentTrack || currentTrack.type !== 'youtube') {
+        lnSyncLog('IN-WAIT', 'STATE ' + data.action + ' ditunda: belum ada lagu YouTube di sisi ini');
         pendingRoomSync = data;
         return;
       }
-      if (data.vid && currentTrack.id !== data.vid) return; // perintah untuk video lain, tunggu SYNC_TRACK
-      if (Date.now() < trackSwitchUntil) { deferredState = data; return; }
+      if (data.vid && currentTrack.id !== data.vid) { lnSyncLog('IN-DROP', 'STATE ' + data.action + ' diabaikan: lagu beda (pengirim=' + data.vid + ' lokal=' + currentTrack.id + ')'); return; } // perintah untuk video lain, tunggu SYNC_TRACK
+      if (Date.now() < trackSwitchUntil) { lnSyncLog('IN-WAIT', 'STATE ' + data.action + ' ditunda: sedang ganti lagu'); deferredState = data; return; }
+      lnSyncLog('IN-OK', 'STATE ' + data.action + ' diterapkan');
       holdRemote(900);
       try {
         if (data.action === 'PLAY') {
@@ -3308,6 +3342,7 @@
     function handleIncomingSyncData(data, senderConn) {
       if (!data || typeof data !== 'object') return;
       if (data.type === 'PING') return;
+      if (data.type === 'SYNC_TRACK' || data.type === 'SYNC_STATE') lnSyncLog('IN', data.type + ' ' + (data.action || '') + ' ' + (data.vid || (data.track && data.track.id) || ''));
       const fromGuest = isHost && senderConn && (session === 'custom' || !isAdminPeer(senderConn.peer));
       if (fromGuest) {
         const sm = members[senderConn.peer] || {};
@@ -3457,13 +3492,14 @@
     }
 
     function broadcastSync(action, time = 0, track = null) {
-      if (!isRoomConnected || !connections.length) return;
-      if (!canPlayControl()) return; // tamu tanpa izin tidak mengirim perintah putar
+      if (!isRoomConnected || !connections.length) { lnSyncLog('OUT-SKIP', action + ' tidak dikirim: roomConnected=' + isRoomConnected + ' koneksi=' + connections.length); return; }
+      if (!canPlayControl()) { lnSyncLog('OUT-SKIP', action + ' tidak dikirim: tidak punya izin kontrol'); return; } // tamu tanpa izin tidak mengirim perintah putar
       if (action === 'PLAY' || action === 'TRACK') roomPlaying = true; else if (action === 'PAUSE') roomPlaying = false;
       const payload = action === 'TRACK'
         ? { type: 'SYNC_TRACK', track: netTrack(track), time, playing: true, at: trackAt,
             list: netList(), idx: currentIndex }
         : { type: 'SYNC_STATE', action, time, vid: currentTrack && currentTrack.id };
+      lnSyncLog('OUT', payload.type + ' ' + (payload.action || '') + ' ' + (payload.vid || (payload.track && payload.track.id) || '') + ' -> ' + connections.filter(c => c.open).length + '/' + connections.length);
       connections.forEach(c => { if (c.open) { try { c.send(payload); } catch (e) { console.warn('LN sync send gagal:', action, e); } } });
     }
 
