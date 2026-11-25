@@ -2361,10 +2361,32 @@
     }
     async function fetchTurn() {
       const url = lnTurnApiUrl();
+      const C = window.Capacitor;
+      const native = !!(C && ((C.isNativePlatform && C.isNativePlatform()) || (C.getPlatform && C.getPlatform() !== 'web')));
       const ctrl = new AbortController();
       let timedOut = false;
       const t = setTimeout(() => { timedOut = true; ctrl.abort(); }, 15000);
       try {
+        // Android APK: gunakan CapacitorHttp native agar request tidak melewati origin WebView.
+        const nativeHttp = native && C && C.Plugins && C.Plugins.CapacitorHttp;
+        if (nativeHttp && typeof nativeHttp.request === 'function') {
+          const response = await nativeHttp.request({
+            url,
+            method: 'GET',
+            headers: { 'Cache-Control': 'no-cache' },
+            connectTimeout: 10000,
+            readTimeout: 10000
+          });
+          let j = response && response.data;
+          if (typeof j === 'string') { try { j = JSON.parse(j); } catch (_) { j = null; } }
+          if (!response || response.status < 200 || response.status >= 300) {
+            throw new Error((j && j.error) || ('HTTP ' + (response && response.status || 'gagal')));
+          }
+          if (!j || !Array.isArray(j.iceServers) || !j.iceServers.length) throw new Error('Respons TURN kosong');
+          return j.iceServers;
+        }
+
+        // Browser dan APK lama tanpa plugin: gunakan fetch dengan diagnostik yang jelas.
         const r = await fetch(url, {
           method: 'GET', mode: 'cors', credentials: 'omit',
           signal: ctrl.signal, cache: 'no-store'
