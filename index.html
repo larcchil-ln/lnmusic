@@ -2902,7 +2902,12 @@
     // ===== Izin "play bareng" untuk tamu =====
     // Admin (Host / Nuki / Nana) selalu boleh. Tamu hanya boleh setelah Admin memberi izin (members[id].ctl).
     function isGuestSession() { return session === 'guest' || (session === 'custom' && !isHost); }
-    function myPlayPerm() { const m = peer && members[peer.id]; return !!(m && (m.ctl || m.role === 'admin')); }
+    function myPlayPerm() {
+      const id = peer && peer.id;
+      const m = id && members[id];
+      // Identitas admin utama tetap sah meskipun snapshot MEMBERS lokal terlambat.
+      return !!(id && isAdminPeer(id)) || !!(m && (m.ctl || m.role === 'admin' || m.owner));
+    }
     function canPlayControl() { return !isRoomConnected || !isGuestSession() || myPlayPerm() || !partnerOnline(); }
     function guardPlayCtl() {
       if (canPlayControl()) return true;
@@ -3347,8 +3352,11 @@
       const fromGuest = isHost && senderConn && (session === 'custom' || !isAdminPeer(senderConn.peer));
       if (fromGuest) {
         const sm = members[senderConn.peer] || {};
-        const ctl = !!sm.ctl || sm.role === 'admin';
-        const blocked = sm.role === 'admin'
+        // Jangan salah menganggap Nana/Nuki sebagai guest hanya karena data
+        // MEMBERS belum tersinkron di host saat event track baru tiba.
+        const senderIsAdmin = isAdminPeer(senderConn.peer) || sm.role === 'admin' || !!sm.owner;
+        const ctl = !!sm.ctl || senderIsAdmin;
+        const blocked = senderIsAdmin
           ? /^(STATE|HISTORY|QUEUE_SET|LYR_|KICK|ROOM_META|FORCE_MUTE)/
           : (ctl ? /^(STATE|HISTORY|QUEUE_SET|LYR_|KICK|VC_STOP_ALL|ROOM_META|FORCE_MUTE)/ : /^(SYNC_|STATE|HISTORY|QUEUE_SET|QUEUE_DEL|QUEUE_MOVE|LYR_|KICK|VC_STOP_ALL|ROOM_META|FORCE_MUTE)/);
         if (blocked.test(String(data.type))) return;
