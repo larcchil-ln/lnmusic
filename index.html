@@ -1934,7 +1934,7 @@
       // 1) Server Vercel (/api/search) memakai YouTube Data API, key aman di environment variable
       try {
         const ctrl = new AbortController(), tm = setTimeout(() => ctrl.abort(), 6000);
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&mode=${mode}${short ? '&short=1' : ''}${n > 12 ? '&n=' + n + '&max=' + n + '&limit=' + n : ''}`, { signal: ctrl.signal });
+        const res = await fetch(lnApiUrl(`/api/search?q=${encodeURIComponent(query)}&mode=${mode}${short ? '&short=1' : ''}${n > 12 ? '&n=' + n + '&max=' + n + '&limit=' + n : ''}`), { signal: ctrl.signal });
         clearTimeout(tm);
         if (res.ok) {
           const data = await res.json();
@@ -2342,7 +2342,7 @@
     async function fetchTurn() {
       const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 7000);
       try {
-        const r = await fetch('/api/turn', { signal: ctrl.signal, cache: 'no-store' });
+        const r = await fetch(lnApiUrl('/api/turn'), { signal: ctrl.signal, cache: 'no-store' });
         const j = await r.json().catch(() => null);
         if (!r.ok) throw new Error((j && j.error) || 'HTTP ' + r.status);
         if (!j || !Array.isArray(j.iceServers) || !j.iceServers.length) throw new Error('Respons kosong');
@@ -4660,11 +4660,11 @@
     const playTop = i => playTrackFromList(topList(), i, true);
     async function fetchChart(region, q) {
       try {
-        const d = await (await fetch(`/api/trending?region=${region}&b=${Math.floor(Date.now() / 6e5)}`)).json(); // b = jendela 10 menit supaya cache edge tidak basi
+        const d = await (await fetch(lnApiUrl(`/api/trending?region=${region}&b=${Math.floor(Date.now() / 6e5)}`))).json(); // b = jendela 10 menit supaya cache edge tidak basi
         if (d.items?.length) return d.items;
       } catch (e) {}
       try {
-        const d = await (await fetch(`/api/search?chart=1&region=${region}`)).json();
+        const d = await (await fetch(lnApiUrl(`/api/search?chart=1&region=${region}`))).json();
         if (d.items?.length) return d.items;
       } catch (e) {}
       const rs = await Promise.all([q, q + ' official audio', q + ' terpopuler', q + ' viral'].map(x => fetchSearchResults(x, 'music')));
@@ -6084,13 +6084,13 @@
     const PUSH_OK = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
     const lnCid = (() => { try { let c = localStorage.getItem('ln_cid'); if (!c) { c = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); localStorage.setItem('ln_cid', c); } return c; } catch (e) { return 'x' + Math.random().toString(36).slice(2, 12); } })();
     const pushU8 = b => { const s = (b + '='.repeat((4 - b.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/'); return Uint8Array.from(atob(s), ch => ch.charCodeAt(0)); };
-    async function pushPost(body) { try { const r = await fetch('/api/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); return r.ok ? await r.json() : null; } catch (e) { return null; } }
+    async function pushPost(body) { try { const r = await fetch(lnApiUrl('/api/push'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); return r.ok ? await r.json() : null; } catch (e) { return null; } }
     async function pushEnable(quiet) {
       if (!PUSH_OK()) return quiet || showToast('Browser ini belum mendukung notifikasi (iPhone: pasang dulu ke Layar Utama)');
       try {
         const perm = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
         if (perm !== 'granted') return quiet || showToast('Izin notifikasi ditolak');
-        const { publicKey } = await (await fetch('/api/push', { cache: 'no-store' })).json(); if (!publicKey) throw new Error('key');
+        const { publicKey } = await (await fetch(lnApiUrl('/api/push'), { cache: 'no-store' })).json(); if (!publicKey) throw new Error('key');
         const reg = await navigator.serviceWorker.ready;
         let sub = await reg.pushManager.getSubscription();
         if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: pushU8(publicKey) });
