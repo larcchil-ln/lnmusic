@@ -1876,11 +1876,7 @@
             ytReady = true;
             ytPlayer.setVolume(document.getElementById('volume-bar').value);
             enforceHDAudioVideo();
-            if (pendingRoomSync) {
-              const pending = pendingRoomSync;
-              pendingRoomSync = null;
-              setTimeout(() => applyIncomingRoomSync(pending), 250);
-            }
+            setTimeout(flushPendingRoomSync, 250);
           },
           onStateChange: (event) => {
             if (event.data === YT.PlayerState.BUFFERING || event.data === YT.PlayerState.PLAYING) {
@@ -2189,6 +2185,12 @@
           setPlayingUI(true);
         } else {
           showToast('Menyiapkan pemutar YouTube...');
+          // dulu lagu hilang kalau pemutar belum siap; sekarang diputar begitu siap
+          whenYtReady(() => {
+            if (currentTrack !== track) return;
+            ytPlayer.loadVideoById({ videoId: track.id, suggestedQuality: 'hd1080' });
+            setPlayingUI(true);
+          });
         }
       }
 
@@ -2349,7 +2351,40 @@
       clearTimeout(_remoteTimer);
       _remoteTimer = setTimeout(() => { isRemoteAction = false; _remoteUntil = 0; }, Math.max(0, _remoteUntil - Date.now()));
     }
-    let pendingRoomSync = null;
+    // FIX REALTIME: lagu (SYNC_TRACK) & perintah play/pause (SYNC_STATE) disimpan terpisah,
+    // supaya PLAY yang datang sesudahnya tidak menimpa lagu yang belum sempat dimuat.
+    let pendingTrackSync = null, pendingStateSync = null;
+    function queueRoomSync(data) {
+      if (!data) return;
+      if (data.type === 'SYNC_TRACK') { pendingTrackSync = data; pendingStateSync = null; }
+      else pendingStateSync = data;
+    }
+    function flushPendingRoomSync() {
+      if (!ytReady || !ytPlayer) return;
+      const t = pendingTrackSync, s = pendingStateSync;
+      pendingTrackSync = null; pendingStateSync = null;
+      if (t) applyIncomingRoomSync(t);
+      if (s) setTimeout(() => applyIncomingRoomSync(s), t ? 1900 : 0);
+    }
+    let lastLocalCtl = 0, lastRemoteCtl = 0, autoplayHintOn = false;
+    // Browser sering memblokir autoplay dari perintah jarak jauh: minta satu ketukan untuk ikut memutar.
+    function ensureRemotePlaying() {
+      setTimeout(() => {
+        if (!roomPlaying || !ytReady || !ytPlayer || autoplayHintOn) return;
+        let st = -2; try { st = ytPlayer.getPlayerState(); } catch (e) {}
+        if (st === 1 || st === 3) return;
+        autoplayHintOn = true;
+        showToast('Ketuk layar untuk ikut memutar lagu dari room 🎵');
+        const go = () => {
+          document.removeEventListener('pointerdown', go, true);
+          autoplayHintOn = false;
+          if (!roomPlaying) return;
+          holdRemote(1200);
+          try { ytPlayer.playVideo(); setPlayingUI(true); } catch (e) {}
+        };
+        document.addEventListener('pointerdown', go, true);
+      }, 2800);
+    }
     let roomPlaying = null, lastRevert = 0; // keadaan play/pause terakhir dari room (untuk tamu tanpa izin)
 
     // TURN dari Cloudflare: kredensial sementara dibuat oleh fungsi /api/turn (token rahasia ada di Vercel)
@@ -2712,10 +2747,11 @@
     function applyIncomingRoomSync(data) {
       if (!data || !['SYNC_TRACK', 'SYNC_STATE'].includes(data.type)) return;
       if (!ytReady || !ytPlayer) {
-        pendingRoomSync = data;
+        queueRoomSync(data);
         return;
       }
 
+      lastRemoteCtl = Date.now();
       if (data.type === 'SYNC_TRACK') {
         if (!data.track || data.track.type !== 'youtube' || !/^[\w-]{11}$/.test(String(data.track.id || ''))) return;
         holdRemote(3500);
@@ -2737,7 +2773,7 @@
         // sering membutuhkan waktu lebih lama daripada browser desktop.
         setTimeout(() => {
           try {
-            if (!ytReady || !ytPlayer) { pendingRoomSync = data; return; }
+            if (!ytReady || !ytPlayer) { queueRoomSync(data); return; }
             ytPlayer.seekTo(Math.max(0, Number(data.time) || 0), true);
             if (data.playing === false) {
               ytPlayer.pauseVideo();
@@ -2745,9 +2781,10 @@
             } else {
               ytPlayer.playVideo();
               setPlayingUI(true);
+              ensureRemotePlaying();
             }
           } catch (e) {
-            pendingRoomSync = data;
+            queueRoomSync(data);
           }
           holdRemote(900);
           trackSwitchUntil = 0;
@@ -2757,13 +2794,31 @@
         return;
       }
 
-      if (!['PLAY', 'PAUSE', 'SEEK'].includes(data.action) || !Number.isFinite(+data.time)) return;
-      if (!currentTrack || currentTrack.type !== 'youtube') {
-        pendingRoomSync = data;
+      if (!['PLAY', 'PAUSE', 'SEEK', 'HB'].includes(data.action) || !Number.isFinite(+data.time)) return;
+      if (Date.now() < trackSwitchUntil) { deferredState = data; return; }
+      // FIX REALTIME: kalau SYNC_TRACK sempat terlewat, perintah ini membawa lagunya -> langsung ikut memutar
+      const sameTrack = currentTrack && currentTrack.type === 'youtube' && (!data.vid || currentTrack.id === data.vid);
+      if (!sameTrack) {
+        const tr = data.track;
+        if (tr && tr.type === 'youtube' && /^[\w-]{11}$/.test(String(tr.id || '')) && (!data.vid || tr.id === data.vid)) {
+          return applyIncomingRoomSync({ type: 'SYNC_TRACK', track: tr, time: +data.time, playing: data.action !== 'PAUSE', at: data.at });
+        }
+        if (!currentTrack || currentTrack.type !== 'youtube') queueRoomSync(data);
         return;
       }
-      if (data.vid && currentTrack.id !== data.vid) return; // perintah untuk video lain, tunggu SYNC_TRACK
-      if (Date.now() < trackSwitchUntil) { deferredState = data; return; }
+      if (data.action === 'HB') {
+        // detak sinkron dari host yang sedang memutar: koreksi selisih waktu & ikut play
+        if (Date.now() - lastLocalCtl < 3000 || isRemoteAction) return;
+        try {
+          const st = ytPlayer.getPlayerState();
+          if (st === 3) return;
+          holdRemote(900);
+          roomPlaying = true;
+          if (Math.abs(ytPlayer.getCurrentTime() - data.time) > 2.5) ytPlayer.seekTo(data.time, true);
+          if (st !== 1 && !autoplayHintOn) { ytPlayer.playVideo(); setPlayingUI(true); ensureRemotePlaying(); }
+        } catch (e) {}
+        return;
+      }
       holdRemote(900);
       try {
         if (data.action === 'PLAY') {
@@ -2771,6 +2826,7 @@
           ytPlayer.playVideo();
           setPlayingUI(true);
           roomPlaying = true;
+          ensureRemotePlaying();
         } else if (data.action === 'PAUSE') {
           ytPlayer.seekTo(data.time, true);
           ytPlayer.pauseVideo();
@@ -2780,7 +2836,7 @@
           ytPlayer.seekTo(data.time, true);
         }
       } catch (e) {
-        pendingRoomSync = data;
+        queueRoomSync(data);
       }
     }
 
@@ -3460,12 +3516,28 @@
       if (!isRoomConnected || !connections.length) return;
       if (!canPlayControl()) return; // tamu tanpa izin tidak mengirim perintah putar
       if (action === 'PLAY' || action === 'TRACK') roomPlaying = true; else if (action === 'PAUSE') roomPlaying = false;
+      lastLocalCtl = Date.now();
+      const yt = currentTrack && currentTrack.type === 'youtube';
       const payload = action === 'TRACK'
         ? { type: 'SYNC_TRACK', track: netTrack(track), time, playing: true, at: trackAt,
             list: netList(), idx: currentIndex }
-        : { type: 'SYNC_STATE', action, time, vid: currentTrack && currentTrack.id };
+        : { type: 'SYNC_STATE', action, time, vid: currentTrack && currentTrack.id,
+            track: yt ? netTrack(currentTrack) : undefined, at: trackAt };
       connections.forEach(c => { if (c.open) { try { c.send(payload); } catch (e) { console.warn('LN sync send gagal:', action, e); } } });
     }
+
+    // FIX REALTIME: host yang sedang memutar mengirim detak tiap 5 detik, jadi peserta yang
+    // ketinggalan lagu / baru tersambung ulang / terblokir autoplay otomatis ikut lagi.
+    setInterval(() => {
+      try {
+        if (!isRoomConnected || !partnerOnline() || !canManageRoom()) return;
+        if (!currentTrack || currentTrack.type !== 'youtube' || !ytReady || !ytPlayer) return;
+        if (isRemoteAction || Date.now() - lastRemoteCtl < 4000 || Date.now() - lastLocalCtl < 2500) return;
+        if (ytPlayer.getPlayerState() !== 1) return;
+        const hb = { type: 'SYNC_STATE', action: 'HB', time: ytPlayer.getCurrentTime(), vid: currentTrack.id, track: netTrack(currentTrack), at: trackAt };
+        connections.forEach(c => { if (c.open) { try { c.send(hb); } catch (e) {} } });
+      } catch (e) {}
+    }, 5000);
 
     function forceSyncNow() {
       if (!currentTrack || currentTrack.type !== 'youtube') return showToast('Putar lagu/film YouTube dulu');
