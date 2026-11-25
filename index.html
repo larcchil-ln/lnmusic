@@ -2701,7 +2701,7 @@
 
       if (data.type === 'SYNC_TRACK') {
         const track = data.track;
-        if (!track || track.type !== 'youtube' || !/^[\\w-]{11}$/.test(String(track.id || ''))) return;
+        if (!track || track.type !== 'youtube' || !/^[\w-]{11}$/.test(String(track.id || ''))) return;
 
         const token = ++roomSyncToken;
         const targetId = String(track.id);
