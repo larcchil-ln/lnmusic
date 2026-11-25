@@ -2714,8 +2714,20 @@
         isRemoteAction = true;
         roomPlaying = shouldPlay;
         pendingRoomSync = null;
+        // Perbarui metadata/UI seperti pemutaran lokal, lalu paksa IFrame
+        // menerima ID target secara eksplisit. Pada sebagian WebView, urutan
+        // stopVideo() -> loadVideoById() dari playTrack bisa meninggalkan video lama.
         playTrack({ ...track }, false);
         if (data.at) trackAt = Number(data.at) || Date.now();
+        try {
+          ytPlayer.loadVideoById({
+            videoId: targetId,
+            startSeconds: targetTime,
+            suggestedQuality: 'hd1080'
+          });
+        } catch (e) {
+          console.warn('Gagal memuat video room, mencoba ulang:', e);
+        }
 
         let attempts = 0;
         const finishTrackSync = () => {
@@ -2735,6 +2747,16 @@
           // IFrame API kadang masih melaporkan ID video sebelumnya saat buffering.
           // Tunggu lebih lama; jangan menyerah setelah 6 detik pada koneksi lambat.
           if (loadedId !== targetId && attempts++ < 120) {
+            // Coba ulang load secara terbatas jika player masih mempertahankan ID lama.
+            if (attempts === 8 || attempts === 24 || attempts === 48) {
+              try {
+                ytPlayer.loadVideoById({
+                  videoId: targetId,
+                  startSeconds: targetTime,
+                  suggestedQuality: 'hd1080'
+                });
+              } catch (_) {}
+            }
             setTimeout(finishTrackSync, 250);
             return;
           }
