@@ -104,7 +104,7 @@
     state = s || {};
     if ($('ln-offline-now')) $('ln-offline-now').textContent = state.active && state.title ? state.title : 'Belum ada lagu diputar';
     if ($('ln-offline-artist')) $('ln-offline-artist').textContent = state.active ? (state.artist || 'Artis tidak dikenal') : 'Pilih lagu dari daftar';
-    if ($('ln-offline-toggle')) $('ln-offline-toggle').textContent = state.playing ? 'Ⅱ' : '▶';
+    if (window.lnOfflineUI) window.lnOfflineUI.sync(state);
     if ($('ln-offline-position') && !dragging) $('ln-offline-position').textContent = fmt(state.pos);
     if ($('ln-offline-duration')) $('ln-offline-duration').textContent = fmt(state.dur);
     var seek = $('ln-offline-seek');
@@ -138,7 +138,7 @@
     return null;
   }
   function initNative() {
-    LM = getPlugin('LocalMusic');
+    LM = getPlugin('LocalMusic'); window.__lnLM = LM;
     BP = getPlugin('BackgroundPlay');
     bind();
     window.lnLocalMusicDiagnostics = { capacitor: !!C, native: native, localMusicPlugin: !!LM, backgroundPlugin: !!BP, platform: (C && C.getPlatform ? C.getPlatform() : 'unknown'), bridgeScriptLoaded: !!C, userAgent: navigator.userAgent || '' };
