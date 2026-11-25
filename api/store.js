@@ -2,6 +2,17 @@
 const { Redis } = require('@upstash/redis');
 const crypto = require('node:crypto');
 
+const ALLOWED_ORIGINS = new Set(['https://lnmusic.web.id', 'https://lnmusic.vercel.app', 'https://localhost', 'http://localhost', 'capacitor://localhost', 'ionic://localhost']);
+function applyCors(req, res) {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
+}
+
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL,
   token: process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN
@@ -23,7 +34,9 @@ function verify(tok) {
 }
 
 module.exports = async (req, res) => {
+  applyCors(req, res);
   res.setHeader('Cache-Control', 'no-store');
+  if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   let b = req.body;
   if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }

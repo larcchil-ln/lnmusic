@@ -779,6 +779,30 @@
   @media(max-height:700px){#ln-now-playing .ln-np-cover{width:min(42vw,175px)!important;margin:7px auto!important}#ln-now-playing .ln-np-lyrics{margin:5px 0!important}}
 .ln-group-row{width:100%;text-align:left}.ln-group-back{display:block;width:calc(100% - 24px);margin:8px 12px;padding:9px 12px;text-align:left;border-radius:10px;background:rgba(255,255,255,.06);color:#f9a8d4;font-size:11px;font-weight:800}
 </style>
+
+<style id="ln-offline-redesign">
+#tab-offline.ln-offline-page{padding:0 0 calc(116px + env(safe-area-inset-bottom));min-height:calc(100dvh - 150px);color:#f5f3f7}
+.ln-library-shell{display:grid;grid-template-columns:224px minmax(0,1fr);gap:18px;max-width:1180px;margin:0 auto}
+.ln-library-sidebar{position:sticky;top:14px;align-self:start;min-height:calc(100dvh - 190px);padding:18px 12px;border:1px solid #ffffff12;border-radius:22px;background:linear-gradient(160deg,#17131e,#0c0b11)}
+.ln-side-brand{display:flex;align-items:center;gap:11px;padding:7px 8px 19px;border-bottom:1px solid #ffffff12}.ln-side-brand-icon{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(140deg,#a52a60,#3c245d);font-size:23px}.ln-side-brand b,.ln-side-brand small,.ln-side-storage b,.ln-side-storage small{display:block}.ln-side-brand b{font-size:13px}.ln-side-brand small,.ln-side-storage small{font-size:10px;color:#8e8998;margin-top:3px}
+.ln-library-nav{display:grid;gap:5px;padding:16px 0}.ln-library-nav button{height:43px;display:flex;align-items:center;gap:12px;padding:0 12px;border:0;border-radius:12px;background:transparent;color:#aaa5b2;text-align:left;font-size:12px;font-weight:650}.ln-library-nav button svg{width:17px;height:17px}.ln-library-nav button em{margin-left:auto;font-style:normal;font-size:10px;color:#898391}.ln-library-nav button.is-active{background:linear-gradient(100deg,#81274f55,#542b6b33);color:#ffd8e9;box-shadow:inset 2px 0 #f472b6}.ln-nav-divider{height:1px;background:#ffffff12;margin:7px 8px}
+.ln-side-storage{display:flex;gap:9px;align-items:center;padding:12px 8px;border-top:1px solid #ffffff12}.ln-storage-dot{width:8px;height:8px;border-radius:50%;background:#63d7a0;box-shadow:0 0 12px #63d7a088}
+.ln-library-main{min-width:0}.ln-library-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 2px 17px}.ln-library-toolbar h2{font-size:23px;font-weight:850;letter-spacing:-.5px}.ln-eyebrow{font-size:9px;letter-spacing:2px;font-weight:800;color:#f28db5}.ln-toolbar-actions{display:flex;align-items:center;gap:8px}.ln-search-wrap{height:40px;width:min(330px,42vw);display:flex;align-items:center;gap:9px;padding:0 12px;border:1px solid #ffffff13;border-radius:12px;background:#ffffff08;color:#999}.ln-search-wrap svg{width:16px}.ln-search-wrap input{width:100%;min-width:0;background:transparent;border:0;outline:0;color:#fff;font-size:11px}.ln-icon-button,.ln-mobile-menu{width:40px;height:40px;border:1px solid #ffffff14;border-radius:12px;background:#ffffff08;color:#e8dce7;display:grid;place-items:center}.ln-icon-button svg,.ln-mobile-menu svg{width:18px}
+.ln-library-overview{display:flex;align-items:center;gap:13px;padding:13px 15px;border:1px solid #ffffff12;border-radius:16px;background:linear-gradient(100deg,#8c285033,#44225c22)}.ln-library-overview>div b{display:block;font-size:21px}.ln-library-overview>div span{font-size:10px;color:#aaa}.ln-library-overview p{flex:1;font-size:10px;color:#aaa}.ln-primary-button{display:flex;align-items:center;gap:7px;padding:10px 13px;border:0;border-radius:11px;background:#d92861;color:white;font-size:11px;font-weight:800}.ln-primary-button svg{width:14px}
+.ln-library-content{margin-top:14px;border:1px solid #ffffff12;border-radius:18px;background:#100e16;overflow:hidden}.ln-list-toolbar{display:flex;justify-content:space-between;align-items:center;padding:16px 17px 11px}.ln-list-toolbar h3{font-size:16px;font-weight:800}.ln-list-toolbar small{font-size:10px;color:#8e8998}.ln-sort-button{display:flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid #ffffff14;border-radius:10px;background:#ffffff08;color:#d9cbd8;font-size:10px}.ln-sort-button svg{width:14px}
+.ln-alphabet{display:flex;gap:3px;overflow-x:auto;padding:3px 14px 10px;scrollbar-width:none}.ln-alphabet button{flex:0 0 25px;height:25px;border:0;border-radius:7px;background:transparent;color:#88818f;font-size:10px}.ln-alphabet button.active{background:#8d2c5a55;color:#ffd4e6}.ln-offline-list{max-height:calc(100dvh - 360px);min-height:230px;overflow:auto;overscroll-behavior:contain}.ln-song{display:flex!important;align-items:center;gap:12px!important;min-height:70px;padding:10px 15px!important;border-top:1px solid #ffffff08}.ln-song-art{width:48px!important;height:48px!important;flex:0 0 48px;border-radius:10px!important;background:#241b2b center/cover no-repeat!important}.ln-song-info{flex:1;min-width:0}.ln-song-info b{display:block;font-size:13px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ln-song-info small{display:block;font-size:10px!important;color:#96909e!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ln-song button{flex:0 0 auto}.ln-group-row{background:#ffffff04}.ln-group-back{display:block;padding:12px 15px;color:#f4a5c5;font-size:11px}.ln-empty{display:grid;justify-items:center;gap:8px;padding:45px 15px;color:#a7a0ad;text-align:center}.ln-empty svg{width:27px;height:27px;color:#f18ab5}.ln-empty b{color:#eee;font-size:13px}.ln-empty span{font-size:10px;max-width:280px}.ln-library-footer-note{padding:12px 3px;color:#817b89;font-size:9px}.ln-library-footer-note span{color:#6ed5a1}
+.ln-offline-player{position:fixed!important;z-index:55;left:12px;right:12px;bottom:calc(78px + env(safe-area-inset-bottom));display:none;padding:10px 13px!important;border:1px solid #ffffff1a!important;border-radius:17px!important;background:rgba(15,12,20,.96)!important;backdrop-filter:blur(20px);box-shadow:0 12px 38px #0009}.ln-offline-player.active{display:block}.ln-player-top{display:flex;align-items:center;gap:10px}.ln-player-art{width:42px!important;height:42px!important;flex:0 0 42px;border-radius:10px!important;background:#2b1a2d center/cover no-repeat!important}.ln-player-meta{min-width:0;flex:1}.ln-player-meta b{font-size:12px!important}.ln-player-meta small{font-size:10px!important}.ln-player-top>button{width:34px;height:34px;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;color:#eee}.ln-player-top>button svg{width:17px}.ln-player-top .ln-player-main{width:42px;height:42px;background:#e11d55;color:white}.ln-player-top .ln-player-expand{border-radius:10px;background:#ffffff0b;color:#f4a2c6}.ln-player-progress{display:flex;align-items:center;gap:8px;margin-top:7px;color:#999;font-size:9px}.ln-player-progress input{flex:1;min-width:0;accent-color:#ec3b75}
+#ln-now-playing{box-sizing:border-box;z-index:150!important;padding:calc(14px + env(safe-area-inset-top)) 22px calc(18px + env(safe-area-inset-bottom))!important;overflow-y:auto!important;background:radial-gradient(90% 45% at 50% 0%,#75254855,transparent 75%),#09080d!important}.ln-np-close{position:sticky;top:0}.ln-np-cover{width:min(66vw,310px)!important;max-height:32dvh!important;margin:16px auto!important;border-radius:22px!important}.ln-np-title{font-size:20px!important}.ln-np-lyrics{min-height:110px!important;max-height:25dvh!important;margin:14px 0!important}.ln-np-queue-toggle{margin-top:5px}.ln-np-controls{margin-top:12px!important}.ln-np-controls button{min-width:44px;min-height:44px}.ln-np-controls #ln-np-toggle{width:60px!important;height:60px!important}
+.ln-mobile-menu{display:none}
+@media(max-width:700px){.ln-library-shell{display:block}.ln-library-sidebar{display:none;position:fixed;z-index:90;left:10px;top:calc(10px + env(safe-area-inset-top));bottom:calc(10px + env(safe-area-inset-bottom));width:min(270px,82vw);min-height:0;overflow:auto;box-shadow:0 20px 70px #000b}.ln-library-sidebar.open{display:block}.ln-mobile-menu{display:grid;flex:none}.ln-library-toolbar{justify-content:flex-start;gap:10px}.ln-library-toolbar>div:nth-child(2){flex:1;min-width:0}.ln-library-toolbar h2{font-size:19px}.ln-toolbar-actions{flex:1;justify-content:flex-end}.ln-search-wrap{width:min(44vw,220px);height:38px}.ln-library-overview{gap:8px;padding:11px}.ln-library-overview>div b{font-size:18px}.ln-library-overview p{font-size:9px}.ln-primary-button{padding:9px;font-size:10px;white-space:nowrap}.ln-offline-list{max-height:calc(100dvh - 340px)}.ln-song{min-height:65px;padding:9px 12px!important}.ln-song-art{width:44px!important;height:44px!important;flex-basis:44px}.ln-offline-player{left:8px;right:8px;bottom:calc(78px + env(safe-area-inset-bottom))}}
+@media(min-width:701px){.ln-offline-player{left:250px;right:24px;bottom:18px;max-width:850px;margin:auto}}
+/* Fix: tampilkan mini player aktif; aturan lama display:none!important menutupnya. */
+#ln-offline-player.active{display:block!important;visibility:visible!important;opacity:1!important}
+/* Pastikan pemutar layar penuh tampil di atas seluruh antarmuka aplikasi. */
+#ln-now-playing.open{display:flex!important;visibility:visible!important;pointer-events:auto!important}
+#ln-offline-player .ln-player-art,#ln-now-playing .ln-np-cover{background-repeat:no-repeat!important;background-size:cover!important;background-position:center!important}
+</style>
+
 </head>
 <body class="min-h-screen flex flex-col md:flex-row selection:bg-rose-500/30 selection:text-rose-200">
 
@@ -963,53 +987,53 @@
         <div id="online-tracks-grid"></div>
       </section>
 
-      <!-- TAB OFFLINE: redesigned professional device-library UI -->
-      <section id="tab-offline" class="hidden space-y-5 ln-offline-page">
-        <div class="ln-offline-hero">
-          <div class="ln-offline-hero-top">
-            <div class="ln-offline-symbol">♫</div>
-            <div class="ln-offline-heading">
-              <span class="ln-eyebrow">KOLEKSI PERANGKAT</span>
-              <h3>Musik Offline</h3>
-              <p>Temukan dan putar musik yang tersimpan di memori internal maupun kartu SD.</p>
+      <!-- OFFLINE LIBRARY: compact responsive library workspace -->
+      <section id="tab-offline" class="hidden ln-offline-page">
+        <div class="ln-library-shell">
+          <aside class="ln-library-sidebar" id="ln-library-sidebar">
+            <div class="ln-side-brand"><span class="ln-side-brand-icon">♫</span><div><b>Musik Offline</b><small>Perpustakaan perangkat</small></div></div>
+            <nav class="ln-library-nav" aria-label="Navigasi perpustakaan">
+              <button data-ln-category="all" class="is-active"><i data-lucide="music-2"></i><span>Lagu</span><em id="ln-nav-song-count">0</em></button>
+              <button data-ln-category="albums"><i data-lucide="disc-3"></i><span>Album</span></button>
+              <button data-ln-category="artists"><i data-lucide="mic-2"></i><span>Artis</span></button>
+              <button data-ln-category="folders"><i data-lucide="folder"></i><span>Folder</span></button>
+              <button data-ln-category="favorites"><i data-lucide="heart"></i><span>Favorit</span></button>
+              <button data-ln-category="playlists"><i data-lucide="list-music"></i><span>Daftar Putar</span></button>
+              <div class="ln-nav-divider"></div>
+              <button id="ln-sidebar-scan"><i data-lucide="scan-search"></i><span>Pindai Musik</span></button>
+              <button id="ln-sidebar-library"><i data-lucide="library"></i><span>Pustaka Musik</span></button>
+            </nav>
+            <div class="ln-side-storage"><span class="ln-storage-dot"></span><div><b id="ln-side-status">Belum dipindai</b><small>Internal &amp; kartu SD</small></div></div>
+          </aside>
+          <div class="ln-library-main">
+            <header class="ln-library-toolbar">
+              <button class="ln-mobile-menu" id="ln-mobile-menu" aria-label="Buka navigasi"><i data-lucide="menu"></i></button>
+              <div><span class="ln-eyebrow">KOLEKSI PERANGKAT</span><h2 id="ln-library-title">Lagu</h2></div>
+              <div class="ln-toolbar-actions">
+                <label class="ln-search-wrap"><i data-lucide="search"></i><input id="ln-offline-search" type="search" placeholder="Cari lagu, artis, album..." autocomplete="off"></label>
+                <button id="ln-offline-scan" class="ln-icon-button" title="Pindai ulang"><i data-lucide="refresh-cw"></i></button>
+              </div>
+            </header>
+            <div class="ln-library-overview">
+              <div><b id="ln-offline-count">0</b><span>lagu ditemukan</span></div>
+              <p id="ln-offline-status">Siap memindai musik di perangkat.</p>
+              <button id="ln-offline-playall" class="ln-primary-button"><i data-lucide="play"></i> Putar semua</button>
             </div>
+            <div class="ln-library-content">
+              <div class="ln-list-toolbar">
+                <div><h3 id="ln-list-heading">Semua lagu</h3><small id="ln-offline-subcount">Belum dipindai</small></div>
+                <button id="ln-sort-az" class="ln-sort-button"><i data-lucide="arrow-down-a-z"></i> A–Z</button>
+              </div>
+              <div class="ln-alphabet" id="ln-alphabet" aria-label="Filter huruf"></div>
+              <div id="ln-offline-list" class="ln-offline-list"><div class="ln-empty"><i data-lucide="music-2"></i><b>Belum ada musik</b><span>Pindai musik untuk membaca koleksi di memori internal dan kartu SD.</span></div></div>
+            </div>
+            <div id="ln-offline-lyrics" class="hidden"></div>
+            <div class="ln-library-footer-note"><span>●</span> Musik diputar langsung dari perangkat. File asli tidak disalin.</div>
           </div>
-          <div class="ln-storage-pills"><span>▣ Memori Internal</span><span>▤ Kartu SD</span><span class="ln-storage-live">● Tanpa menyalin file</span></div>
-          <div class="ln-offline-actions">
-            <button id="ln-offline-scan" type="button" class="ln-scan-button">⟳ &nbsp; Pindai Musik</button>
-            <button id="ln-offline-playall" type="button" class="ln-playall-button">▶ &nbsp; Putar Semua</button>
-          </div>
-          <p id="ln-offline-status" class="ln-status">Siap memindai koleksi musik di perangkat.</p>
         </div>
-
-        <div class="ln-library-summary">
-          <div class="ln-summary-card"><span class="ln-summary-icon">♫</span><div><b id="ln-offline-count">0</b><small>Lagu ditemukan</small></div></div>
-          <div class="ln-summary-card"><span class="ln-summary-icon">▣</span><div><b>2 lokasi</b><small>Internal &amp; SD Card</small></div></div>
-        </div>
-
-        <div class="ln-library-panel">
-          <div class="ln-library-heading"><div><span class="ln-eyebrow">PERPUSTAKAAN</span><h3>Semua Lagu</h3></div><span id="ln-offline-subcount">Belum dipindai</span></div>
-          <label class="ln-search-wrap"><span>⌕</span><input id="ln-offline-search" type="search" placeholder="Cari judul, artis, atau album…" autocomplete="off"></label>
-          <div class="ln-category-row" aria-label="Kategori musik">
-            <button type="button" data-ln-category="all" class="is-active">Semua</button>
-            <button type="button" data-ln-category="artists">Artis</button>
-            <button type="button" data-ln-category="albums">Album</button>
-            <button type="button" data-ln-category="folders">Folder</button>
-            <button type="button" data-ln-category="favorites">♥ Favorit</button>
-          </div>
-          <div id="ln-offline-list" class="ln-offline-list"><div class="ln-empty"><div class="ln-empty-icon">♫</div><b>Belum ada daftar musik</b><span>Tekan Pindai Musik untuk mencari lagu di memori internal dan kartu SD.</span></div></div>
-        </div>
-
-        <div class="ln-lyrics-panel">
-          <div class="ln-lyrics-head"><div><span class="ln-eyebrow">LIRIK LAGU</span><h3>Ikuti setiap bait</h3></div><label class="ln-lrc-import">＋ Impor .LRC<input id="ln-offline-lrc-file" type="file" accept=".lrc,text/plain"></label></div>
-          <div id="ln-offline-lyrics" class="ln-offline-lyrics"><p class="ln-lyrics-empty">Lirik tersinkron akan tampil di sini. Impor file .LRC atau coba pencarian online.</p></div>
-          <p class="ln-lyrics-footnote">Lirik online memerlukan koneksi internet. File .LRC yang diimpor disimpan di perangkat.</p>
-        </div>
-        <div class="ln-device-note"><span>ⓘ</span><p>LNMusic membaca daftar musik Android secara langsung. File MP3/WAV/M4A tetap berada di lokasi aslinya dan tidak digandakan ke penyimpanan aplikasi.</p></div>
-        <div class="ln-offline-player">
-          <div class="ln-player-top"><div class="ln-player-art">♫</div><div class="ln-player-meta"><b id="ln-offline-now">Belum ada lagu diputar</b><small id="ln-offline-artist">Pilih lagu dari daftar</small></div><button class="ln-player-expand" id="ln-player-expand" type="button">Layar penuh ↗</button><span class="ln-player-live">LOCAL</span></div>
+        <div class="ln-offline-player" id="ln-offline-player">
+          <div class="ln-player-top"><div class="ln-player-art">♫</div><div class="ln-player-meta"><b id="ln-offline-now">Belum ada lagu diputar</b><small id="ln-offline-artist">Pilih lagu dari koleksi</small></div><button id="ln-offline-prev" title="Sebelumnya"> <i data-lucide="skip-back"></i> </button><button id="ln-offline-toggle" class="ln-player-main" title="Putar"><i data-lucide="play"></i></button><button id="ln-offline-next" title="Berikutnya"><i data-lucide="skip-forward"></i></button><button class="ln-player-expand" id="ln-player-expand" type="button" title="Layar penuh"><i data-lucide="maximize-2"></i></button></div>
           <div class="ln-player-progress"><span id="ln-offline-position">0:00</span><input id="ln-offline-seek" type="range" min="0" max="1" value="0"><span id="ln-offline-duration">0:00</span></div>
-          <div class="ln-player-controls"><button id="ln-offline-shuffle" type="button" title="Acak">⤨</button><button id="ln-offline-prev" type="button" title="Sebelumnya">|◀</button><button id="ln-offline-toggle" type="button" class="ln-player-main" title="Putar">▶</button><button id="ln-offline-next" type="button" title="Berikutnya">▶|</button><button id="ln-offline-repeat" type="button" title="Ulangi">↻</button></div>
         </div>
       </section>
 
@@ -1915,7 +1939,7 @@
       // 1) Server Vercel (/api/search) memakai YouTube Data API, key aman di environment variable
       try {
         const ctrl = new AbortController(), tm = setTimeout(() => ctrl.abort(), 6000);
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&mode=${mode}${short ? '&short=1' : ''}${n > 12 ? '&n=' + n + '&max=' + n + '&limit=' + n : ''}`, { signal: ctrl.signal });
+        const res = await fetch(lnApiUrl(`/api/search?q=${encodeURIComponent(query)}&mode=${mode}${short ? '&short=1' : ''}${n > 12 ? '&n=' + n + '&max=' + n + '&limit=' + n : ''}`), { signal: ctrl.signal });
         clearTimeout(tm);
         if (res.ok) {
           const data = await res.json();
@@ -2320,14 +2344,37 @@
       { urls: 'stun:global.stun.twilio.com:3478' }
     ];
     let iceCache = null, iceInfo = { src: 'belum', msg: '' };
+    function lnTurnApiUrl() {
+      const host = location.hostname;
+      const cap = window.Capacitor;
+      const native = !!(cap && ((typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) ||
+        (typeof cap.getPlatform === 'function' && cap.getPlatform() !== 'web')));
+      const localApp = native || host === 'localhost' || host === '127.0.0.1' ||
+        location.protocol === 'capacitor:' || location.protocol === 'file:';
+      return localApp ? 'https://lnmusic.web.id/api/turn' : new URL('/api/turn', location.href).href;
+    }
     async function fetchTurn() {
-      const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 7000);
+      const url = lnTurnApiUrl();
+      const ctrl = new AbortController();
+      let timedOut = false;
+      const t = setTimeout(() => { timedOut = true; ctrl.abort(); }, 15000);
       try {
-        const r = await fetch('/api/turn', { signal: ctrl.signal, cache: 'no-store' });
+        const r = await fetch(url, {
+          method: 'GET', mode: 'cors', credentials: 'omit',
+          signal: ctrl.signal, cache: 'no-store'
+        });
         const j = await r.json().catch(() => null);
         if (!r.ok) throw new Error((j && j.error) || 'HTTP ' + r.status);
-        if (!j || !Array.isArray(j.iceServers) || !j.iceServers.length) throw new Error('Respons kosong');
+        if (!j || !Array.isArray(j.iceServers) || !j.iceServers.length) throw new Error('Respons TURN kosong');
         return j.iceServers;
+      } catch (e) {
+        if (timedOut || e.name === 'AbortError') {
+          throw new Error('Timeout 15 detik saat menghubungi ' + url);
+        }
+        if (e instanceof TypeError || e.message === 'Failed to fetch') {
+          throw new Error('Koneksi/CORS gagal ke ' + url + ' (origin aplikasi: ' + location.origin + ')');
+        }
+        throw e;
       } finally { clearTimeout(t); }
     }
     async function getIceServers() {
@@ -2386,13 +2433,21 @@
       nuki: { name: 'Nuki', partner: 'nana', hash: '969a8ff0c04cacdbf3b1571fda2369c022cd11b8f20cd75feda6895df99e6043', peerId: 'lnmusic-nuki-' + ID_SUFFIX },
       nana: { name: 'Nana', partner: 'nuki', hash: 'c4314da79256da8fe80faa6e33c7ffb7bb26869ffe46e93e85c4040bf7bd0c77', peerId: 'lnmusic-nana-' + ID_SUFFIX }
     };
+    // Tentukan host API saat dipanggil, bukan saat halaman dieksekusi.
+    // Di APK, Capacitor bridge dimuat belakangan sehingga pemeriksaan native saat startup bisa terlalu dini.
+    const lnApiUrl = path => {
+      const cap = window.Capacitor;
+      const native = !!(cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform());
+      const localApp = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+      return (native || localApp ? 'https://lnmusic.web.id' : '') + path;
+    };
     // ===== Database Upstash via Vercel (/api/store) — pengganti localStorage untuk chat, state room, playlist & profil =====
     const DBX = {
       tok: (() => { try { return localStorage.getItem('ln_dbtoken') || ''; } catch (e) { return ''; } })(),
       ready: false, mem: {}, pend: {}, timers: {}, last: {}, warned: false,
       async call(body, keep) {
         try {
-          const r = await fetch('/api/store', { method: 'POST', keepalive: !!keep, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, token: this.tok }) });
+          const r = await fetch(lnApiUrl('/api/store'), { method: 'POST', keepalive: !!keep, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, token: this.tok }) });
           if (r.status === 401 && body.action !== 'auth' && !this.warned) { this.warned = true; showToast('Sesi database habis, silakan login ulang'); }
           return r.ok ? await r.json() : null;
         } catch (e) { return null; }
@@ -2445,7 +2500,7 @@
 
     async function verifyLoginOnServer(u, pw) {
       try {
-        const r = await fetch('/api/login', {
+        const r = await fetch(lnApiUrl('/api/login'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user: u, pass: pw })
@@ -4638,11 +4693,11 @@
     const playTop = i => playTrackFromList(topList(), i, true);
     async function fetchChart(region, q) {
       try {
-        const d = await (await fetch(`/api/trending?region=${region}&b=${Math.floor(Date.now() / 6e5)}`)).json(); // b = jendela 10 menit supaya cache edge tidak basi
+        const d = await (await fetch(lnApiUrl(`/api/trending?region=${region}&b=${Math.floor(Date.now() / 6e5)}`))).json(); // b = jendela 10 menit supaya cache edge tidak basi
         if (d.items?.length) return d.items;
       } catch (e) {}
       try {
-        const d = await (await fetch(`/api/search?chart=1&region=${region}`)).json();
+        const d = await (await fetch(lnApiUrl(`/api/search?chart=1&region=${region}`))).json();
         if (d.items?.length) return d.items;
       } catch (e) {}
       const rs = await Promise.all([q, q + ' official audio', q + ' terpopuler', q + ' viral'].map(x => fetchSearchResults(x, 'music')));
@@ -6062,13 +6117,13 @@
     const PUSH_OK = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
     const lnCid = (() => { try { let c = localStorage.getItem('ln_cid'); if (!c) { c = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); localStorage.setItem('ln_cid', c); } return c; } catch (e) { return 'x' + Math.random().toString(36).slice(2, 12); } })();
     const pushU8 = b => { const s = (b + '='.repeat((4 - b.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/'); return Uint8Array.from(atob(s), ch => ch.charCodeAt(0)); };
-    async function pushPost(body) { try { const r = await fetch('/api/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); return r.ok ? await r.json() : null; } catch (e) { return null; } }
+    async function pushPost(body) { try { const r = await fetch(lnApiUrl('/api/push'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); return r.ok ? await r.json() : null; } catch (e) { return null; } }
     async function pushEnable(quiet) {
       if (!PUSH_OK()) return quiet || showToast('Browser ini belum mendukung notifikasi (iPhone: pasang dulu ke Layar Utama)');
       try {
         const perm = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
         if (perm !== 'granted') return quiet || showToast('Izin notifikasi ditolak');
-        const { publicKey } = await (await fetch('/api/push', { cache: 'no-store' })).json(); if (!publicKey) throw new Error('key');
+        const { publicKey } = await (await fetch(lnApiUrl('/api/push'), { cache: 'no-store' })).json(); if (!publicKey) throw new Error('key');
         const reg = await navigator.serviceWorker.ready;
         let sub = await reg.pushManager.getSubscription();
         if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: pushU8(publicKey) });
