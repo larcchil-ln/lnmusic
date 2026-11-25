@@ -35,6 +35,8 @@
     return -2;
   }
   function resume() {
+    // jangan lawan pause yang dikirim pasangan lewat room (bikin lagu "loncat" play lagi di kedua sisi)
+    try { if (typeof isRoomConnected !== 'undefined' && isRoomConnected && typeof roomPlaying !== 'undefined' && roomPlaying === false) return; } catch (e) {}
     try { if (ytState() === 2) ytPlayer.playVideo(); } catch (e) {}
   }
 
