@@ -2206,7 +2206,9 @@
 
       if (!isRemoteAction && track.type === 'youtube') {
         saveRoomState();
-        broadcastSync('TRACK', 0, track);
+        // Setiap pergantian track lokal wajib mengirim ID track ke semua peer.
+        // Tidak bergantung pada tombol Play/Pause atau Seek.
+        broadcastTrackSelection(track);
       }
     }
 
@@ -3489,6 +3491,46 @@
         if (voiceOn) Object.keys(members).filter(id => id !== peer.id && !voiceCalls[id]).forEach(callPeer);
       }
     }
+
+    // Broadcast track dipisahkan dari event PLAY/PAUSE/SEEK.
+    // Dipanggil setiap kali playTrack memilih ID YouTube baru, termasuk dari
+    // pencarian, next/previous, antrean, dan fitur tambahan.
+    let lastTrackBroadcastKey = '', lastTrackBroadcastAt = 0;
+    function broadcastTrackSelection(track) {
+      if (isRemoteAction || !track || track.type !== 'youtube') return false;
+      if (!currentTrack || String(currentTrack.id) !== String(track.id)) return false;
+      if (!isRoomConnected) return false;
+      const openPeers = connections.filter(c => c && c.open);
+      if (!openPeers.length) return false;
+
+      // playTrack sudah menjalankan guardPlayCtl sebelum sampai ke sini.
+      // Jangan lakukan pemeriksaan izin kedua yang bisa menolak event track
+      // setelah pemutaran lokal sudah diizinkan.
+      const key = String(track.id) + ':' + String(trackAt);
+      if (key === lastTrackBroadcastKey && Date.now() - lastTrackBroadcastAt < 1500) return true;
+
+      const payload = {
+        type: 'SYNC_TRACK',
+        track: slimTrack(track),
+        time: 0,
+        playing: true,
+        at: trackAt || Date.now(),
+        sentAt: Date.now()
+      };
+      let sent = 0;
+      openPeers.forEach(c => {
+        try { c.send(payload); sent++; }
+        catch (e) { console.warn('Gagal mengirim track baru ke room:', c.peer, e); }
+      });
+      if (sent) {
+        lastTrackBroadcastKey = key;
+        lastTrackBroadcastAt = Date.now();
+        roomPlaying = true;
+      }
+      return sent > 0;
+    }
+    // Dipakai juga oleh ln-extras.js saat lagu dipilih dari fitur tambahan.
+    window.broadcastTrackSelection = broadcastTrackSelection;
 
     function broadcastSync(action, time = 0, track = null, playing = true) {
       if (!isRoomConnected || !connections.length) return;
