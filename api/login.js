@@ -9,6 +9,17 @@
  */
 const crypto = require('crypto');
 
+const ALLOWED_ORIGINS = new Set(['https://lnmusic.web.id', 'https://lnmusic.vercel.app', 'https://localhost', 'http://localhost', 'capacitor://localhost', 'ionic://localhost']);
+function applyCors(req, res) {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
+}
+
 const HASHES = {
   nuki: () => process.env.LN_HASH_NUKI,
   nana: () => process.env.LN_HASH_NANA
@@ -57,7 +68,9 @@ function safeEqualHex(a, b) {
 }
 
 module.exports = async (req, res) => {
+  applyCors(req, res);
   res.setHeader('Cache-Control', 'no-store');
+  if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return res.status(405).json({ ok: false }); }
 
   let body = req.body;
