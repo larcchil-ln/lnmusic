@@ -2213,8 +2213,18 @@
       { urls: 'stun:global.stun.twilio.com:3478' }
     ];
     let iceCache = null, iceInfo = { src: 'belum', msg: '' };
+    function lnTurnApiUrl() {
+      const host = location.hostname;
+      const cap = window.Capacitor;
+      const native = !!(cap && ((typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) ||
+        (typeof cap.getPlatform === 'function' && cap.getPlatform() !== 'web')));
+      const localApp = native || host === 'localhost' || host === '127.0.0.1' ||
+        location.protocol === 'capacitor:' || location.protocol === 'file:';
+      // Web memakai origin aktif (same-origin); APK/dev memakai domain kanonis tanpa redirect apex -> www.
+      return localApp ? 'https://www.lnmusic.web.id/api/turn' : new URL('/api/turn', location.href).href;
+    }
     async function fetchTurn() {
-      const url = 'https://lnmusic.web.id/api/turn';
+      const url = lnTurnApiUrl();
       const C = window.Capacitor;
       const native = !!(C && ((C.isNativePlatform && C.isNativePlatform()) || (C.getPlatform && C.getPlatform() !== 'web')));
       const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 12000);
