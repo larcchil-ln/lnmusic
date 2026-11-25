@@ -213,6 +213,11 @@
       const origPlayTrack = window.playTrack;
       window.playTrack = function (track, autoOpenFull) {
         origPlayTrack.apply(this, arguments);
+        // Fallback eksplisit untuk pemilihan dari OUR/fitur tambahan.
+        // Helper memeriksa currentTrack dan mendeduplikasi kiriman dari core.
+        if (track && track.type === 'youtube' && typeof window.broadcastTrackSelection === 'function') {
+          window.broadcastTrackSelection(track);
+        }
         if (track && track.title) {
           state.playHistory.unshift({
             id: track.id || '',

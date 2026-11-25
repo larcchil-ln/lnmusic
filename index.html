@@ -2166,9 +2166,12 @@
       }
 
       htmlAudio.pause();
-      if (ytReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
 
       if (track.type === 'offline') {
+        // Hentikan YouTube hanya saat benar-benar berpindah ke file offline.
+        // Jangan stopVideo() sebelum loadVideoById() untuk track YouTube:
+        // pada beberapa WebView event stop lama dapat beradu dengan pemuatan track baru.
+        if (ytReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
         let blob = track.blob;
         if (!blob) {
           const found = offlineTracks.find(o => o.id === track.id);
@@ -2203,7 +2206,9 @@
 
       if (!isRemoteAction && track.type === 'youtube') {
         saveRoomState();
-        broadcastSync('TRACK', 0, track);
+        // Setiap pergantian track lokal wajib mengirim ID track ke semua peer.
+        // Tidak bergantung pada tombol Play/Pause atau Seek.
+        broadcastTrackSelection(track);
       }
     }
 
@@ -2689,65 +2694,130 @@
 
     // Terapkan perintah room setelah YouTube IFrame siap. Di Android WebView,
     // event room bisa tiba lebih cepat daripada player selesai dibuat/dimuat.
+    // Sinkronisasi YouTube room: tunggu sampai IFrame benar-benar memuat video
+    // sebelum seek/play. Ini menghindari race condition yang sering muncul di Android WebView.
+    let roomSyncToken = 0;
     function applyIncomingRoomSync(data) {
       if (!data || !['SYNC_TRACK', 'SYNC_STATE'].includes(data.type)) return;
       if (!ytReady || !ytPlayer) {
+        // Simpan hanya perintah terbaru agar track lama tidak menimpa pilihan terbaru.
         pendingRoomSync = data;
         return;
       }
 
       if (data.type === 'SYNC_TRACK') {
-        if (!data.track || data.track.type !== 'youtube' || !/^[\w-]{11}$/.test(String(data.track.id || ''))) return;
+        const track = data.track;
+        if (!track || track.type !== 'youtube' || !/^[\w-]{11}$/.test(String(track.id || ''))) return;
+
+        const token = ++roomSyncToken;
+        const targetId = String(track.id);
+        const targetTime = Math.max(0, Number(data.time) || 0);
+        const shouldPlay = data.playing !== false;
+
+        // Tandai sebagai aksi remote sebelum memuat video supaya event PLAY/PAUSE
+        // dari YouTube tidak memantul kembali menjadi perintah baru ke room.
         isRemoteAction = true;
-        roomPlaying = data.playing !== false;
-        playTrack(data.track, false);
-        if (data.at) trackAt = data.at;
-        // Tunggu IFrame menerima video baru sebelum seek/play; Android WebView
-        // sering membutuhkan waktu lebih lama daripada browser desktop.
-        setTimeout(() => {
+        roomPlaying = shouldPlay;
+        pendingRoomSync = null;
+        // Perbarui metadata/UI seperti pemutaran lokal, lalu paksa IFrame
+        // menerima ID target secara eksplisit. Pada sebagian WebView, urutan
+        // stopVideo() -> loadVideoById() dari playTrack bisa meninggalkan video lama.
+        // playTrack memuat ID YouTube tepat satu kali. Hindari loadVideoById
+        // kedua secara langsung karena dua perintah berurutan dapat saling
+        // membatalkan pada sebagian Android WebView.
+        playTrack({ ...track }, false);
+        if (data.at) trackAt = Number(data.at) || Date.now();
+
+        let attempts = 0;
+        const finishTrackSync = () => {
+          if (token !== roomSyncToken) return;
+          if (!ytReady || !ytPlayer) {
+            pendingRoomSync = data;
+            isRemoteAction = false;
+            return;
+          }
+
+          let loadedId = '';
           try {
-            if (!ytReady || !ytPlayer) { pendingRoomSync = data; isRemoteAction = false; return; }
-            ytPlayer.seekTo(Math.max(0, Number(data.time) || 0), true);
-            if (data.playing === false) {
-              ytPlayer.pauseVideo();
-              setPlayingUI(false);
-            } else {
+            const videoData = ytPlayer.getVideoData && ytPlayer.getVideoData();
+            loadedId = videoData && videoData.video_id ? String(videoData.video_id) : '';
+          } catch (_) {}
+
+          // IFrame API kadang masih melaporkan ID video sebelumnya saat buffering.
+          // Tunggu lebih lama; jangan menyerah setelah 6 detik pada koneksi lambat.
+          if (loadedId !== targetId && attempts++ < 120) {
+            // Coba ulang load secara terbatas jika player masih mempertahankan ID lama.
+            if (attempts === 8 || attempts === 24 || attempts === 48) {
+              try {
+                ytPlayer.loadVideoById({
+                  videoId: targetId,
+                  startSeconds: targetTime,
+                  suggestedQuality: 'hd1080'
+                });
+              } catch (_) {}
+            }
+            setTimeout(finishTrackSync, 250);
+            return;
+          }
+          if (loadedId !== targetId) {
+            isRemoteAction = false;
+            showToast('Video pasangan belum berhasil dimuat. Coba kirim ulang dari perangkat pemutar.');
+            return;
+          }
+
+          try {
+            if (targetTime > 0.5) ytPlayer.seekTo(targetTime, true);
+            if (shouldPlay) {
               ytPlayer.playVideo();
               setPlayingUI(true);
+            } else {
+              ytPlayer.pauseVideo();
+              setPlayingUI(false);
             }
+            roomPlaying = shouldPlay;
           } catch (e) {
-            pendingRoomSync = data;
+            console.warn('Gagal menerapkan track room:', e);
           }
-          setTimeout(() => { isRemoteAction = false; }, 900);
-        }, 1600);
-        appendSystemChat(`🎵 Memutar bersama: ${data.track.title || 'YouTube'}`);
+          setTimeout(() => {
+            if (token === roomSyncToken) isRemoteAction = false;
+          }, 2200);
+        };
+
+        // Beri waktu IFrame untuk memproses loadVideoById sebelum memeriksa ID.
+        setTimeout(finishTrackSync, 400);
+        appendSystemChat(`🎵 Memutar bersama: ${track.title || 'YouTube'}`);
         return;
       }
 
-      if (!['PLAY', 'PAUSE', 'SEEK'].includes(data.action) || !Number.isFinite(+data.time)) return;
+      if (!['PLAY', 'PAUSE', 'SEEK'].includes(data.action) || !Number.isFinite(Number(data.time))) return;
       if (!currentTrack || currentTrack.type !== 'youtube') {
         pendingRoomSync = data;
         return;
       }
+      const token = ++roomSyncToken;
       isRemoteAction = true;
+      const targetTime = Math.max(0, Number(data.time) || 0);
       try {
         if (data.action === 'PLAY') {
-          if (Math.abs(ytPlayer.getCurrentTime() - data.time) > 1.8) ytPlayer.seekTo(data.time, true);
+          const currentTime = ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0;
+          if (Math.abs(currentTime - targetTime) > 1.25) ytPlayer.seekTo(targetTime, true);
           ytPlayer.playVideo();
           setPlayingUI(true);
           roomPlaying = true;
         } else if (data.action === 'PAUSE') {
-          ytPlayer.seekTo(data.time, true);
+          ytPlayer.seekTo(targetTime, true);
           ytPlayer.pauseVideo();
           setPlayingUI(false);
           roomPlaying = false;
         } else {
-          ytPlayer.seekTo(data.time, true);
+          ytPlayer.seekTo(targetTime, true);
         }
       } catch (e) {
         pendingRoomSync = data;
       }
-      setTimeout(() => { isRemoteAction = false; }, 900);
+      setTimeout(() => {
+        if (token === roomSyncToken) isRemoteAction = false;
+      }, 1400);
     }
 
     function restoreRoomState() {
@@ -2832,7 +2902,12 @@
     // ===== Izin "play bareng" untuk tamu =====
     // Admin (Host / Nuki / Nana) selalu boleh. Tamu hanya boleh setelah Admin memberi izin (members[id].ctl).
     function isGuestSession() { return session === 'guest' || (session === 'custom' && !isHost); }
-    function myPlayPerm() { const m = peer && members[peer.id]; return !!(m && (m.ctl || m.role === 'admin')); }
+    function myPlayPerm() {
+      const id = peer && peer.id;
+      const m = id && members[id];
+      // Identitas admin utama tetap sah meskipun snapshot MEMBERS lokal terlambat.
+      return !!(id && isAdminPeer(id)) || !!(m && (m.ctl || m.role === 'admin' || m.owner));
+    }
     function canPlayControl() { return !isRoomConnected || !isGuestSession() || myPlayPerm() || !partnerOnline(); }
     function guardPlayCtl() {
       if (canPlayControl()) return true;
@@ -3248,8 +3323,10 @@
           if (!(isHost && !isAdminPeer(conn.peer))) sendHistory(conn);
         }
         if (voiceOn) callPeer(conn.peer);
-        if (isHost && isPlaying && currentTrack && currentTrack.type === 'youtube') {
-          conn.send({ type: 'SYNC_TRACK', track: slimTrack(currentTrack), time: curTime(), playing: true, at: trackAt });
+        // Kirim snapshot track meskipun sedang pause agar anggota yang baru masuk
+        // tidak tertinggal sampai host menekan play lagi.
+        if (isHost && currentTrack && currentTrack.type === 'youtube') {
+          conn.send({ type: 'SYNC_TRACK', track: slimTrack(currentTrack), time: curTime(), playing: !!isPlaying, at: trackAt, sentAt: Date.now() });
         }
       });
       conn.on('data', (data) => { conn._last = Date.now(); handleIncomingSyncData(data, conn); });
@@ -3275,8 +3352,11 @@
       const fromGuest = isHost && senderConn && (session === 'custom' || !isAdminPeer(senderConn.peer));
       if (fromGuest) {
         const sm = members[senderConn.peer] || {};
-        const ctl = !!sm.ctl || sm.role === 'admin';
-        const blocked = sm.role === 'admin'
+        // Jangan salah menganggap Nana/Nuki sebagai guest hanya karena data
+        // MEMBERS belum tersinkron di host saat event track baru tiba.
+        const senderIsAdmin = isAdminPeer(senderConn.peer) || sm.role === 'admin' || !!sm.owner;
+        const ctl = !!sm.ctl || senderIsAdmin;
+        const blocked = senderIsAdmin
           ? /^(STATE|HISTORY|QUEUE_SET|LYR_|KICK|ROOM_META|FORCE_MUTE)/
           : (ctl ? /^(STATE|HISTORY|QUEUE_SET|LYR_|KICK|VC_STOP_ALL|ROOM_META|FORCE_MUTE)/ : /^(SYNC_|STATE|HISTORY|QUEUE_SET|QUEUE_DEL|QUEUE_MOVE|LYR_|KICK|VC_STOP_ALL|ROOM_META|FORCE_MUTE)/);
         if (blocked.test(String(data.type))) return;
@@ -3420,20 +3500,61 @@
       }
     }
 
-    function broadcastSync(action, time = 0, track = null) {
+    // Broadcast track dipisahkan dari event PLAY/PAUSE/SEEK.
+    // Dipanggil setiap kali playTrack memilih ID YouTube baru, termasuk dari
+    // pencarian, next/previous, antrean, dan fitur tambahan.
+    let lastTrackBroadcastKey = '', lastTrackBroadcastAt = 0;
+    function broadcastTrackSelection(track) {
+      if (isRemoteAction || !track || track.type !== 'youtube') return false;
+      if (!currentTrack || String(currentTrack.id) !== String(track.id)) return false;
+      if (!isRoomConnected) return false;
+      const openPeers = connections.filter(c => c && c.open);
+      if (!openPeers.length) return false;
+
+      // playTrack sudah menjalankan guardPlayCtl sebelum sampai ke sini.
+      // Jangan lakukan pemeriksaan izin kedua yang bisa menolak event track
+      // setelah pemutaran lokal sudah diizinkan.
+      const key = String(track.id) + ':' + String(trackAt);
+      if (key === lastTrackBroadcastKey && Date.now() - lastTrackBroadcastAt < 1500) return true;
+
+      const payload = {
+        type: 'SYNC_TRACK',
+        track: slimTrack(track),
+        time: 0,
+        playing: true,
+        at: trackAt || Date.now(),
+        sentAt: Date.now()
+      };
+      let sent = 0;
+      openPeers.forEach(c => {
+        try { c.send(payload); sent++; }
+        catch (e) { console.warn('Gagal mengirim track baru ke room:', c.peer, e); }
+      });
+      if (sent) {
+        lastTrackBroadcastKey = key;
+        lastTrackBroadcastAt = Date.now();
+        roomPlaying = true;
+      }
+      return sent > 0;
+    }
+    // Dipakai juga oleh ln-extras.js saat lagu dipilih dari fitur tambahan.
+    window.broadcastTrackSelection = broadcastTrackSelection;
+
+    function broadcastSync(action, time = 0, track = null, playing = true) {
       if (!isRoomConnected || !connections.length) return;
       if (!canPlayControl()) return; // tamu tanpa izin tidak mengirim perintah putar
-      if (action === 'PLAY' || action === 'TRACK') roomPlaying = true; else if (action === 'PAUSE') roomPlaying = false;
+      if (action === 'PLAY' || (action === 'TRACK' && playing)) roomPlaying = true;
+      else if (action === 'PAUSE' || action === 'TRACK') roomPlaying = false;
       const payload = action === 'TRACK'
-        ? { type: 'SYNC_TRACK', track: slimTrack(track), time, playing: true, at: trackAt }
-        : { type: 'SYNC_STATE', action, time };
-      connections.forEach(c => { if (c.open) c.send(payload); });
+        ? { type: 'SYNC_TRACK', track: slimTrack(track), time: Math.max(0, Number(time) || 0), playing: !!playing, at: trackAt, sentAt: Date.now() }
+        : { type: 'SYNC_STATE', action, time: Math.max(0, Number(time) || 0), sentAt: Date.now() };
+      connections.forEach(c => { if (c.open) { try { c.send(payload); } catch (e) { console.warn('Gagal mengirim sinkronisasi room:', e); } } });
     }
 
     function forceSyncNow() {
       if (!currentTrack || currentTrack.type !== 'youtube') return showToast('Putar lagu/film YouTube dulu');
       const time = (ytReady && ytPlayer) ? ytPlayer.getCurrentTime() : 0;
-      broadcastSync('TRACK', time, currentTrack);
+      broadcastSync('TRACK', time, currentTrack, !!isPlaying);
       showToast('Posisi detik dikirim ke pasangan!');
     }
 
