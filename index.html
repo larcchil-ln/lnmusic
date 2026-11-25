@@ -2344,14 +2344,37 @@
       { urls: 'stun:global.stun.twilio.com:3478' }
     ];
     let iceCache = null, iceInfo = { src: 'belum', msg: '' };
+    function lnTurnApiUrl() {
+      const host = location.hostname;
+      const cap = window.Capacitor;
+      const native = !!(cap && ((typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) ||
+        (typeof cap.getPlatform === 'function' && cap.getPlatform() !== 'web')));
+      const localApp = native || host === 'localhost' || host === '127.0.0.1' ||
+        location.protocol === 'capacitor:' || location.protocol === 'file:';
+      return localApp ? 'https://lnmusic.web.id/api/turn' : new URL('/api/turn', location.href).href;
+    }
     async function fetchTurn() {
-      const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 7000);
+      const url = lnTurnApiUrl();
+      const ctrl = new AbortController();
+      let timedOut = false;
+      const t = setTimeout(() => { timedOut = true; ctrl.abort(); }, 15000);
       try {
-        const r = await fetch(lnApiUrl('/api/turn'), { signal: ctrl.signal, cache: 'no-store' });
+        const r = await fetch(url, {
+          method: 'GET', mode: 'cors', credentials: 'omit',
+          signal: ctrl.signal, cache: 'no-store'
+        });
         const j = await r.json().catch(() => null);
         if (!r.ok) throw new Error((j && j.error) || 'HTTP ' + r.status);
-        if (!j || !Array.isArray(j.iceServers) || !j.iceServers.length) throw new Error('Respons kosong');
+        if (!j || !Array.isArray(j.iceServers) || !j.iceServers.length) throw new Error('Respons TURN kosong');
         return j.iceServers;
+      } catch (e) {
+        if (timedOut || e.name === 'AbortError') {
+          throw new Error('Timeout 15 detik saat menghubungi ' + url);
+        }
+        if (e instanceof TypeError || e.message === 'Failed to fetch') {
+          throw new Error('Koneksi/CORS gagal ke ' + url + ' (origin aplikasi: ' + location.origin + ')');
+        }
+        throw e;
       } finally { clearTimeout(t); }
     }
     async function getIceServers() {
