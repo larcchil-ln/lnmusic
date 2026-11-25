@@ -2539,7 +2539,7 @@
       }
 
       if (data.type === 'SYNC_TRACK') {
-        if (!data.track || data.track.type !== 'youtube' || !/^[\\w-]{11}$/.test(String(data.track.id || ''))) return;
+        if (!data.track || data.track.type !== 'youtube' || !/^[\w-]{11}$/.test(String(data.track.id || ''))) return;
         isRemoteAction = true;
         roomPlaying = data.playing !== false;
         playTrack(data.track, false);
