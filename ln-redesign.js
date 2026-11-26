@@ -235,8 +235,30 @@
     });
   }
 
+  // Respons cepat: siapkan server TURN lebih awal (supaya masuk room tidak menunggu) + umpan balik saat tombol ditekan
+  function snappy() {
+    if (window.__lrSnappy) return; window.__lrSnappy = true;
+    setTimeout(function () { try { if (typeof getIceServers === 'function') getIceServers(); } catch (e) {} }, 800);
+    function busy(btn, txt) {
+      if (!btn || btn.dataset.lrBusy) return;
+      var old = btn.innerHTML; btn.dataset.lrBusy = '1'; btn.disabled = true; btn.textContent = txt;
+      setTimeout(function () { btn.disabled = false; btn.innerHTML = old; delete btn.dataset.lrBusy; }, 3500);
+    }
+    document.addEventListener('submit', function (e) {
+      var f = e.target; if (!f || !f.closest || !f.closest('#lr-kita-card')) return;
+      busy(f.querySelector('button[type=submit]'), 'Memproses...');
+    }, true);
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('#lr-create, #lr-go');
+      if (!b || b.disabled) return;
+      if (b.id === 'lr-create') { var n = $('lr-name'); if (!n || n.value.trim().length < 2) return; }
+      b.classList.add('lr-press');
+      setTimeout(function () { b.classList.remove('lr-press'); }, 600);
+    }, true);
+  }
+
   function init() {
-    typingGuard(); topIcons(); sidebar(); hero(); startBox(); roomView(); mark();
+    snappy(); typingGuard(); topIcons(); sidebar(); hero(); startBox(); roomView(); mark();
     if (window.switchTab && !window.switchTab.__lr) {
       var o = window.switchTab;
       window.switchTab = function () {

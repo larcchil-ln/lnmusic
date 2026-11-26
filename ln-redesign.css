@@ -217,3 +217,8 @@ html:not(.ln-android) #room-setup-area > div:not(#lr-start) { display: none !imp
   font-size: .9rem !important; font-weight: 700 !important;
 }
 #lr-kita-card .text-zinc-500 { color: #71717a; }
+
+/* Umpan balik instan saat tombol masuk/buat room ditekan */
+#lr-create, #lr-go, #lr-kita-card form button[type=submit] { transition: transform .12s, opacity .15s, filter .15s; touch-action: manipulation; }
+#lr-create:active, #lr-go:not(:disabled):active, #lr-kita-card form button[type=submit]:active { transform: scale(.96); filter: brightness(1.08); }
+#lr-kita-card form button[type=submit]:disabled { opacity: .7; }

@@ -2897,8 +2897,15 @@
       profiles = {}; myProfile = { name: '', bio: '', avatar: '' };
       chatLog = []; if (u === 'guest' || u === 'custom') roomQueue = [];
       renderChat();
-      // FIX LOGIN: jangan biarkan database yang lambat menahan masuk room (maks 2,5 detik; sisanya lanjut di latar)
-      await Promise.race([dbHydrate(), new Promise(r => setTimeout(r, 2500))]);
+      // RESPONS INSTAN: tampilkan ruang room sekarang juga; koneksi & data menyusul di latar
+      try {
+        document.getElementById('room-setup-area').classList.add('hidden');
+        document.getElementById('room-active-area').classList.remove('hidden');
+        document.getElementById('active-room-code').textContent = currentRoomCode;
+        setRoomPill('Menghubungkan ke room...', false);
+      } catch (e) {}
+      // FIX LOGIN: jangan biarkan database yang lambat menahan masuk room (maks 1,2 detik; sisanya lanjut di latar)
+      await Promise.race([dbHydrate(), new Promise(r => setTimeout(r, 1200))]);
       if (session !== u) return; // sudah logout selama memuat
       clearInterval(stateTimer); stateTimer = setInterval(saveRoomState, 4000);
       startSession();
