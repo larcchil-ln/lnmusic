@@ -805,6 +805,7 @@
 #ln-offline-player .ln-player-art,#ln-now-playing .ln-np-cover{background-repeat:no-repeat!important;background-size:cover!important;background-position:center!important}
 </style>
 
+  <link rel="stylesheet" href="./ln-redesign.css" />
 </head>
 <body class="min-h-screen flex flex-col md:flex-row selection:bg-rose-500/30 selection:text-rose-200">
 
@@ -1567,11 +1568,12 @@
     </aside>
   </div>
 
-  <nav id="ln-mnav" class="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-white/10 grid grid-cols-4 py-2 z-40" style="padding-bottom:max(8px,env(safe-area-inset-bottom))">
+  <nav id="ln-mnav" class="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-white/10 grid grid-cols-5 py-2 z-40" style="padding-bottom:max(8px,env(safe-area-inset-bottom))">
         <button onclick="switchTab('online')" id="mob-nav-online" class="mnav flex flex-col items-center gap-1 text-rose-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11 12 3.8l8.5 7.2"/><path d="M5.5 9.7V20h13V9.7"/><path d="M10 20v-5.5h4V20"/></svg><span>Beranda</span></button>
         <button onclick="switchTab('together')" id="mob-nav-together" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.2" r="3.2"/><path d="M3.3 19.5c.6-3.3 2.9-5.2 5.7-5.2s5.1 1.9 5.7 5.2"/><circle cx="17.2" cy="9" r="2.4"/><path d="M16.6 14.4c2.3.2 3.8 1.7 4.2 4.4"/></svg><span>Bareng</span></button>
         <button onclick="switchTab('videocall')" id="mob-nav-videocall" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6.5" width="12" height="11" rx="3.2"/><path d="m15 10.6 5.5-3.1v9L15 13.4"/></svg><span>Call</span></button>
         <button onclick="switchTab('playlists')" id="mob-nav-playlists" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h11M4 11.5h11M4 16.5h6"/><circle cx="17.5" cy="17" r="2.6"/><path d="M20.1 17V7.8l-3-1"/></svg><span>Playlist</span></button>
+        <button onclick="switchTab('offline')" id="mob-nav-offline" class="mnav flex flex-col items-center gap-1 text-zinc-400 text-[10px] font-medium"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v11"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4.5 20h15"/></svg><span>Offline</span></button>
       </nav>
 
   <!-- ===================================================================== -->
@@ -1663,7 +1665,7 @@
     <img id="splash-logo" data-ln-logo data-ln-wide alt="LNMusic" class="w-48 h-auto object-contain" />
     <h1 class="text-2xl font-extrabold">LNMusic</h1>
     <p class="text-xs text-zinc-400 max-w-xs">Create by Oel</p>
-    <button onclick="enterFullscreen()" aria-label="Lanjutkan" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-violet-600 text-sm font-bold text-white shadow-lg shadow-rose-600/30 inline-flex items-center justify-center gap-2.5">LANJUTKAN <i data-lucide="arrow-right" class="w-4 h-4" aria-hidden="true"></i></button>
+    <button onclick="enterFullscreen()" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-rose-600 to-violet-600 text-sm font-bold text-white shadow-lg shadow-rose-600/30">Mulai • Layar Penuh</button>
     <p id="splash-hint" class="text-[11px] text-zinc-500 max-w-xs"></p>
   </div>
 
@@ -6336,6 +6338,7 @@
   <script src="./ln-local.js?v=bridge5"></script>
   <script src="./ln-offline-ui.js"></script>
   <script src="./ln-offline-v2.js"></script>
+  <script src="./ln-redesign.js"></script>
 <script>
 /* Hapus tombol emoji 📷 / 🎤 lama di bar chat (disuntik skrip eksternal) supaya kolom teks lebih lega */
 (function () {
