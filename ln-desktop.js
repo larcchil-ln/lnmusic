@@ -9,7 +9,6 @@
     together: { label: 'Bareng', icon: 'headphones' },
     videocall: { label: 'Video Call', icon: 'video' },
     playlists: { label: 'Playlist', icon: 'list-music' },
-    offline: { label: 'Offline', icon: 'download' }
   };
   bar.querySelectorAll('nav .nav-btn').forEach(function (b) {
     var m = (b.getAttribute('onclick') || '').match(/switchTab\('(\w+)'\)/);
@@ -26,9 +25,10 @@
   navStyle.id = 'ln-desktop-icon-nav-style';
   navStyle.textContent = `
     @media (min-width: 768px) {
-      #ln-top nav { gap: 7px !important; padding: 5px !important; }
+      #ln-top nav { gap: 9px !important; padding: 6px !important; }
+      #ln-top nav #nav-offline { display: none !important; }
       #ln-top nav .nav-btn {
-        width: 46px !important; min-width: 46px !important; height: 46px !important;
+        width: 52px !important; min-width: 52px !important; height: 52px !important;
         padding: 0 !important; display: inline-flex !important; align-items: center !important;
         justify-content: center !important; border-radius: 14px !important;
         font-size: 0 !important; line-height: 1 !important;
@@ -39,7 +39,7 @@
         width: 100% !important; height: 100% !important; gap: 0 !important;
       }
       #ln-top nav .nav-btn svg {
-        display: block !important; width: 21px !important; height: 21px !important;
+        display: block !important; width: 26px !important; height: 26px !important;
         padding: 0 !important; border-radius: 0 !important; background: none !important;
         stroke-width: 1.9 !important;
       }
