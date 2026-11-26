@@ -1,6 +1,6 @@
-/* LNMusic redesign web: menyisipkan ikon, sidebar, pil mobile, dan hero Bareng. Tidak aktif di APK. */
+/* LNMusic redesign: ikon/sidebar hanya di web biasa; hero & layar Bareng + perbaikan input berlaku di web dan APK. */
 (function () {
-  if (document.documentElement.classList.contains('ln-android')) return;
+  var APK = document.documentElement.classList.contains('ln-android');
   var P = {
     home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/>',
     together: '<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4.5" height="7" rx="2"/><rect x="16.5" y="14" width="4.5" height="7" rx="2"/>',
@@ -258,8 +258,8 @@
   }
 
   function init() {
-    snappy(); typingGuard(); topIcons(); sidebar(); hero(); startBox(); roomView(); mark();
-    if (window.switchTab && !window.switchTab.__lr) {
+    snappy(); typingGuard(); if (!APK) { topIcons(); sidebar(); } hero(); startBox(); roomView(); mark();
+    if (!APK && window.switchTab && !window.switchTab.__lr) {
       var o = window.switchTab;
       window.switchTab = function () {
         var r = o.apply(this, arguments);

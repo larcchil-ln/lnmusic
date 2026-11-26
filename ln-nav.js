@@ -226,6 +226,12 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && exitOpen()) exitClose(); });
   try { history.replaceState({ ln: 0 }, ''); } catch (e) {}
   trap();
+  // Dipanggil MainActivity (Android) setiap tombol Back ditekan; selalu "ditangani" di sini, tidak bergantung riwayat WebView
+  window.lnBackPress = function () {
+    if (exitOpen()) { exitClose(); return 'ok'; }
+    if (closeTop() || goPrevTab()) return 'ok';
+    showExit(); return 'ok';
+  };
   window.addEventListener('popstate', function (ev) {
     if (ev.state && ev.state.ln === 1) return; // maju ke jebakan, abaikan
     if (exitOpen()) { exitClose(); return trap(); }            // Back saat dialog terbuka = tetap di aplikasi

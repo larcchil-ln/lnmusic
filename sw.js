@@ -5,7 +5,7 @@
  * - TIDAK menyentuh: /api/*, YouTube, signaling PeerJS, LRCLIB, atau request non-GET.
  * Naikkan VERSION setiap kali daftar SHELL berubah.
  */
-const VERSION = 'v10-room';
+const VERSION = 'v12-pages-launch';
 const SHELL_CACHE = 'lnmusic-shell-' + VERSION;
 const CDN_CACHE = 'lnmusic-cdn-' + VERSION;
 const SHELL = [
@@ -17,10 +17,12 @@ const SHELL = [
   '/ln-local.js',
   '/ln-offline-ui.js',
   '/ln-offline-v2.js',
-  '/ln-android.css',
   '/ln-redesign.css',
+  '/ln-pages.css',
+  '/icons/splash-logo.png',
   '/ln-redesign.js',
   '/ln-minilyrics.js',
+  '/ln-android.css',
   '/ln-android.js',
   '/manifest.webmanifest',
   '/icons/icon-192.png',

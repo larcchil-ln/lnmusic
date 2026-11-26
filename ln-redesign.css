@@ -1,6 +1,6 @@
-/* LNMusic redesign web (desktop + mobile) — hanya web biasa, APK tidak terpengaruh.
+/* LNMusic redesign web (desktop + mobile) — web + APK. Bagian navigasi/sidebar/player hanya untuk web biasa; bagian tab Bareng berlaku di keduanya.
    Warna: hitam OLED + hijau #22d36a (sama dengan APK). */
-html:not(.ln-android) {
+html {
   --lr-bg: #000;
   --lr-panel: rgba(21, 21, 26, .72);
   --lr-panel2: rgba(29, 29, 36, .6);
@@ -70,7 +70,7 @@ html:not(.ln-android) #ln-mini input[type=range] { accent-color: #4ade80; }
 
 /* ---------- Tab Bareng: hero ---------- */
 #lr-hero { display: none; }
-html:not(.ln-android) #lr-hero {
+html #lr-hero {
   display: block; position: relative; overflow: hidden; border-radius: 26px; padding: 30px 32px 32px; margin-bottom: 18px;
   background: radial-gradient(ellipse at 80% 40%, rgba(34, 211, 106, .5), transparent 62%), linear-gradient(120deg, rgba(14, 14, 18, .94), rgba(0, 0, 0, .94));
   border: 1px solid var(--lr-line);
@@ -83,14 +83,14 @@ html:not(.ln-android) #lr-hero {
 .lr-cta { color: #04210f; position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 10px; padding: 14px 26px; border-radius: 999px; font-weight: 700; font-size: 1rem; background: var(--lr-grad); box-shadow: 0 10px 30px -10px var(--lr-glow); }
 .lr-cta:active { transform: scale(.97); }
 .lr-art { position: absolute; right: 3%; top: 50%; transform: translateY(-50%); width: min(44%, 360px); pointer-events: none; }
-html:not(.ln-android) #tab-together > .glass { background: transparent !important; border: 0 !important; padding: 0 !important; }
-html:not(.ln-android) #tab-together > .glass > div:first-child { border: 0 !important; padding-bottom: 0 !important; }
-html:not(.ln-android) #tab-together > .glass > div:first-child > div:first-child { display: none; }
-html:not(.ln-android) #room-setup-area > div { border-color: var(--lr-line) !important; background: var(--lr-panel) !important; }
+html #tab-together > .glass { background: transparent !important; border: 0 !important; padding: 0 !important; }
+html #tab-together > .glass > div:first-child { border: 0 !important; padding-bottom: 0 !important; }
+html #tab-together > .glass > div:first-child > div:first-child { display: none; }
+html #room-setup-area > div { border-color: var(--lr-line) !important; background: var(--lr-panel) !important; }
 
 /* ---------- Mobile: navigasi tetap di bawah (bawaan), hero disesuaikan ---------- */
 @media (max-width: 767.98px) {
-  html:not(.ln-android) #lr-hero { padding: 22px 20px 24px; border-radius: 22px; }
+  html #lr-hero { padding: 22px 20px 24px; border-radius: 22px; }
   .lr-h-ic .lr-ic { width: 38px; height: 38px; }
   .lr-art { width: 46%; right: -6%; top: 38%; opacity: .5; }
   #lr-hero p { font-size: .95rem; max-width: 80%; }
@@ -103,10 +103,10 @@ html:not(.ln-android) #nav-offline, html:not(.ln-android) #mob-nav-offline, html
 html:not(.ln-android) #ln-mnav { grid-template-columns: repeat(4, 1fr) !important; }
 
 /* ---------- Layar awal Bareng ---------- */
-html:not(.ln-android) #room-setup-area { display: block; max-width: 460px; }
-html:not(.ln-android) #room-setup-area > div:not(#lr-start) { display: none !important; }
-html:not(.ln-android) #room-setup-area.lr-kita > div:not(#lr-start):not(#ln-bh):not(:nth-child(2)) { display: block !important; margin-top: 14px; }
-html:not(.ln-android) #tab-together .glass:has(#room-setup-area:not(.hidden)) > div:first-child { display: none; }
+html #room-setup-area { display: block; max-width: 460px; }
+html #room-setup-area > div:not(#lr-start) { display: none !important; }
+html #room-setup-area.lr-kita > div:not(#lr-start):not(#ln-bh):not(:nth-child(2)) { display: block !important; margin-top: 14px; }
+html #tab-together .glass:has(#room-setup-area:not(.hidden)) > div:first-child { display: none; }
 #lr-start { display: flex; flex-direction: column; gap: 12px; }
 #lr-start input { width: 100%; height: 54px; border-radius: 16px; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .1); color: #fff; padding: 0 18px; font-size: 1rem; outline: none; transition: border-color .2s, box-shadow .2s; }
 #lr-start input:focus { border-color: #22d36a; box-shadow: 0 0 0 3px rgba(34, 211, 106, .18); }
@@ -129,15 +129,15 @@ html:not(.ln-android) #tab-together .glass:has(#room-setup-area:not(.hidden)) > 
 #lr-info { width: 26px; height: 26px; border-radius: 50%; font-size: .75rem; font-weight: 800; font-style: italic; color: #a1a1b5; border: 1px solid rgba(255, 255, 255, .18); }
 #lr-note { font-size: .8rem; color: #a1a1b5; text-align: center; line-height: 1.5; }
 #lr-last > div { border-radius: 18px !important; background: rgba(34, 211, 106, .07) !important; border: 1px solid rgba(34, 211, 106, .25) !important; padding: 14px !important; }
-@media (max-width: 767.98px) { html:not(.ln-android) #room-setup-area { max-width: none; } }
+@media (max-width: 767.98px) { html #room-setup-area { max-width: none; } }
 
 /* ---------- Dalam room ---------- */
-html:not(.ln-android) #room-active-area { position: relative; isolation: isolate; }
-html:not(.ln-android) #room-active-area::before { content: ""; position: absolute; inset: -30px -16px; z-index: -1; border-radius: 32px; background: var(--lr-cover) center / cover no-repeat; filter: blur(64px) saturate(1.5); opacity: 0; transition: opacity .6s; pointer-events: none; }
-html:not(.ln-android) #room-active-area.lr-has-cover::before { opacity: .38; }
-html:not(.ln-android) #room-active-area > div:first-child { background: rgba(21, 21, 26, .72) !important; border: 1px solid rgba(34, 211, 106, .22) !important; border-radius: 22px !important; padding: 16px 18px !important; backdrop-filter: blur(14px); }
-html:not(.ln-android) #active-room-code { font-size: 1.5rem !important; letter-spacing: -.01em !important; }
-html:not(.ln-android) #active-room-id-badge { font-family: ui-monospace, monospace; letter-spacing: .08em; color: #86efac !important; background: rgba(34, 211, 106, .12) !important; border-color: rgba(34, 211, 106, .3) !important; }
+html #room-active-area { position: relative; isolation: isolate; }
+html #room-active-area::before { content: ""; position: absolute; inset: -30px -16px; z-index: -1; border-radius: 32px; background: var(--lr-cover) center / cover no-repeat; filter: blur(64px) saturate(1.5); opacity: 0; transition: opacity .6s; pointer-events: none; }
+html #room-active-area.lr-has-cover::before { opacity: .38; }
+html #room-active-area > div:first-child { background: rgba(21, 21, 26, .72) !important; border: 1px solid rgba(34, 211, 106, .22) !important; border-radius: 22px !important; padding: 16px 18px !important; backdrop-filter: blur(14px); }
+html #active-room-code { font-size: 1.5rem !important; letter-spacing: -.01em !important; }
+html #active-room-id-badge { font-family: ui-monospace, monospace; letter-spacing: .08em; color: #86efac !important; background: rgba(34, 211, 106, .12) !important; border-color: rgba(34, 211, 106, .3) !important; }
 .lr-actions { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap !important; }
 .lr-actions > button:first-child { height: 44px; padding: 0 18px !important; border-radius: 999px !important; background: var(--lr-grad) !important; color: #04210f !important; font-size: .9rem !important; font-weight: 800 !important; box-shadow: 0 10px 26px -12px rgba(34, 211, 106, .7) !important; }
 .lr-actions > button:first-child svg { color: #04210f !important; stroke: #04210f !important; }
@@ -149,8 +149,8 @@ html:not(.ln-android) #active-room-id-badge { font-family: ui-monospace, monospa
 .lr-menu button { width: 100%; justify-content: flex-start; padding: 11px 12px !important; border-radius: 11px !important; background: transparent !important; font-size: .85rem !important; }
 .lr-menu button:hover { background: rgba(255, 255, 255, .07) !important; }
 .lr-menu #btn-leave-room { color: #fda4af !important; }
-html:not(.ln-android) #tab-together .tg-sub, html:not(.ln-android) #tab-together .tg-hint { display: none; }
-html:not(.ln-android) #tab-together .tg-card { background: rgba(21, 21, 26, .66) !important; border-color: rgba(255, 255, 255, .08) !important; backdrop-filter: blur(14px); }
+html #tab-together .tg-sub, html #tab-together .tg-hint { display: none; }
+html #tab-together .tg-card { background: rgba(21, 21, 26, .66) !important; border-color: rgba(255, 255, 255, .08) !important; backdrop-filter: blur(14px); }
 #lr-tabs { display: none; }
 @media (max-width: 1023.98px) {
   #lr-tabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .08); }
@@ -176,8 +176,8 @@ html:not(.ln-android) #tab-together .tg-card { background: rgba(21, 21, 26, .66)
   color: #71717a !important; -webkit-text-fill-color: #71717a !important; opacity: 1 !important;
 }
 /* 2) Bug rendering input di dalam blur (backdrop-filter) pada browser HP: blur dimatikan di area input */
-html:not(.ln-android) #tab-together .glass, html:not(.ln-android) #tab-together .tg-card,
-html:not(.ln-android) #room-setup-area > div, html:not(.ln-android) #room-active-area > div:first-child {
+html #tab-together .glass, html #tab-together .tg-card,
+html #room-setup-area > div, html #room-active-area > div:first-child {
   -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
 }
 /* 3) Konflik ukuran/padding dengan aturan lama (#room-setup-area input ... !important) */
@@ -191,13 +191,13 @@ html:not(.ln-android) #room-setup-area > div, html:not(.ln-android) #room-active
 /* ---------- Perbaikan: layar awal Bareng harus hilang saat sudah masuk room ---------- */
 /* "#room-setup-area { display:block }" di atas mengalahkan class .hidden Tailwind, sehingga
    layar awal tetap tampil dan room muncul di bawahnya. Aturan ini mengembalikan perilaku hidden. */
-html:not(.ln-android) #room-setup-area.hidden,
-html:not(.ln-android) #room-setup-area.hidden > div { display: none !important; }
-html:not(.ln-android) #room-active-area.hidden { display: none !important; }
+html #room-setup-area.hidden,
+html #room-setup-area.hidden > div { display: none !important; }
+html #room-active-area.hidden { display: none !important; }
 
 /* ---------- Room Kita langsung tampil di layar awal (desain sama dengan kolom baru) ---------- */
 /* Kartu "Buat Room Baru / Gabung Kode" versi lama tidak pernah ditampilkan lagi */
-html:not(.ln-android) #room-setup-area > div:not(#lr-start) { display: none !important; }
+html #room-setup-area > div:not(#lr-start) { display: none !important; }
 #lr-kita-card { display: flex !important; flex-direction: column; gap: 12px; padding: 0 !important; background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
 #lr-kita-card > div:nth-child(-n+2) { display: none !important; }
 #lr-kita-card form { display: flex; flex-direction: column; gap: 12px; }

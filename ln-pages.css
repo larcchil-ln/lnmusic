@@ -1,0 +1,154 @@
+/* LNMusic — tab Video Call & Playlist, modal playlist, aksen panggilan, dan splash peluncuran.
+   Berlaku di web dan APK. Palet: hitam + hijau #22d36a (sama dengan ln-redesign.css / ln-android.css). */
+
+html {
+  --pg-green: #22d36a;
+  --pg-green-d: #16a34a;
+  --pg-grad: linear-gradient(100deg, #16a34a 0%, #22d36a 100%);
+  --pg-panel: rgba(21, 21, 26, .78);
+  --pg-panel2: rgba(255, 255, 255, .045);
+  --pg-line: rgba(34, 211, 106, .16);
+  --pg-line2: rgba(255, 255, 255, .08);
+  --pg-muted: #a1a1ab;
+}
+
+/* ---------- Tombol ---------- */
+.pg-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 46px; padding: 0 22px; border-radius: 999px; font-size: .9rem; font-weight: 700; line-height: 1;
+  border: 1px solid transparent; cursor: pointer; transition: transform .15s ease, opacity .2s ease, background .2s ease;
+}
+.pg-btn:active { transform: scale(.97); }
+.pg-btn-primary { color: #04210f; background: var(--pg-grad); box-shadow: 0 12px 28px -14px rgba(34, 211, 106, .7); }
+.pg-btn-primary svg { stroke: #04210f; }
+.pg-btn-ghost { color: #d4d4e4; background: var(--pg-panel2); border-color: var(--pg-line2); }
+.pg-btn-ghost:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.pg-btn-sm { height: 40px; padding: 0 16px; font-size: .82rem; }
+.pg-btn-lg { height: 54px; padding: 0 30px; font-size: 1rem; }
+.pg-icon-btn {
+  flex: none; width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  color: #a1a1b5; background: var(--pg-panel2); border: 1px solid var(--pg-line2); transition: background .2s, color .2s;
+}
+.pg-icon-btn:hover { color: #fff; background: rgba(255, 255, 255, .1); }
+.pg-icon-btn.pg-danger:hover { color: #fda4af; background: rgba(244, 63, 94, .16); border-color: rgba(244, 63, 94, .3); }
+
+/* ---------- Judul bagian ---------- */
+.pg-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.pg-head-t h3 { font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.15; }
+.pg-head-t p { margin-top: 4px; font-size: .8rem; color: var(--pg-muted); line-height: 1.45; }
+.pg-eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; font-weight: 800; color: #4ade80; }
+@media (max-width: 520px) {
+  .pg-head { align-items: flex-start; flex-direction: column; }
+  .pg-head .pg-btn { width: 100%; }
+}
+
+/* ---------- Playlist: kartu ---------- */
+.pg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.pg-card {
+  display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px; text-align: left; border-radius: 20px;
+  background: var(--pg-panel); border: 1px solid var(--pg-line2); transition: border-color .2s, background .2s, transform .15s;
+}
+.pg-card:hover { border-color: var(--pg-line); background: rgba(29, 29, 36, .85); }
+.pg-card:active { transform: scale(.985); }
+.pg-card.on { border-color: rgba(34, 211, 106, .55); background: linear-gradient(100deg, rgba(34, 211, 106, .16), rgba(34, 211, 106, .05)); }
+.pg-cover {
+  flex: none; width: 52px; height: 52px; border-radius: 15px; display: grid; place-items: center; color: #04210f;
+  background: var(--pg-grad); box-shadow: 0 10px 22px -12px rgba(34, 211, 106, .8);
+}
+.pg-cover svg { stroke: #04210f; }
+.pg-card-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.pg-card-t b { font-size: .95rem; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-card-t small { font-size: .75rem; color: var(--pg-muted); }
+.pg-chev { flex: none; color: #71717a; }
+.pg-card.on .pg-chev { color: #4ade80; }
+
+/* ---------- Playlist: detail ---------- */
+.pg-detail { border-radius: 24px; padding: 18px; background: var(--pg-panel); border: 1px solid var(--pg-line); }
+.pg-detail.hidden { display: none; }
+.pg-detail-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 14px; margin-bottom: 12px; border-bottom: 1px solid var(--pg-line2); }
+.pg-detail-t { min-width: 0; }
+.pg-detail-t h4 { margin-top: 4px; font-size: 1.3rem; font-weight: 800; letter-spacing: -.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-detail-a { display: flex; align-items: center; gap: 8px; flex: none; }
+@media (max-width: 520px) {
+  .pg-detail { padding: 14px; border-radius: 20px; }
+  .pg-detail-h { flex-direction: column; align-items: stretch; }
+  .pg-detail-a { justify-content: space-between; }
+  .pg-detail-a .pg-btn { flex: 1; }
+}
+.pg-tracks { display: flex; flex-direction: column; gap: 4px; }
+.pg-track { display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 4px; border-radius: 14px; transition: background .2s; }
+.pg-track:hover { background: rgba(255, 255, 255, .05); }
+.pg-track-m { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.pg-track-n { flex: none; width: 22px; text-align: center; font-size: .78rem; font-weight: 700; color: #71717a; }
+.pg-track-img { flex: none; width: 46px; height: 46px; border-radius: 12px; object-fit: cover; background: #1d1d24; }
+.pg-track-i { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.pg-track-i b { font-size: .88rem; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-track-i small { font-size: .74rem; color: var(--pg-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-track-i em {
+  font-style: normal; margin-left: 4px; padding: 1px 7px; border-radius: 999px; font-size: .62rem; font-weight: 800;
+  letter-spacing: .05em; text-transform: uppercase; color: #4ade80; background: rgba(34, 211, 106, .12);
+}
+.pg-track .pg-icon-btn { background: transparent; border-color: transparent; }
+.pg-empty { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 28px 16px; text-align: center; color: #71717a; border-radius: 18px; border: 1px dashed var(--pg-line2); }
+.pg-empty svg { color: #3f3f46; }
+.pg-empty p { font-size: .82rem; line-height: 1.5; max-width: 320px; }
+
+/* "Lagu Kita" (Koleksi lagu spesial) dihapus dari tab Playlist */
+#ln-lagu-kita { display: none !important; }
+
+/* ---------- Video Call: tab ---------- */
+.pg-vc { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.pg-vc-hero {
+  position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;
+  padding: 34px 22px 28px; border-radius: 28px; border: 1px solid var(--pg-line);
+  background: radial-gradient(ellipse at 50% -10%, rgba(34, 211, 106, .38), transparent 62%), linear-gradient(160deg, rgba(18, 18, 22, .96), rgba(4, 4, 6, .96));
+}
+.pg-vc-badge {
+  width: 72px; height: 72px; border-radius: 22px; display: grid; place-items: center; color: #04210f;
+  background: var(--pg-grad); box-shadow: 0 18px 40px -16px rgba(34, 211, 106, .85);
+}
+.pg-vc-badge svg { stroke: #04210f; }
+.pg-vc-hero h3 { font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+.pg-vc-hero p { max-width: 380px; font-size: .88rem; line-height: 1.55; color: #c9c9d6; }
+.pg-vc-act { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 8px; width: 100%; }
+.pg-vc-act .pg-btn-lg { width: 100%; max-width: 320px; }
+.pg-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.pg-steps li { display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; border-radius: 18px; background: var(--pg-panel); border: 1px solid var(--pg-line2); }
+.pg-steps li > span {
+  flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: .82rem; font-weight: 800;
+  color: #4ade80; background: rgba(34, 211, 106, .12); border: 1px solid rgba(34, 211, 106, .3);
+}
+.pg-steps b { display: block; font-size: .92rem; font-weight: 700; color: #fff; }
+.pg-steps small { display: block; margin-top: 2px; font-size: .78rem; line-height: 1.45; color: var(--pg-muted); }
+
+/* ---------- Video Call: layar panggilan — aksen hijau (bukan merah/ungu) ---------- */
+.vc-dock button.active-pill { background: var(--pg-grad) !important; color: #04210f !important; border-color: rgba(255, 255, 255, .3) !important; box-shadow: 0 4px 16px rgba(34, 211, 106, .45) !important; }
+.vc-dock button.active-pill svg { stroke: #04210f; }
+#vc-min-top:hover, #vc-swap-hint:hover { background: rgba(34, 211, 106, .26) !important; border-color: rgba(34, 211, 106, .5) !important; }
+
+/* ---------- Modal playlist (Buat / Simpan ke Playlist) ---------- */
+#modal-create-playlist > div, #modal-add-to-playlist > div {
+  border-radius: 26px; background: rgba(16, 16, 20, .98); border: 1px solid var(--pg-line);
+}
+#modal-create-playlist h3, #modal-add-to-playlist h3 { font-size: 1.15rem; font-weight: 800; letter-spacing: -.01em; }
+#modal-create-playlist input {
+  height: 52px; border-radius: 16px; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .1); padding: 0 16px; outline: none;
+}
+#modal-create-playlist input:focus { border-color: var(--pg-green); box-shadow: 0 0 0 3px rgba(34, 211, 106, .18); }
+#modal-create-playlist button.bg-rose-600 { height: 42px; border-radius: 999px; padding: 0 22px; background: var(--pg-grad) !important; color: #04210f !important; font-weight: 800; }
+#modal-add-to-playlist #modal-track-name { color: #86efac; }
+#modal-add-to-playlist > div > button { border-radius: 999px; }
+#modal-add-to-playlist > div > button:hover { border-color: var(--pg-green); color: #86efac; }
+
+/* ---------- Splash peluncuran APK: logo di atas gradien putih -> hijau ---------- */
+#ln-launch { display: none; }
+html.ln-android #ln-launch {
+  position: fixed; inset: 0; z-index: 2147483000; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #ffffff 0%, #e9fbf0 45%, #22d36a 100%); transition: opacity .45s ease;
+}
+html.ln-android #ln-launch img { width: min(46vw, 230px); height: auto; -webkit-user-drag: none; }
+html.ln-android #ln-launch.out { opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: no-preference) {
+  html.ln-android #ln-launch img { animation: pgLaunch .7s cubic-bezier(.2, .8, .2, 1) both; }
+}
+@keyframes pgLaunch { from { opacity: 0; transform: scale(.88); } to { opacity: 1; transform: none; } }

@@ -806,8 +806,11 @@
 </style>
 
   <link rel="stylesheet" href="./ln-redesign.css" />
+  <link rel="stylesheet" href="./ln-pages.css" />
 </head>
 <body class="min-h-screen flex flex-col md:flex-row selection:bg-rose-500/30 selection:text-rose-200">
+  <div id="ln-launch" aria-hidden="true"><img src="./icons/splash-logo.png" alt="" /></div>
+  <script>(function(){var e=document.getElementById('ln-launch');if(!e)return;if(!document.documentElement.classList.contains('ln-android')){e.remove();return}var t0=Date.now(),done=0;function go(){if(done)return;done=1;e.classList.add('out');setTimeout(function(){if(e.parentNode)e.parentNode.removeChild(e)},500)}function ready(){setTimeout(go,Math.max(0,1100-(Date.now()-t0)))}if(document.readyState==='complete')ready();else window.addEventListener('load',ready);setTimeout(go,3500)})();</script>
 
   <!-- Ambient Background Glow -->
   <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
@@ -1044,34 +1047,28 @@
       <!-- TAB 3: PLAYLISTS                                                  -->
       <!-- ================================================================= -->
       <section id="tab-playlists" class="hidden space-y-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <h3 class="text-lg font-bold">Playlist</h3>
-            <p class="text-xs text-zinc-400">Gabungkan lagu favorit dari YouTube &amp; Offline dalam satu playlist.</p>
+        <div class="pg-head">
+          <div class="pg-head-t">
+            <h3>Playlist</h3>
+            <p>Gabungkan lagu favorit dari YouTube &amp; Offline dalam satu playlist.</p>
           </div>
-          <button onclick="openCreatePlaylistModal()" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-semibold text-white flex items-center gap-1.5 transition">
-            <i data-lucide="plus" class="w-4 h-4"></i> Buat Playlist
-          </button>
+          <button onclick="openCreatePlaylistModal()" class="pg-btn pg-btn-primary pg-btn-sm"><i data-lucide="plus" class="w-4 h-4"></i> Buat Playlist</button>
         </div>
 
-        <div id="playlists-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        <div id="playlists-container" class="pg-grid"></div>
 
-        <div id="playlist-detail-box" class="hidden glass rounded-3xl p-5 md:p-6 space-y-4">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
-            <div>
-              <span class="text-[11px] uppercase tracking-wider text-rose-400 font-bold">Isi Playlist</span>
-              <h4 id="detail-playlist-name" class="text-xl font-extrabold">Nama Playlist</h4>
+        <div id="playlist-detail-box" class="hidden pg-detail">
+          <div class="pg-detail-h">
+            <div class="pg-detail-t">
+              <span class="pg-eyebrow">Isi Playlist</span>
+              <h4 id="detail-playlist-name">Nama Playlist</h4>
             </div>
-            <div class="flex items-center gap-2">
-              <button onclick="playCurrentPlaylist()" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-semibold text-white flex items-center gap-1.5">
-                <i data-lucide="play" class="w-4 h-4 fill-white"></i> Putar Playlist
-              </button>
-              <button onclick="deleteCurrentPlaylist()" class="p-2 rounded-xl bg-white/5 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition" title="Hapus Playlist">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-              </button>
+            <div class="pg-detail-a">
+              <button onclick="playCurrentPlaylist()" class="pg-btn pg-btn-primary pg-btn-sm"><i data-lucide="play" class="w-4 h-4"></i> Putar Playlist</button>
+              <button onclick="deleteCurrentPlaylist()" class="pg-icon-btn pg-danger" title="Hapus Playlist" aria-label="Hapus Playlist"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>
           </div>
-          <div id="detail-playlist-tracks" class="space-y-2"></div>
+          <div id="detail-playlist-tracks" class="pg-tracks"></div>
         </div>
       </section>
 
@@ -1293,12 +1290,21 @@
       <section id="tab-game" class="hidden space-y-4"><div id="lg-root"></div></section>
 
       <section id="tab-videocall" class="hidden space-y-5">
-        <div class="glass rounded-3xl p-7 text-center space-y-4 border border-white/10">
-          <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-rose-500/30 to-violet-500/30 grid place-items-center"><i data-lucide="video" class="w-8 h-8 text-rose-300"></i></div>
-          <h3 class="text-lg font-extrabold">Video Call</h3>
-          <p id="vc-hint" class="text-xs text-zinc-400 leading-relaxed">Gabung room di tab Bareng dulu, lalu mulai video call sambil dengerin lagu.</p>
-          <button id="vc-start-btn" onclick="vcToggle()" class="px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-600 to-violet-600 text-xs font-bold text-white shadow-lg shadow-rose-600/25">Mulai video call</button>
-          <div><button onclick="lnDiag()" class="px-4 py-2 rounded-xl bg-white/[0.06] border border-white/10 text-[11px] font-semibold text-zinc-300 inline-flex items-center gap-1.5"><i data-lucide="activity" class="w-3.5 h-3.5"></i> Tes koneksi</button></div>
+        <div class="pg-vc">
+          <div class="pg-vc-hero">
+            <span class="pg-vc-badge"><i data-lucide="video" class="w-8 h-8"></i></span>
+            <h3>Video Call</h3>
+            <p id="vc-hint">Gabung room di tab Bareng dulu, lalu mulai video call sambil dengerin lagu.</p>
+            <div class="pg-vc-act">
+              <button id="vc-start-btn" onclick="vcToggle()" class="pg-btn pg-btn-primary pg-btn-lg">Mulai video call</button>
+              <button onclick="lnDiag()" class="pg-btn pg-btn-ghost"><i data-lucide="activity" class="w-4 h-4"></i> Tes koneksi</button>
+            </div>
+          </div>
+          <ol class="pg-steps" aria-label="Cara memulai">
+            <li><span>1</span><div><b>Gabung room</b><small>Buka tab Bareng, lalu buat atau masuk ke room.</small></div></li>
+            <li><span>2</span><div><b>Mulai video call</b><small>Tekan tombol di atas, maksimal 6 peserta.</small></div></li>
+            <li><span>3</span><div><b>Izinkan kamera &amp; mikrofon</b><small>Musik tetap bisa diputar bareng selama panggilan.</small></div></li>
+          </ol>
         </div>
       </section>
 
@@ -2187,7 +2193,7 @@
         setPlayingUI(true);
       } else {
         if (ytReady && ytPlayer) {
-          ytPlayer.loadVideoById({ videoId: track.id, suggestedQuality: 'hd1080' });
+          ytPlayer.loadVideoById({ videoId: track.id, suggestedQuality: (window.__lnQ || 'hd1080') });
           enforceHDAudioVideo();
           setPlayingUI(true);
         } else {
@@ -5967,17 +5973,16 @@
       `).join('');
 
       const container = document.getElementById('playlists-container');
-      container.innerHTML = playlists.map(pl => `
-        <div onclick="selectPlaylist('${esc(pl.id)}')" class="glass-card rounded-2xl p-4 cursor-pointer ${selectedPlaylistId === pl.id ? 'border-rose-500/60 bg-rose-500/10' : ''}">
-          <div class="flex items-center justify-between mb-2">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500/30 to-violet-500/30 flex items-center justify-center text-rose-300">
-              <i data-lucide="disc-3" class="w-5 h-5"></i>
-            </div>
-            <span class="text-xs text-zinc-400">${pl.tracks.length} item</span>
-          </div>
-          <h4 class="font-bold text-sm truncate">${esc(pl.name)}</h4>
-        </div>
-      `).join('');
+      container.innerHTML = playlists.length ? playlists.map(pl => `
+        <button type="button" onclick="selectPlaylist('${esc(pl.id)}')" class="pg-card ${selectedPlaylistId === pl.id ? 'on' : ''}">
+          <span class="pg-cover"><i data-lucide="disc-3" class="w-6 h-6"></i></span>
+          <span class="pg-card-t">
+            <b>${esc(pl.name)}</b>
+            <small>${pl.tracks.length} item</small>
+          </span>
+          <i data-lucide="chevron-right" class="pg-chev w-4 h-4"></i>
+        </button>
+      `).join('') : `<div class="pg-empty"><i data-lucide="list-music" class="w-8 h-8"></i><p>Belum ada playlist. Buat playlist pertamamu.</p></div>`;
 
       const detailBox = document.getElementById('playlist-detail-box');
       const currentPl = playlists.find(p => p.id === selectedPlaylistId);
@@ -5988,18 +5993,19 @@
         document.getElementById('detail-playlist-name').textContent = currentPl.name;
         const tracksEl = document.getElementById('detail-playlist-tracks');
         if (!currentPl.tracks.length) {
-          tracksEl.innerHTML = `<p class="text-xs text-zinc-500 py-4 text-center">Playlist ini masih kosong. Klik tombol (+) pada lagu/video untuk menambahkannya.</p>`;
+          tracksEl.innerHTML = `<div class="pg-empty"><i data-lucide="music" class="w-8 h-8"></i><p>Playlist ini masih kosong. Klik tombol (+) pada lagu/video untuk menambahkannya.</p></div>`;
         } else {
           tracksEl.innerHTML = currentPl.tracks.map((t, i) => `
-            <div class="flex items-center justify-between p-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition">
-              <div onclick="playTrackFromList(playlists.find(p=>p.id==='${esc(currentPl.id)}').tracks, ${i}, true)" class="flex items-center gap-3 min-w-0 flex-1 cursor-pointer">
-                <img src="${esc(t.thumb || DEFAULT_LOGO)}" class="w-10 h-10 rounded-lg object-cover shrink-0" />
-                <div class="min-w-0">
-                  <p class="text-sm font-semibold truncate">${esc(t.title)}</p>
-                  <p class="text-[11px] text-zinc-400 truncate">${esc(t.artist)} • <span class="uppercase text-rose-400">${esc(t.type)}</span></p>
-                </div>
+            <div class="pg-track">
+              <div onclick="playTrackFromList(playlists.find(p=>p.id==='${esc(currentPl.id)}').tracks, ${i}, true)" class="pg-track-m">
+                <span class="pg-track-n">${i + 1}</span>
+                <img src="${esc(t.thumb || DEFAULT_LOGO)}" alt="" class="pg-track-img" />
+                <span class="pg-track-i">
+                  <b>${esc(t.title)}</b>
+                  <small>${esc(t.artist)} <em>${esc(t.type)}</em></small>
+                </span>
               </div>
-              <button onclick="removeTrackFromPlaylist('${esc(currentPl.id)}', ${i})" class="p-2 text-zinc-500 hover:text-red-400">
+              <button onclick="removeTrackFromPlaylist('${esc(currentPl.id)}', ${i})" class="pg-icon-btn" title="Hapus dari playlist" aria-label="Hapus dari playlist">
                 <i data-lucide="x" class="w-4 h-4"></i>
               </button>
             </div>

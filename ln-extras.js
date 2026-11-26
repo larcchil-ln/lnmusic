@@ -274,7 +274,7 @@
         <p id="ln-auto-greeting-text" class="text-xs md:text-sm font-bold text-white"></p>
       </div>
 
-      <div id="ln-lagu-kita" class="glass rounded-2xl p-4 md:p-5 border border-white/10 space-y-3">
+      <div id="ln-lagu-kita" hidden aria-hidden="true" style="display:none" class="hidden glass rounded-2xl p-4 md:p-5 border border-white/10 space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h4 class="text-sm font-extrabold text-white"><i data-lucide="heart" class="w-4 h-4 text-rose-400 inline -mt-0.5"></i> Lagu Kita</h4>
