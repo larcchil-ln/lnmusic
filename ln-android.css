@@ -1,0 +1,207 @@
+/* LNMusic — tampilan native Android (Material 3). Semua aturan di bawah HANYA aktif di APK
+   (kelas html.ln-android dipasang otomatis). Web di browser tidak berubah. */
+
+html.ln-android {
+  --a-bg: #0b0b0e;
+  --a-surface: #15151a;
+  --a-surface2: #1d1d24;
+  --a-surface3: #26262f;
+  --a-primary: #22d36a;
+  --a-on-primary: #04210f;
+  --a-primary-soft: rgba(34, 211, 106, .18);
+  --a-text: #f4f4f6;
+  --a-muted: #a1a1ab;
+  --a-nav-h: 72px;
+  scroll-behavior: auto;
+  overscroll-behavior: none;
+}
+
+/* ---------- Dasar: tidak ada kesan "halaman web" ---------- */
+html.ln-android #splash { display: none !important; }           /* tidak ada tombol "Mulai • Layar Penuh" */
+html.ln-android body {
+  background: var(--a-bg) !important;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none; user-select: none;                 /* teks tidak terseleksi saat ditekan lama */
+  overscroll-behavior: none;
+}
+html.ln-android input, html.ln-android textarea { -webkit-user-select: text; user-select: text; }
+html.ln-android body > div.fixed.inset-0.pointer-events-none.overflow-hidden { display: none !important; } /* blob blur berat */
+html.ln-android * { scrollbar-width: none; }
+html.ln-android *::-webkit-scrollbar { display: none; }
+html.ln-android img { -webkit-user-drag: none; }
+html.ln-android button:active:not(.lnh-btn):not(.lnh-seg-b) { opacity: .86; }
+
+/* Warna aksen tunggal (hijau) menggantikan rose/violet di seluruh app */
+html.ln-android .bg-rose-600, html.ln-android .bg-rose-500,
+html.ln-android .hover\:bg-rose-500:hover, html.ln-android .hover\:bg-rose-600:hover { background-color: var(--a-primary) !important; }
+html.ln-android .bg-rose-600, html.ln-android .bg-rose-500 { color: var(--a-on-primary) !important; }
+html.ln-android .bg-rose-600 svg.fill-white, html.ln-android .bg-rose-600 svg { fill: var(--a-on-primary); stroke: var(--a-on-primary); }
+html.ln-android .from-rose-600 { background-image: none !important; background-color: var(--a-primary) !important; color: var(--a-on-primary) !important; }
+html.ln-android .from-rose-600 svg { stroke: var(--a-on-primary) !important; }
+html.ln-android .text-rose-300, html.ln-android .text-rose-400, html.ln-android .text-rose-500,
+html.ln-android .hover\:text-rose-300:hover { color: #4ade80 !important; }
+html.ln-android .bg-rose-500\/15, html.ln-android .bg-rose-500\/20, html.ln-android .bg-rose-500\/10,
+html.ln-android .hover\:bg-rose-500\/20:hover { background-color: var(--a-primary-soft) !important; }
+html.ln-android .border-rose-500\/20, html.ln-android .border-rose-500\/25, html.ln-android .border-rose-500\/30 { border-color: rgba(34, 211, 106, .28) !important; }
+html.ln-android [class*="shadow-rose"], html.ln-android [class*="shadow-violet"] { box-shadow: 0 4px 14px rgba(0, 0, 0, .35) !important; }
+html.ln-android input:focus, html.ln-android textarea:focus { border-color: var(--a-primary) !important; outline: none; }
+html.ln-android .accent-rose-500, html.ln-android input[type=range] { accent-color: var(--a-primary); }
+
+/* ---------- Top app bar ---------- */
+html.ln-android #ln-appbar {
+  background: var(--a-bg) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  border: 0 !important; padding: max(10px, env(safe-area-inset-top)) 16px 8px !important;
+}
+html.ln-android #ln-appbar h1 { font-size: 22px !important; letter-spacing: -.02em; font-weight: 800; }
+html.ln-android #ln-appbar p { display: none; }
+html.ln-android #ln-appbar img { height: 30px !important; }
+html.ln-android #ln-appbar button {
+  background: var(--a-surface2) !important; border: 0 !important; border-radius: 999px !important;
+  min-width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; padding: 0 12px !important;
+}
+html.ln-android #ln-appbar button:not(:first-child) { padding: 0 !important; width: 40px; }
+html.ln-android #ln-appbar button:first-child { color: #4ade80 !important; font-size: 13px !important; font-weight: 700; gap: 6px; }
+
+/* ---------- Konten utama ---------- */
+html.ln-android main { padding-bottom: calc(var(--a-nav-h) + 96px + env(safe-area-inset-bottom)) !important; }
+html.ln-android main > div.max-w-5xl { padding: 4px 16px 24px !important; }
+html.ln-android #hero { display: none !important; }              /* banner lama diganti beranda trending */
+
+/* Kotak pencarian ala M3 SearchBar */
+html.ln-android #tab-online > .glass { background: none !important; border: 0 !important; padding: 0 !important; box-shadow: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+html.ln-android #yt-search-input {
+  height: 54px; border-radius: 27px !important; background: var(--a-surface2) !important; border: 2px solid transparent !important;
+  padding: 0 52px 0 54px !important; font-size: 16px !important; color: var(--a-text);
+}
+html.ln-android #yt-search-input::placeholder { color: #8b8b96; }
+html.ln-android #yt-search-input:focus { border-color: var(--a-primary) !important; }
+html.ln-android #tab-online .relative > svg, html.ln-android #tab-online .relative > i { left: 20px !important; }
+
+/* Pilihan Musik / Video = tombol segmen */
+html.ln-android #mode-music, html.ln-android #mode-video {
+  height: 38px; border-radius: 19px !important; padding: 0 16px !important; font-size: 14px !important; font-weight: 700 !important;
+  background: transparent; color: var(--a-muted);
+}
+html.ln-android #mode-music.bg-rose-600, html.ln-android #mode-video.bg-rose-600 { background: var(--a-primary) !important; color: var(--a-on-primary) !important; }
+
+/* Chip "Cepat" ala assist chip */
+html.ln-android #tab-online .glass .no-scrollbar { gap: 8px; padding: 2px 0 6px; }
+html.ln-android #tab-online .glass .no-scrollbar > span { display: none; }
+html.ln-android #tab-online .glass .no-scrollbar button {
+  height: 36px; border-radius: 12px !important; padding: 0 14px !important; font-size: 13.5px !important; font-weight: 600 !important;
+  background: transparent !important; border: 1px solid rgba(255, 255, 255, .16) !important; color: #e4e4e7 !important;
+}
+html.ln-android #online-section-title { font-size: 20px !important; }
+html.ln-android .yt-h { margin: 24px 0 10px; }
+html.ln-android .yt-h h3 { font-size: 20px !important; }
+html.ln-android .yt-tabs button { height: 34px; padding: 0 14px; font-size: 13.5px; }
+
+/* ---------- Bottom navigation (Material 3) ---------- */
+html.ln-android #ln-mnav {
+  background: var(--a-surface) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  border: 0 !important; border-radius: 0 !important; box-shadow: 0 -1px 0 rgba(255, 255, 255, .05);
+  height: calc(var(--a-nav-h) + env(safe-area-inset-bottom)); padding: 12px 4px env(safe-area-inset-bottom) !important; gap: 0 !important; align-items: start;
+}
+html.ln-android #ln-mnav .mnav {
+  position: relative; display: flex !important; flex-direction: column; align-items: center; justify-content: flex-start;
+  gap: 4px; padding: 0 !important; background: none !important; box-shadow: none !important; border-radius: 0 !important;
+  color: var(--a-muted) !important; font-size: 12px !important; font-weight: 500 !important; letter-spacing: .01em; overflow: visible; min-width: 0;
+}
+html.ln-android #ln-mnav .mnav::before {                         /* pil indikator aktif */
+  content: ""; position: absolute; top: 0; left: 50%; width: 64px; height: 32px; margin-left: -32px; border-radius: 16px;
+  background: var(--a-primary-soft); opacity: 0; transform: scaleX(.35);
+  transition: transform .28s cubic-bezier(.2, 0, 0, 1), opacity .2s;
+}
+html.ln-android #ln-mnav .mnav.on::before, html.ln-android #ln-mnav .mnav.text-rose-400::before, html.ln-android #ln-mnav .mnav.text-rose-300::before { opacity: 1; transform: scaleX(1); }
+html.ln-android #ln-mnav .mnav .ic { position: relative; z-index: 1; width: 24px !important; height: 24px !important; margin-top: 4px; stroke-width: 1.9; transform: none !important; transition: stroke .2s, fill .2s; }
+html.ln-android #ln-mnav .mnav span { position: relative; z-index: 1; line-height: 1.1; }
+html.ln-android #ln-mnav .mnav.on, html.ln-android #ln-mnav .mnav.text-rose-400, html.ln-android #ln-mnav .mnav.text-rose-300 { color: var(--a-text) !important; font-weight: 700 !important; }
+html.ln-android #ln-mnav .mnav.on .ic, html.ln-android #ln-mnav .mnav.text-rose-400 .ic, html.ln-android #ln-mnav .mnav.text-rose-300 .ic { stroke: #b9f5d0 !important; fill: rgba(185, 245, 208, .22); }
+html.ln-android #ln-ind { display: none !important; }
+
+/* ---------- Mini player (melayang di atas nav) ---------- */
+html.ln-android #ln-mini {
+  bottom: calc(var(--a-nav-h) + env(safe-area-inset-bottom) + 8px) !important; left: 10px !important; right: 10px !important;
+  width: auto; border: 0 !important; border-radius: 22px; background: var(--a-surface3) !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important; padding: 8px 10px !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .5);
+}
+html.ln-android #ln-mini > div { max-width: none; gap: 8px; }
+html.ln-android #ln-mini #player-title { font-size: 14px; }
+html.ln-android #ln-mini #player-source-badge { display: none; }
+html.ln-android #ln-mini button[onclick="playPrev()"],
+html.ln-android #ln-mini button[onclick="toggleShuffle()"],
+html.ln-android #ln-mini button[onclick="toggleRepeat()"],
+html.ln-android #ln-mini button[onclick="openFullscreenPlayer()"] { display: none !important; }
+html.ln-android #ln-mini #btn-play-pause { width: 44px; height: 44px; box-shadow: none; }
+html.ln-android #ln-mini #btn-queue { background: transparent !important; width: 40px; height: 40px; }
+
+/* ---------- Efek sentuh (ripple) ---------- */
+html.ln-android .lnh-row, html.ln-android .lnh-btn, html.ln-android .lnh-chip, html.ln-android .lnh-rcard, html.ln-android .yt-row { position: relative; overflow: hidden; }
+html.ln-android .lna-rip { position: absolute; border-radius: 50%; background: currentColor; opacity: .16; transform: scale(0); animation: lnaRip .55s ease-out forwards; pointer-events: none; }
+@keyframes lnaRip { to { transform: scale(1); opacity: 0; } }
+
+/* ---------- Beranda trending ---------- */
+.lnh { display: block; }
+.lnh-quick { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 14px; }
+.lnh-chip {
+  flex: none; height: 38px; padding: 0 16px; border-radius: 12px; display: inline-flex; align-items: center; gap: 8px;
+  background: var(--a-surface2); color: var(--a-text); font-size: 13.5px; font-weight: 700; border: 0; cursor: pointer;
+}
+.lnh-chip svg { width: 18px; height: 18px; stroke: #4ade80; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.lnh-hero { position: relative; border-radius: 30px; overflow: hidden; background: #0f0f13; border: 1px solid rgba(255, 255, 255, .08); }
+.lnh-track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+.lnh-card {
+  position: relative; flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always; padding: 16px 16px 46px; box-sizing: border-box;
+  background: linear-gradient(180deg, var(--c, #3a2a1c) 0%, #121216 58%, #0d0d10 100%);
+}
+.lnh-art { position: relative; aspect-ratio: 16 / 10; border-radius: 22px; overflow: hidden; background: #1a1a20; box-shadow: 0 10px 30px rgba(0, 0, 0, .35); }
+.lnh-art .bgi { position: absolute; inset: 0; background-size: cover; background-position: center; filter: blur(22px) brightness(.75); transform: scale(1.3); }
+.lnh-art img { position: relative; width: 100%; height: 100%; object-fit: cover; display: block; }
+.lnh-art.sq img { object-fit: contain; }
+.lnh-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 18px; }
+.lnh-eyebrow { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--a-primary); font-size: 12px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+.lnh-eyebrow svg { flex: none; width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.lnh-seg { flex: none; display: inline-flex; padding: 4px; border-radius: 999px; background: rgba(0, 0, 0, .38); border: 1px solid rgba(255, 255, 255, .1); }
+.lnh-seg-b { height: 32px; padding: 0 13px; border-radius: 999px; border: 0; background: transparent; color: #b4b4be; font-size: 13px; font-weight: 700; }
+.lnh-seg-b.on { background: #fff; color: #09090b; }
+.lnh-title { margin: 14px 0 0; color: #fff; font-size: 27px; line-height: 1.12; font-weight: 800; letter-spacing: -.025em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.lnh-artist { margin: 8px 0 0; color: var(--a-muted); font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lnh-actions { display: flex; align-items: center; gap: 10px; margin-top: 22px; }
+.lnh-btn { height: 52px; border-radius: 26px; border: 0; font-size: 15px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+.lnh-btn svg { width: 20px; height: 20px; fill: currentColor; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+.lnh-btn.p { flex: 1.35; background: var(--a-primary); color: var(--a-on-primary); transition: transform .12s; }
+.lnh-btn.p:active { transform: scale(.97); }
+.lnh-btn.s { flex: 1; background: transparent; color: #f1f1f4; }
+.lnh-btn.s svg { fill: none; stroke-width: 2.2; stroke-linecap: round; }
+.lnh-dots { position: absolute; left: 0; right: 0; bottom: 16px; display: flex; justify-content: center; gap: 6px; pointer-events: none; }
+.lnh-dots i { width: 9px; height: 9px; border-radius: 5px; background: rgba(255, 255, 255, .28); transition: width .25s, background .25s; }
+.lnh-dots i.on { width: 28px; background: var(--a-primary); }
+
+.lnh-sec { margin-top: 26px; }
+.lnh-sh { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.lnh-sh h3 { flex: 1; min-width: 0; margin: 0; font-size: 20px !important; font-weight: 800 !important; letter-spacing: -.02em; color: #fff; }
+.lnh-sh h3 small { margin-left: 8px; font-size: 12px; font-weight: 700; color: #4ade80; letter-spacing: .08em; text-transform: uppercase; }
+.lnh-sh button { height: 32px; padding: 0 14px; border: 0; border-radius: 16px; background: var(--a-surface2); color: #e4e4e7; font-size: 12.5px; font-weight: 700; }
+
+.lnh-rail { display: flex; gap: 12px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 4px; scroll-snap-type: x proximity; }
+.lnh-rcard { flex: none; width: 138px; border: 0; background: none; padding: 0; text-align: left; color: #fff; scroll-snap-align: start; border-radius: 16px; }
+.lnh-rcard img { width: 138px; height: 138px; border-radius: 16px; object-fit: cover; display: block; background: var(--a-surface2); }
+.lnh-rcard b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 8px; font-size: 13.5px; line-height: 1.25; font-weight: 700; }
+.lnh-rcard small { display: block; margin-top: 3px; font-size: 12px; color: var(--a-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.lnh-list { display: flex; flex-direction: column; }
+.lnh-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 8px 6px; border: 0; background: none; border-radius: 16px; text-align: left; color: #fff; }
+.lnh-row .rk { flex: none; width: 26px; text-align: center; font-size: 17px; font-weight: 800; color: #6b6b76; font-style: normal; }
+.lnh-row:nth-child(-n+3) .rk { color: var(--a-primary); }
+.lnh-row img { flex: none; width: 54px; height: 54px; border-radius: 13px; object-fit: cover; background: var(--a-surface2); }
+.lnh-row span { flex: 1; min-width: 0; display: block; }
+.lnh-row b { display: block; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lnh-row small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--a-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lnh-row svg { flex: none; width: 22px; height: 22px; stroke: #8b8b96; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.lnh-skel { border-radius: 30px; aspect-ratio: 3 / 4; background: linear-gradient(100deg, #15151a 30%, #1f1f26 50%, #15151a 70%); background-size: 200% 100%; animation: lnhShim 1.3s linear infinite; }
+@keyframes lnhShim { to { background-position: -200% 0; } }
+.lnh-note { margin-top: 12px; font-size: 13px; color: var(--a-muted); text-align: center; }
