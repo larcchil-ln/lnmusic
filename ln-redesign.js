@@ -109,11 +109,20 @@
       '<div class="lr-join"><span class="lr-pre">LN-</span><input id="lr-code" type="text" maxlength="8" inputmode="text" autocapitalize="characters" autocomplete="off" placeholder="8492" aria-label="Kode room">' +
       '<button type="button" id="lr-go" disabled aria-label="Gabung">' + svg('arrow') + '</button></div>' +
       '<p id="lr-err" role="alert" hidden></p>' +
-      '<div class="lr-foot"><button type="button" id="lr-kita">Masuk Room Kita</button><button type="button" id="lr-info" aria-label="Info room" aria-expanded="false">i</button></div>' +
+      '<div class="lr-foot"><button type="button" id="lr-info" aria-label="Info room" aria-expanded="false">i</button></div>' +
       '<p id="lr-note" hidden>Pembuat room jadi Host: bisa atur antrean, peserta, dan izin putar bareng.</p>';
     area.insertBefore(box, area.firstChild);
     var last = $('last-room-card');
     if (last) $('lr-last').appendChild(last);
+
+    // Room Kita (Nuki, Nana, tamu): kartu asli dipindah ke bawah kolom kode, tanpa klik tambahan
+    var kita = $('login-user') && $('login-user').closest('#room-setup-area > div');
+    if (kita) {
+      kita.id = 'lr-kita-card';
+      var dv = document.createElement('div'); dv.className = 'lr-or'; dv.innerHTML = '<i></i><span>Masuk ke Room Kita</span><i></i>';
+      var foot = box.querySelector('.lr-foot');
+      box.insertBefore(dv, foot); box.insertBefore(kita, foot);
+    }
 
     var name = $('lr-name'), code = $('lr-code'), go = $('lr-go'), err = $('lr-err');
     try {
@@ -143,14 +152,12 @@
     name.addEventListener('keydown', function (e) { if (e.key === 'Enter') { if (code.value.length >= 4) join(); else create(); } });
     name.addEventListener('input', function () { say(''); });
     $('lr-create').onclick = create; go.onclick = join;
-    $('lr-kita').onclick = function () { area.classList.toggle('lr-kita'); };
     $('lr-info').onclick = function () { var n = $('lr-note'); n.hidden = !n.hidden; this.setAttribute('aria-expanded', String(!n.hidden)); };
 
     // Link undangan (?room=...) mengisi kode otomatis
     function sync() {
       var jc = $('jroom-code');
       if (jc && jc.value && !code.value) { code.value = jc.value; clean(); if (!name.value) name.focus(); }
-      if (/[?&]join=1/.test(location.search)) area.classList.add('lr-kita');
     }
     sync(); setTimeout(sync, 600);
   }

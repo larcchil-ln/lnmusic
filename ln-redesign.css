@@ -194,3 +194,26 @@ html:not(.ln-android) #room-setup-area > div, html:not(.ln-android) #room-active
 html:not(.ln-android) #room-setup-area.hidden,
 html:not(.ln-android) #room-setup-area.hidden > div { display: none !important; }
 html:not(.ln-android) #room-active-area.hidden { display: none !important; }
+
+/* ---------- Room Kita langsung tampil di layar awal (desain sama dengan kolom baru) ---------- */
+/* Kartu "Buat Room Baru / Gabung Kode" versi lama tidak pernah ditampilkan lagi */
+html:not(.ln-android) #room-setup-area > div:not(#lr-start) { display: none !important; }
+#lr-kita-card { display: flex !important; flex-direction: column; gap: 12px; padding: 0 !important; background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+#lr-kita-card > div:nth-child(-n+2) { display: none !important; }
+#lr-kita-card form { display: flex; flex-direction: column; gap: 12px; }
+#lr-kita-card form > * { margin: 0 !important; }
+#lr-kita-card p.hidden { display: none !important; }
+#lr-kita-card .flex-1 { flex: 1 1 0%; min-width: 0; }
+#lr-kita-card form.space-y-2 .flex { display: flex; gap: 10px; align-items: center; }
+#lr-kita-card form button[type=submit] {
+  height: 54px; border-radius: 16px !important; font-size: 1rem !important; font-weight: 800 !important; padding: 0 20px !important;
+  color: #04210f !important; background: var(--lr-grad) !important; box-shadow: 0 14px 34px -16px rgba(34, 211, 106, .7) !important;
+}
+#lr-kita-card form.space-y-2 button[type=submit] { flex: none; width: auto; font-size: .95rem !important; }
+#lr-kita-card form button[type=submit]:active { transform: scale(.98); }
+#lr-kita-card #ln-reg-btn {
+  height: 50px; margin: 0 !important; padding: 0 16px !important; border-radius: 16px !important;
+  color: #86efac !important; background: rgba(34, 211, 106, .07) !important; border: 1px solid rgba(34, 211, 106, .25) !important;
+  font-size: .9rem !important; font-weight: 700 !important;
+}
+#lr-kita-card .text-zinc-500 { color: #71717a; }
