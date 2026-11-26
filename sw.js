@@ -5,7 +5,7 @@
  * - TIDAK menyentuh: /api/*, YouTube, signaling PeerJS, LRCLIB, atau request non-GET.
  * Naikkan VERSION setiap kali daftar SHELL berubah.
  */
-const VERSION = 'v5-redesign';
+const VERSION = 'v6-minilyrics';
 const SHELL_CACHE = 'lnmusic-shell-' + VERSION;
 const CDN_CACHE = 'lnmusic-cdn-' + VERSION;
 const SHELL = [
@@ -20,6 +20,7 @@ const SHELL = [
   '/ln-android.css',
   '/ln-redesign.css',
   '/ln-redesign.js',
+  '/ln-minilyrics.js',
   '/ln-android.js',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
