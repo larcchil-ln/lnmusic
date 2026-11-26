@@ -1,8 +1,8 @@
-/* LNMusic — beranda trending khusus APK Android.
+/* LNMusic — beranda trending (APK, web HP, dan desktop).
    Mengganti isi #hits-shelves dengan: carousel hero (Top 5), rak lagu, dan tangga lagu.
    Data memakai yang sudah ada di index.html (top50 / topTab / setTopTab / playTrackFromList). */
 (function () {
-  if (!document.documentElement.classList.contains('ln-android')) return;
+  if (!document.documentElement.classList.contains('ln-ui')) return;
 
   var L = { cur: [], oth: [] };
   var lastSig = '', lastTouch = 0, tints = {};
@@ -96,7 +96,7 @@
     lastSig = sig;
     var hero = list.slice(0, 5), h = '<div class="lnh">' + quick();
     h += '<div class="lnh-hero"><div class="lnh-track no-scrollbar" id="lnh-track">' + hero.map(function (t, i) { return heroCard(t, i, key); }).join('') + '</div>' +
-      '<div class="lnh-dots" id="lnh-dots">' + hero.map(function (_, i) { return '<i' + (i ? '' : ' class="on"') + '></i>'; }).join('') + '</div></div>';
+      '<button class="lnh-nav l" data-nav="-1" aria-label="Sebelumnya"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button><button class="lnh-nav r" data-nav="1" aria-label="Berikutnya"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button><div class="lnh-dots" id="lnh-dots">' + hero.map(function (_, i) { return '<i' + (i ? '' : ' class="on"') + '></i>'; }).join('') + '</div></div>';
     var railList = oth.length ? oth : list, railKey = oth.length ? (key === 'id' ? 'west' : 'id') : key, railL = oth.length ? 'oth' : 'cur';
     h += '<section class="lnh-sec"><div class="lnh-sh"><h3>' + (oth.length ? 'Lagi ramai di ' + regionName(railKey) : 'Lagu trending') + '</h3><button class="lnh-more" data-l="' + railL + '">Putar semua</button></div>' +
       '<div class="lnh-rail no-scrollbar">' + railList.slice(0, 15).map(function (t, i) { return railCard(t, i, railL); }).join('') + '</div></section>';
@@ -131,8 +131,9 @@
     try { playTrackFromList(list, i, true); } catch (e) {}
   }
   document.addEventListener('click', function (e) {
-    var el = e.target && e.target.closest ? e.target.closest('#hits-shelves [data-go],#hits-shelves [data-r],#hits-shelves [data-act],#hits-shelves .lnh-rcard,#hits-shelves .lnh-row,#hits-shelves .lnh-more') : null;
+    var el = e.target && e.target.closest ? e.target.closest('#hits-shelves [data-nav],#hits-shelves [data-go],#hits-shelves [data-r],#hits-shelves [data-act],#hits-shelves .lnh-rcard,#hits-shelves .lnh-row,#hits-shelves .lnh-more') : null;
     if (!el) return;
+    if (el.dataset.nav) { var tr = trackEl(); if (tr) { lastTouch = Date.now(); tr.scrollBy({ left: (+el.dataset.nav) * tr.clientWidth, behavior: 'smooth' }); } return; }
     if (el.dataset.go) { try { switchTab(el.dataset.go); } catch (x) {} return; }
     if (el.dataset.r) { try { if (tabKey() !== el.dataset.r) setTopTab(el.dataset.r); } catch (x) {} return; }
     if (el.dataset.act === 'play') return playList('cur', +el.dataset.i);

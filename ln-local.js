@@ -17,6 +17,7 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }); }
   function fmt(ms) { var n = Math.max(0, Math.floor((Number(ms) || 0) / 1000)); return Math.floor(n / 60) + ':' + ('0' + (n % 60)).slice(-2); }
   function setStatus(msg, kind) {
+    try { if (window.lnOfflineUI && window.lnOfflineUI.status) window.lnOfflineUI.status(msg, kind); } catch (e) {}
     var el = $('ln-offline-status'); if (!el) return;
     el.textContent = msg || '';
     el.className = 'ln-status' + (kind ? ' ' + kind : '');
@@ -82,6 +83,7 @@
       lib = (result && result.items) || [];
       scanned = true;
       filter();
+      if (window.lnOfflineUI && window.lnOfflineUI.setLib) window.lnOfflineUI.setLib(lib);
       setStatus(lib.length ? 'Pemindaian selesai · ' + lib.length + ' lagu ditemukan' : 'Pemindaian selesai · belum ada lagu yang terbaca', lib.length ? 'success' : '');
     }).catch(function (err) {
       setStatus('Tidak dapat memindai: ' + ((err && err.message) || err), 'error');
@@ -91,6 +93,20 @@
       if (btn) { btn.disabled = false; btn.textContent = '⟳  Pindai Musik'; }
     });
   }
+  window.lnLocal = {
+    items: function () { return lib; },
+    plugin: function () { return LM; },
+    scan: function () { scan(); },
+    play: function (items, index) {
+      if (!LM || !items || !items[index]) return Promise.resolve();
+      pauseWebPlayers();
+      return LM.play({ ids: items.map(function (s) { return s.id; }), index: index }).then(function () {
+        var s = items[index];
+        state = Object.assign({}, state, { active: true, playing: true, id: s.id, title: s.title, artist: s.artist, dur: s.dur, pos: 0 });
+        updatePlayer(state);
+      });
+    }
+  };
   function playIndex(index) {
     if (!LM || !view.length) return;
     pauseWebPlayers();

@@ -139,11 +139,12 @@
     window.addEventListener('resize', function () { if (vcEl.classList.contains('ln-drag')) putPos(parseFloat(vcEl.style.left) || 8, parseFloat(vcEl.style.top) || 8); });
   }
 
-  // ---- Tombol Back: tutup lapisan teratas -> kembali ke Beranda -> baru keluar ----
+  // ---- Tombol Back: tutup lapisan teratas -> mundur tab demi tab -> Beranda -> dialog keluar ----
   var armed = 0;
   function trap() { try { history.pushState({ ln: 1 }, ''); } catch (e) {} }
   function toast(m) { try { showToast(m); } catch (e) {} }
   function closeTop() {
+    try { if (window.lnOfflineUI && window.lnOfflineUI.back && window.lnOfflineUI.back()) return true; } catch (e) {}
     if ($('ln-qd') && $('ln-qd').classList.contains('open')) { try { lnQueueClose(); } catch (e) { $('ln-qd').classList.remove('open'); } return true; }
     if (document.fullscreenElement || document.webkitFullscreenElement) { try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) {} return true; }
     if (!hidden('photo-viewer-modal')) { try { closePhotoViewer(); } catch (e) { $('photo-viewer-modal').classList.add('hidden'); } return true; }
@@ -155,21 +156,80 @@
     if (fs && !fs.classList.contains('translate-y-full')) { try { closeFullscreenPlayer(); } catch (e) {} return true; }
     return false;
   }
-  function goHome() {
+  // Riwayat tab: Back kembali ke tab yang terakhir dibuka, sampai Beranda
+  var tabHist = [], goingBack = false;
+  (function () {
+    var st = window.switchTab;
+    if (typeof st !== 'function' || st.__lnHist) return;
+    var w = function () {
+      var prev = null; try { prev = curTab; } catch (e) {}
+      var r = st.apply(this, arguments);
+      try { if (!goingBack && prev && curTab !== prev) { tabHist.push(prev); if (tabHist.length > 25) tabHist.shift(); } } catch (e) {}
+      return r;
+    };
+    w.__lnHist = true; window.switchTab = w;
+  })();
+  function goPrevTab() {
     try {
-      if (curTab && curTab !== 'online') {
-        var to = curTab === 'videocall' ? (vcPrev && vcPrev !== 'videocall' ? vcPrev : 'online') : 'online';
-        switchTab(to); return true;
-      }
-    } catch (e) {}
-    return false;
+      var cur = curTab, to = null;
+      while (tabHist.length) { var p = tabHist.pop(); if (p && p !== cur) { to = p; break; } }
+      if (!to && cur && cur !== 'online') to = (cur === 'videocall' && vcPrev && vcPrev !== 'videocall') ? vcPrev : 'online';
+      if (!to) return false;
+      goingBack = true; try { switchTab(to); } finally { goingBack = false; }
+      return true;
+    } catch (e) { return false; }
   }
+
+  // Dialog konfirmasi keluar (bottom sheet di HP, modal di desktop)
+  var dlg = null;
+  function exitOpen() { return !!(dlg && dlg.isConnected); }
+  function exitClose() { if (dlg) { dlg.classList.remove('on'); var d = dlg; dlg = null; setTimeout(function () { d.remove(); }, 220); } }
+  function exitApp() {
+    exitClose();
+    try { var P = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.BackgroundPlay; if (P && P.exitApp) { P.exitApp(); return; } } catch (e) {}
+    try { if (navigator.app && navigator.app.exitApp) { navigator.app.exitApp(); return; } } catch (e) {}
+    try { history.go(-2); } catch (e) {}
+  }
+  function showExit() {
+    if (exitOpen()) return;
+    if (!$('ln-exit-css')) {
+      var s = document.createElement('style'); s.id = 'ln-exit-css';
+      s.textContent =
+        '#ln-exit{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0);transition:background .22s;padding:0}' +
+        '#ln-exit.on{background:rgba(0,0,0,.62)}' +
+        '#ln-exit .box{width:100%;max-width:440px;box-sizing:border-box;background:#1d1d24;border:1px solid rgba(255,255,255,.08);border-radius:28px 28px 0 0;padding:26px 22px calc(22px + env(safe-area-inset-bottom));text-align:center;transform:translateY(40px);opacity:0;transition:transform .26s cubic-bezier(.2,0,0,1),opacity .2s;box-shadow:0 -10px 40px rgba(0,0,0,.5)}' +
+        '#ln-exit.on .box{transform:none;opacity:1}' +
+        '#ln-exit img{width:60px;height:60px;border-radius:16px;display:block;margin:0 auto 14px;box-shadow:0 8px 24px rgba(0,0,0,.45)}' +
+        '#ln-exit h2{margin:0;color:#fff;font-size:20px;font-weight:800;letter-spacing:-.02em}' +
+        '#ln-exit p{margin:8px 0 0;color:#a1a1ab;font-size:14px;line-height:1.45}' +
+        '#ln-exit .btns{display:flex;flex-direction:column;gap:10px;margin-top:22px}' +
+        '#ln-exit button{height:52px;border:0;border-radius:26px;font-size:15px;font-weight:800;cursor:pointer;-webkit-tap-highlight-color:transparent}' +
+        '#ln-exit .stay{background:#22d36a;color:#04210f}' +
+        '#ln-exit .quit{background:#26262f;color:#fda4af}' +
+        '#ln-exit button:active{transform:scale(.98)}#ln-exit button:focus-visible{outline:2px solid #22d36a;outline-offset:2px}' +
+        '@media (min-width:640px){#ln-exit{align-items:center}#ln-exit .box{border-radius:28px;transform:scale(.94)}#ln-exit .btns{flex-direction:row-reverse}#ln-exit button{flex:1}}';
+      document.head.appendChild(s);
+    }
+    var playing = false; try { playing = !!isPlaying; } catch (e) {}
+    var logo = ''; try { logo = DEFAULT_LOGO; } catch (e) {}
+    dlg = document.createElement('div'); dlg.id = 'ln-exit'; dlg.setAttribute('role', 'dialog'); dlg.setAttribute('aria-modal', 'true'); dlg.setAttribute('aria-labelledby', 'ln-exit-t');
+    dlg.innerHTML = '<div class="box">' + (logo ? '<img alt="" src="' + logo + '">' : '') +
+      '<h2 id="ln-exit-t">Keluar dari LNMusic?</h2>' +
+      '<p>' + (playing ? 'Musik yang sedang diputar akan berhenti kalau kamu keluar.' : 'Kamu bisa tetap di aplikasi atau keluar sekarang.') + '</p>' +
+      '<div class="btns"><button type="button" class="stay">Tetap di aplikasi</button><button type="button" class="quit">Keluar</button></div></div>';
+    dlg.addEventListener('click', function (e) { if (e.target === dlg) exitClose(); });
+    dlg.querySelector('.stay').addEventListener('click', exitClose);
+    dlg.querySelector('.quit').addEventListener('click', exitApp);
+    document.body.appendChild(dlg);
+    requestAnimationFrame(function () { if (dlg) { dlg.classList.add('on'); try { dlg.querySelector('.stay').focus({ preventScroll: true }); } catch (e) {} } });
+  }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && exitOpen()) exitClose(); });
   try { history.replaceState({ ln: 0 }, ''); } catch (e) {}
   trap();
   window.addEventListener('popstate', function (ev) {
     if (ev.state && ev.state.ln === 1) return; // maju ke jebakan, abaikan
-    if (closeTop() || goHome()) { armed = 0; return trap(); }
-    if (Date.now() - armed < 2000) { try { history.back(); } catch (e) {} return; } // back kedua: keluar
-    armed = Date.now(); toast('Tekan Back sekali lagi untuk keluar'); trap();
+    if (exitOpen()) { exitClose(); return trap(); }            // Back saat dialog terbuka = tetap di aplikasi
+    if (closeTop() || goPrevTab()) return trap();              // tutup lapisan teratas, lalu mundur tab demi tab
+    showExit(); trap();                                        // sudah di Beranda: tanya dulu
   });
 })();
