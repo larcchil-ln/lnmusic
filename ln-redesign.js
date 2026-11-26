@@ -10,6 +10,8 @@
     user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6 8-6s7.2 2 8 6"/>',
     gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2.5v2.8M12 18.7v2.8M2.5 12h2.8M18.7 12h2.8M5.3 5.3l2 2M16.7 16.7l2 2M5.3 18.7l2-2M16.7 7.3l2-2"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    arrow: '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
     users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><circle cx="17.5" cy="9" r="2.5"/><path d="M17.5 14.2c2.4.2 3.9 1.7 4.3 4.3"/>'
   };
   var TABS = [['online', 'Beranda', 'home'], ['together', 'Bareng', 'together'], ['videocall', 'Call', 'video'], ['playlists', 'Playlist', 'list']];
@@ -70,9 +72,9 @@
       '<button type="button" class="lr-cta" id="lr-cta">' + svg('users') + 'Buat Room</button><div class="lr-art">' + art() + '</div>';
     glass.insertBefore(h, glass.firstChild);
     $('lr-cta').onclick = function () {
-      try { switchCustomRoomTab('create'); } catch (e) {}
-      var f = $('croom-host-name');
-      if (f) { f.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(function () { f.focus({ preventScroll: true }); }, 400); }
+      var f = $('lr-name'), box = $('lr-start');
+      if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (f) setTimeout(function () { f.focus({ preventScroll: true }); }, 400);
     };
     watchSetup();
   }
@@ -85,6 +87,113 @@
     sync();
   }
 
+
+  // ---------- Layar awal Bareng: satu keputusan, minim teks ----------
+  function startBox() {
+    var area = $('room-setup-area');
+    if (!area || $('lr-start')) return;
+    var box = document.createElement('div');
+    box.id = 'lr-start';
+    box.innerHTML =
+      '<div id="lr-last"></div>' +
+      '<input id="lr-name" type="text" maxlength="20" autocomplete="nickname" placeholder="Namamu" aria-label="Namamu">' +
+      '<button type="button" id="lr-create" class="lr-big">' + svg('plus') + 'Buat Room</button>' +
+      '<div class="lr-or"><i></i><span>atau gabung</span><i></i></div>' +
+      '<div class="lr-join"><span class="lr-pre">LN-</span><input id="lr-code" type="text" maxlength="8" inputmode="text" autocapitalize="characters" autocomplete="off" placeholder="8492" aria-label="Kode room">' +
+      '<button type="button" id="lr-go" disabled aria-label="Gabung">' + svg('arrow') + '</button></div>' +
+      '<p id="lr-err" role="alert" hidden></p>' +
+      '<div class="lr-foot"><button type="button" id="lr-kita">Masuk Room Kita</button><button type="button" id="lr-info" aria-label="Info room" aria-expanded="false">i</button></div>' +
+      '<p id="lr-note" hidden>Pembuat room jadi Host: bisa atur antrean, peserta, dan izin putar bareng.</p>';
+    area.insertBefore(box, area.firstChild);
+    var last = $('last-room-card');
+    if (last) $('lr-last').appendChild(last);
+
+    var name = $('lr-name'), code = $('lr-code'), go = $('lr-go'), err = $('lr-err');
+    try {
+      var c = JSON.parse(localStorage.getItem('lnmusic_custom_room') || 'null') || JSON.parse(localStorage.getItem('lnmusic_last_room') || 'null');
+      if (c && c.name) name.value = c.name;
+    } catch (e) {}
+
+    function say(msg) { err.textContent = msg; err.hidden = !msg; }
+    function nm() { var v = name.value.trim(); if (v.length < 2) { say('Isi namamu dulu, minimal 2 huruf'); name.focus(); return null; } say(''); return v; }
+    function relay(id) { var e = $(id); if (e && !e.classList.contains('hidden') && e.textContent) say(e.textContent); }
+    function create() {
+      var v = nm(); if (!v) return;
+      $('croom-host-name').value = v; if ($('croom-title')) $('croom-title').value = '';
+      doCreateCustomRoom(); relay('croom-create-error');
+    }
+    function join() {
+      var c = code.value;
+      if (c.length < 4) { say('Kode room minimal 4 karakter'); code.focus(); return; }
+      var v = nm(); if (!v) return;
+      $('jroom-guest-name').value = v; $('jroom-code').value = 'LN-' + c;
+      doJoinCustomRoom(); relay('croom-join-error');
+    }
+    function clean() { code.value = code.value.toUpperCase().replace(/^LN-?/, '').replace(/[^A-Z0-9]/g, ''); go.disabled = code.value.length < 4; say(''); }
+    code.addEventListener('input', clean);
+    code.addEventListener('paste', function () { setTimeout(clean, 0); });
+    code.addEventListener('keydown', function (e) { if (e.key === 'Enter') join(); });
+    name.addEventListener('keydown', function (e) { if (e.key === 'Enter') { if (code.value.length >= 4) join(); else create(); } });
+    name.addEventListener('input', function () { say(''); });
+    $('lr-create').onclick = create; go.onclick = join;
+    $('lr-kita').onclick = function () { area.classList.toggle('lr-kita'); };
+    $('lr-info').onclick = function () { var n = $('lr-note'); n.hidden = !n.hidden; this.setAttribute('aria-expanded', String(!n.hidden)); };
+
+    // Link undangan (?room=...) mengisi kode otomatis
+    function sync() {
+      var jc = $('jroom-code');
+      if (jc && jc.value && !code.value) { code.value = jc.value; clean(); if (!name.value) name.focus(); }
+      if (/[?&]join=1/.test(location.search)) area.classList.add('lr-kita');
+    }
+    sync(); setTimeout(sync, 600);
+  }
+
+
+  // ---------- Tampilan dalam room ----------
+  function roomView() {
+    var area = $('room-active-area');
+    if (!area || area.dataset.lr) return;
+    area.dataset.lr = '1';
+    area.classList.add('lr-room', 'lr-pane-chat');
+
+    // Header: Undang tetap terlihat, aksi lain masuk menu "..."
+    var head = area.firstElementChild, acts = head && head.lastElementChild;
+    if (acts && acts.children.length > 1) {
+      acts.classList.add('lr-actions');
+      var wrap = document.createElement('div'); wrap.className = 'lr-more-wrap';
+      var more = document.createElement('button'); more.type = 'button'; more.id = 'lr-more'; more.setAttribute('aria-label', 'Menu room'); more.setAttribute('aria-expanded', 'false');
+      more.innerHTML = '<svg class="lr-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>';
+      var menu = document.createElement('div'); menu.className = 'lr-menu'; menu.hidden = true;
+      Array.prototype.slice.call(acts.children, 1).forEach(function (b) { menu.appendChild(b); });
+      wrap.appendChild(more); wrap.appendChild(menu); acts.appendChild(wrap);
+      more.onclick = function (e) { e.stopPropagation(); menu.hidden = !menu.hidden; more.setAttribute('aria-expanded', String(!menu.hidden)); };
+      document.addEventListener('click', function (e) { if (!menu.hidden && !wrap.contains(e.target) || (e.target.closest && e.target.closest('.lr-menu button'))) { menu.hidden = true; more.setAttribute('aria-expanded', 'false'); } });
+    }
+
+    // Tab Chat / Lagu (layar < 1024px)
+    var voice = $('tg-voice');
+    if (voice) {
+      var tabs = document.createElement('div'); tabs.id = 'lr-tabs'; tabs.setAttribute('role', 'tablist');
+      tabs.innerHTML = '<button type="button" role="tab" data-p="chat" aria-selected="true">Chat</button><button type="button" role="tab" data-p="queue" aria-selected="false">Lagu &amp; Antrean</button>';
+      tabs.addEventListener('click', function (e) {
+        var b = e.target.closest('button[data-p]'); if (!b) return;
+        area.classList.toggle('lr-pane-chat', b.dataset.p === 'chat'); area.classList.toggle('lr-pane-queue', b.dataset.p === 'queue');
+        tabs.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-selected', String(x === b)); });
+      });
+      voice.parentNode.insertBefore(tabs, voice);
+    }
+
+    // Latar blur dari cover lagu + avatar berdenyut saat lagu diputar
+    var th = $('player-thumb');
+    function cover() {
+      var s = th && th.getAttribute('src');
+      if (s && !/^data:/.test(s)) area.style.setProperty('--lr-cover', 'url("' + s.replace(/"/g, '%22') + '")'); else area.style.removeProperty('--lr-cover');
+      area.classList.toggle('lr-has-cover', !!(s && !/^data:/.test(s)));
+    }
+    if (th) { new MutationObserver(cover).observe(th, { attributes: true, attributeFilter: ['src'] }); cover(); }
+    setInterval(function () { var p = false; try { p = !!isPlaying; } catch (e) {} area.classList.toggle('lr-playing', p); }, 500);
+  }
+
   function mark() {
     var c = cur();
     document.querySelectorAll('.lr-sb[data-t],.lr-pill[data-t]').forEach(function (b) {
@@ -95,7 +204,7 @@
   }
 
   function init() {
-    topIcons(); sidebar(); hero(); mark();
+    topIcons(); sidebar(); hero(); startBox(); roomView(); mark();
     if (window.switchTab && !window.switchTab.__lr) {
       var o = window.switchTab;
       window.switchTab = function () {
