@@ -203,8 +203,26 @@
     });
   }
 
+  // Saat mengetik di tab Bareng: sembunyikan bar bawah (class lr-typing) & gulir kolom ke tengah layar
+  function typingGuard() {
+    if (window.__lrTyping) return; window.__lrTyping = true;
+    var root = document.documentElement, t;
+    var isText = function (el) {
+      return !!(el && el.matches && el.matches('input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]):not([type=button]):not([type=submit]):not([type=hidden]),textarea') && el.closest('#tab-together'));
+    };
+    document.addEventListener('focusin', function (e) {
+      var el = e.target; if (!isText(el)) return;
+      clearTimeout(t); root.classList.add('lr-typing');
+      setTimeout(function () { try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (x) {} }, 320);
+    });
+    document.addEventListener('focusout', function () {
+      clearTimeout(t);
+      t = setTimeout(function () { if (!isText(document.activeElement)) root.classList.remove('lr-typing'); }, 200);
+    });
+  }
+
   function init() {
-    topIcons(); sidebar(); hero(); startBox(); roomView(); mark();
+    typingGuard(); topIcons(); sidebar(); hero(); startBox(); roomView(); mark();
     if (window.switchTab && !window.switchTab.__lr) {
       var o = window.switchTab;
       window.switchTab = function () {
