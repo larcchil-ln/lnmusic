@@ -187,3 +187,10 @@ html:not(.ln-android) #room-setup-area > div, html:not(.ln-android) #room-active
 @media (max-width: 1023.98px) {
   html.lr-typing #ln-mini, html.lr-typing #ln-mnav { display: none !important; }
 }
+
+/* ---------- Perbaikan: layar awal Bareng harus hilang saat sudah masuk room ---------- */
+/* "#room-setup-area { display:block }" di atas mengalahkan class .hidden Tailwind, sehingga
+   layar awal tetap tampil dan room muncul di bawahnya. Aturan ini mengembalikan perilaku hidden. */
+html:not(.ln-android) #room-setup-area.hidden,
+html:not(.ln-android) #room-setup-area.hidden > div { display: none !important; }
+html:not(.ln-android) #room-active-area.hidden { display: none !important; }

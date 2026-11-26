@@ -82,7 +82,14 @@
   function watchSetup() {
     var h = $('lr-hero'), a = $('room-setup-area');
     if (!h || !a) return;
-    var sync = function () { h.classList.toggle('lr-off', a.classList.contains('hidden') || !!a.closest('.hidden')); };
+    var wasOff = a.classList.contains('hidden');
+    var sync = function () {
+      var off = a.classList.contains('hidden') || !!a.closest('.hidden');
+      h.classList.toggle('lr-off', off);
+      // Baru masuk room: naikkan tampilan ke awal tab Bareng supaya room terlihat penuh
+      if (off && !wasOff) { var t = $('tab-together'); if (t) setTimeout(function () { try { t.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (e) {} }, 60); }
+      wasOff = off;
+    };
     new MutationObserver(sync).observe(a, { attributes: true, attributeFilter: ['class'] });
     sync();
   }
