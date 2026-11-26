@@ -2646,8 +2646,8 @@
     // FIX SYNC: payload ke peer dibuat kecil (koneksi pakai serialization 'json' yang tidak memecah pesan besar).
     const netTrack = t => ({ id: t.id, title: String(t.title || '').slice(0, 80), artist: String(t.artist || '').slice(0, 40), type: t.type, isVideo: !!t.isVideo });
     const netList = () => queue.filter(t => t && t.type === 'youtube').slice(0, 20).map(netTrack);
-    // ===== DEBUG SINKRON (sementara). Ubah LN_SYNC_DEBUG ke false untuk menyembunyikan panel =====
-    var LN_BUILD = 'sync-debug-2', LN_SYNC_DEBUG = true, lnSyncLogs = [], lnSyncPanel = null, lnSyncBtn = null;
+    // ===== DEBUG SINKRON: dimatikan (tombol SYNC disembunyikan). Ubah ke true kalau perlu debug lagi =====
+    var LN_BUILD = 'sync-debug-2', LN_SYNC_DEBUG = false, lnSyncLogs = [], lnSyncPanel = null, lnSyncBtn = null;
     function lnSyncLog(dir, msg) {
       if (!LN_SYNC_DEBUG) return;
       try {

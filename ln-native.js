@@ -38,6 +38,92 @@
     try { if (ytState() === 2) ytPlayer.playVideo(); } catch (e) {}
   }
 
+  // ---- Info lagu untuk notifikasi (judul, artis, sampul, status, posisi) ----
+  function isOffline() {
+    try { return !!(typeof currentTrack !== 'undefined' && currentTrack && currentTrack.type === 'offline'); } catch (e) { return false; }
+  }
+  function isActuallyPlaying() {
+    try { if (isOffline() && typeof htmlAudio !== 'undefined') return !htmlAudio.paused; } catch (e) {}
+    var s = ytState();
+    if (s === 1 || s === 3) return true;
+    if (s === -2) { try { return typeof isPlaying !== 'undefined' && !!isPlaying; } catch (e) {} }
+    return false;
+  }
+  function info() {
+    var o = { title: title(), artist: '', thumb: '', playing: isActuallyPlaying(), pos: -1, dur: 0 };
+    try {
+      if (typeof currentTrack !== 'undefined' && currentTrack) {
+        o.artist = String(currentTrack.artist || '');
+        var th = String(currentTrack.thumb || '');
+        if (!th && currentTrack.type === 'youtube' && currentTrack.id) th = 'https://i.ytimg.com/vi/' + currentTrack.id + '/hqdefault.jpg';
+        o.thumb = /^https?:/.test(th) ? th : '';
+      }
+    } catch (e) {}
+    try {
+      var p = 0, d = 0;
+      if (isOffline() && typeof htmlAudio !== 'undefined') { p = htmlAudio.currentTime; d = htmlAudio.duration; }
+      else if (typeof ytPlayer !== 'undefined' && ytPlayer && ytPlayer.getCurrentTime) { p = ytPlayer.getCurrentTime(); d = ytPlayer.getDuration(); }
+      if (isFinite(p) && p >= 0) o.pos = Math.round(p * 1000);
+      if (isFinite(d) && d > 0) o.dur = Math.round(d * 1000);
+    } catch (e) {}
+    return o;
+  }
+  var lastKey = '', lastPush = 0;
+  function pushInfo(force) {
+    if (!BP || !svcOn || !BP.update) return;
+    try {
+      var o = info();
+      var key = o.title + '|' + o.artist + '|' + o.thumb + '|' + o.playing + '|' + o.dur;
+      var now = Date.now();
+      if (!force && key === lastKey && now - lastPush < 10000) return;   // posisi dikirim tiap ~10 detik saja
+      lastKey = key; lastPush = now;
+      BP.update(o).catch(function () {});
+    } catch (e) {}
+  }
+  var holdUntil = 0;   // setelah dijeda dari notifikasi, layanan dibiarkan hidup supaya tombol Putar tetap ada
+  function ctlToggle() { try { if (typeof togglePlay === 'function') togglePlay(); } catch (e) {} }
+  function onMediaAction(ev) {
+    var a = ev && ev.action;
+    try {
+      if (a === 'toggle') {
+        var was = isActuallyPlaying();
+        ctlToggle();
+        if (was) { wantPlay = false; holdUntil = Date.now() + 10 * 60 * 1000; } else { wantPlay = true; holdUntil = 0; }
+      } else if (a === 'play') {
+        if (!isActuallyPlaying()) ctlToggle();
+        wantPlay = true; holdUntil = 0;
+      } else if (a === 'pause') {
+        if (isActuallyPlaying()) ctlToggle();
+        wantPlay = false; holdUntil = Date.now() + 10 * 60 * 1000;
+      } else if (a === 'next') {
+        wantPlay = true; holdUntil = 0;
+        if (typeof playNext === 'function') playNext();
+      } else if (a === 'prev') {
+        wantPlay = true; holdUntil = 0;
+        if (typeof playPrev === 'function') playPrev();
+      } else if (a === 'seek') {
+        var sec = (ev.arg || 0) / 1000;
+        if (isOffline() && typeof htmlAudio !== 'undefined') htmlAudio.currentTime = sec;
+        else if (typeof ytPlayer !== 'undefined' && ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(sec, true);
+      } else if (a === 'stop') {
+        wantPlay = false; holdUntil = 0; svcOn = false;
+        if (isActuallyPlaying()) ctlToggle();
+        try { BP.stop().catch(function () {}); } catch (e) {}
+        return;
+      }
+    } catch (e) {}
+    setTimeout(function () { pushInfo(true); }, 400);
+    setTimeout(function () {
+      // selaraskan dengan keadaan pemutar yang sebenarnya (mis. kontrol ditolak karena izin room)
+      if (a === 'toggle' || a === 'play' || a === 'pause') {
+        wantPlay = isActuallyPlaying();
+        holdUntil = wantPlay ? 0 : Date.now() + 10 * 60 * 1000;
+      }
+      pushInfo(true);
+    }, 1500);
+  }
+  try { if (BP && BP.addListener) BP.addListener('media', onMediaAction); } catch (e) {}
+
   // Layanan foreground cuma boleh DIMULAI saat app terlihat (aturan Android 12+),
   // jadi di latar belakang kita hanya boleh mempertahankan / menghentikannya.
   function sync(on) {
@@ -46,10 +132,11 @@
       if (on && !svcOn) {
         if (bg()) return;
         svcOn = true; lastTitle = title();
-        BP.start({ title: lastTitle }).catch(function () { svcOn = false; });
-      } else if (on && svcOn && !bg() && title() !== lastTitle) {
-        lastTitle = title();
-        BP.start({ title: lastTitle }).catch(function () {});   // perbarui judul di notifikasi
+        var o = info(); o.playing = true;
+        lastKey = ''; lastPush = Date.now();
+        BP.start(o).catch(function () { svcOn = false; });
+      } else if (on && svcOn) {
+        pushInfo(false);   // judul/artis/sampul/status berubah -> perbarui notifikasi (boleh dari latar belakang)
       } else if (!on && svcOn) {
         svcOn = false; BP.stop().catch(function () {});
       }
@@ -76,7 +163,15 @@
   setInterval(function () {
     try {
       if (bg()) {
-        if (!wantPlay) return;
+        if (!wantPlay) {
+          if (svcOn) {
+            pushInfo(false);
+            // dijeda dari notifikasi: tahan layanan sebentar, lalu lepas supaya baterai tidak terkuras
+            if (Date.now() > holdUntil) { svcOn = false; BP.stop().catch(function () {}); }
+          }
+          return;
+        }
+        pushInfo(false);
         var st = ytState();
         if (st === 2) resume();                       // YouTube terjeda sendiri -> lanjutkan
         if (st === 1 || st === 3) notPlayingSince = 0;
@@ -87,7 +182,9 @@
       } else {
         notPlayingSince = 0;
         if (typeof isPlaying !== 'undefined' && Date.now() - lastChange > 2500) wantPlay = !!isPlaying;
-        sync(wantPlay);
+        if (wantPlay || !svcOn) sync(wantPlay);
+        else if (Date.now() > holdUntil) sync(false);   // dijeda: biarkan notifikasi dulu sampai masa tahan habis
+        else pushInfo(false);
       }
     } catch (e) {}
   }, 1500);
