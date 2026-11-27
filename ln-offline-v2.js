@@ -165,7 +165,13 @@
       '.eq-note{color:#8a85a0;font-size:12.5px;line-height:1.5;margin-top:6px}.eq-reset{margin-top:14px;height:48px;border-radius:24px;background:var(--c2);font-weight:800;width:100%}',
       '.np-lyr{flex:1;min-height:0;overflow:auto;padding:22px 4px;text-align:center;-webkit-mask-image:linear-gradient(transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(transparent,#000 10%,#000 90%,transparent)}',
       '.np-lyr p{margin:0 0 18px;font-size:21px;line-height:1.35;font-weight:800;color:rgba(255,255,255,.34);transition:color .25s,transform .25s}.np-lyr p.on{color:#fff;transform:scale(1.04)}.np-lyr p.n{font-size:14px;font-weight:600;color:#9a96ab;margin-top:40px}.np-lyr p.pl{font-size:16px;font-weight:600;color:rgba(255,255,255,.8)}',
-      '#ln-v2-np.lyr .np-cover{display:none}#ln-v2-np:not(.lyr) .np-lyr{display:none}.np-bot button.on{color:var(--acc)}',
+      '#ln-v2-np:not(.lyr) .np-lyr{display:none}.np-bot button.on{color:var(--acc)}',
+      // Mode lirik (default): cover di atas dengan ukuran tetap, lirik mengisi ruang kosong di bawahnya
+      '#ln-v2-np.lyr .np-cover{flex:none;display:flex;container-type:normal;padding:8px 0 4px;overflow:visible}',
+      '#ln-v2-np.lyr .np-cover i{width:min(calc(100vw - 44px),34dvh,320px);height:auto;max-height:none;max-width:none;aspect-ratio:1;border-radius:24px;box-shadow:0 14px 44px rgba(109,40,217,.38)}',
+      '#ln-v2-np.lyr .np-lyr{display:block;position:relative;flex:1 1 0;min-height:92px;padding:30px 6px}',
+      '#ln-v2-np.lyr .np-lyr p{font-size:19px;margin:0 0 14px}#ln-v2-np.lyr .np-lyr p.pl{font-size:15px;margin:0 0 8px}',
+      '@media (max-height:660px){#ln-v2-np.lyr .np-cover i{width:min(calc(100vw - 44px),28dvh,240px)}}',
       // Layar penuh (Sedang Diputar / Equalizer / lembar pilihan) menutup bar navigasi: <main> punya z-index sendiri sehingga bar bawah
       // tadinya menimpa baris Timer-Lirik-Equalizer-Berikutnya.
       'html.ln-v2-full #ln-mnav,html.ln-v2-full #ln-mini,html.ln-v2-full .ln-offline-player{display:none!important}',
@@ -294,10 +300,10 @@
   }
 
   // ===== Lirik (LRCLIB), tampil di layar penuh dan di baris artis mini player =====
-  var lyr = { k: '', lines: [], plain: '', state: 'idle' }, lyrOn = false, lyrIdx = -1;
+  var lyr = { k: '', lines: [], plain: '', state: 'idle' }, lyrOn = true, lyrIdx = -1;
   function lrcParse(t) { var out = []; String(t || '').split('\n').forEach(function (l) { var m = l.match(/^\[(\d+):(\d+(?:\.\d+)?)\]\s*(.*)$/); if (m && m[3]) out.push({ t: (+m[1]) * 6e4 + Math.round(parseFloat(m[2]) * 1000), s: m[3] }); }); return out; }
   function lyrRender() {
-    var e = $('np-lyr'); if (!e) return; lyrIdx = -1;
+    var e = $('np-lyr'); if (!e) return; lyrIdx = -1; e.scrollTop = 0;
     if (lyr.state === 'load') e.innerHTML = '<p class="n">Mencari lirik…</p>';
     else if (lyr.lines.length) e.innerHTML = lyr.lines.map(function (l, i) { return '<p data-i="' + i + '">' + esc(l.s) + '</p>'; }).join('');
     else if (lyr.plain) e.innerHTML = lyr.plain.split('\n').map(function (l) { return l.trim() ? '<p class="pl">' + esc(l) + '</p>' : ''; }).join('');
@@ -319,7 +325,7 @@
     if (idx === lyrIdx) return; lyrIdx = idx;
     var ma = $('ln-v2-ma'); if (ma) ma.textContent = idx >= 0 ? lyr.lines[idx].s : (st.artist || '');
     var box = $('np-lyr'); if (!box) return; var on = box.querySelector('.on'); if (on) on.classList.remove('on');
-    var el = idx >= 0 ? box.querySelector('[data-i="' + idx + '"]') : null; if (el) { el.classList.add('on'); if (lyrOn) try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {} }
+    var el = idx >= 0 ? box.querySelector('[data-i="' + idx + '"]') : null; if (el) { el.classList.add('on'); if (lyrOn) try { box.scrollTo({ top: Math.max(0, el.offsetTop - box.clientHeight / 2 + el.offsetHeight / 2), behavior: 'smooth' }); } catch (e) {} }
   }
 
   function npEl() { return $('ln-v2-np'); }
@@ -397,11 +403,11 @@
     var r = D.createElement('div'); r.id = 'ln-v2';
     r.innerHTML = '<div id="ln-v2-body"></div>' +
       '<div id="ln-v2-mini" class="v2-mini"><div class="v2-mini-main" data-act="np"><span class="v2-art" id="ln-v2-mart">' + ic.note + '</span><span class="v2-ri"><b id="ln-v2-mt"></b><small id="ln-v2-ma"></small></span></div><button data-act="prev" aria-label="Sebelumnya">' + ic.prev + '</button><button id="ln-v2-mp" data-act="mplay" aria-label="Putar/jeda"></button><button data-act="next" aria-label="Berikutnya">' + ic.next + '</button><i class="v2-bar"><u id="ln-v2-mb"></u></i></div>' +
-      '<div id="ln-v2-np"><div class="np-top"><button class="v2-ib" data-act="npx" aria-label="Tutup">' + ic.down + '</button><span>SEDANG DIPUTAR</span><button class="v2-ib" data-act="npcover" aria-label="Cari cover online" title="Cari cover online">' + ic.image + '</button></div><div class="np-cover"><i>' + ic.note + '</i></div><div class="np-lyr" id="np-lyr"></div>' +
+      '<div id="ln-v2-np" class="lyr"><div class="np-top"><button class="v2-ib" data-act="npx" aria-label="Tutup">' + ic.down + '</button><span>SEDANG DIPUTAR</span><button class="v2-ib" data-act="npcover" aria-label="Cari cover online" title="Cari cover online">' + ic.image + '</button></div><div class="np-cover"><i>' + ic.note + '</i></div><div class="np-lyr" id="np-lyr"></div>' +
       '<div class="np-meta"><span class="s"><h2 id="np-t"></h2><p id="np-a"></p></span><button class="v2-ib np-fav" id="np-fav" data-act="nfav" aria-label="Favorit">' + ic.heart + '</button></div>' +
       '<div class="np-seek"><input id="np-seek" type="range" min="0" max="1" value="0"><div class="np-t"><span id="np-p">0:00</span><span id="np-d">0:00</span></div></div>' +
       '<div class="np-ctl"><button id="np-sh" data-act="shuffle" aria-label="Acak">' + ic.shuffle + '</button><button data-act="prev" aria-label="Sebelumnya">' + ic.prev + '</button><button class="big" id="np-pp" data-act="toggle" aria-label="Putar/jeda"></button><button data-act="next" aria-label="Berikutnya">' + ic.next + '</button><button id="np-rp" data-act="repeat" aria-label="Ulangi">' + ic.repeat + '</button></div>' +
-      '<div class="np-bot"><button data-act="timer">' + ic.moon + 'Timer</button><button id="np-ly" data-act="lyr">' + ic.note + 'Lirik</button><button data-act="eq">' + ic.eq + 'Equalizer</button><button data-act="queue">' + ic.queue + 'Berikutnya</button></div></div><div id="ln-v2-eq"></div>' +
+      '<div class="np-bot"><button data-act="timer">' + ic.moon + 'Timer</button><button id="np-ly" class="on" data-act="lyr">' + ic.note + 'Lirik</button><button data-act="eq">' + ic.eq + 'Equalizer</button><button data-act="queue">' + ic.queue + 'Berikutnya</button></div></div><div id="ln-v2-eq"></div>' +
       '<div id="ln-v2-sheet" class="v2-sheet"><div class="v2-scrim" data-act="scrim"></div><div class="v2-panel"></div></div>';
     tab.appendChild(r); r.addEventListener('click', onClick); applyTheme(); applyQuality(); var eqe = $('ln-v2-eq'); eqe.addEventListener('click', eqClick); eqe.addEventListener('input', eqInput);
     (function () {

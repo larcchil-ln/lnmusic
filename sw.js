@@ -5,7 +5,7 @@
  * - TIDAK menyentuh: /api/*, YouTube, signaling PeerJS, LRCLIB, atau request non-GET.
  * Naikkan VERSION setiap kali daftar SHELL berubah.
  */
-const VERSION = 'v18-spotnav';
+const VERSION = 'v20-mixes';
 const SHELL_CACHE = 'lnmusic-shell-' + VERSION;
 const CDN_CACHE = 'lnmusic-cdn-' + VERSION;
 const SHELL = [
@@ -20,6 +20,7 @@ const SHELL = [
   '/ln-redesign.css',
   '/ln-pages.css',
   '/ln-spotnav.css',
+  '/ln-mixes.js',
   '/ln-orient.js',
   '/icons/splash-logo.png',
   '/ln-redesign.js',
