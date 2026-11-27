@@ -57,11 +57,13 @@
 
   // ---- Potongan HTML ----
   function quick() {
+    // Upload lagu & Musik HP hanya ada di APK; di web tab Offline sudah dihapus
+    var apk = document.documentElement.classList.contains('ln-android');
     return '<div class="lnh-quick no-scrollbar">' +
       '<button class="lnh-chip" data-go="together">' + I.users + 'Nonton bareng</button>' +
-      '<label class="lnh-chip">' + I.up + 'Upload lagu<input type="file" accept="audio/*" multiple class="hidden" onchange="handleOfflineUpload(event)"></label>' +
+      (apk ? '<label class="lnh-chip">' + I.up + 'Upload lagu<input type="file" accept="audio/*" multiple class="hidden" onchange="handleOfflineUpload(event)"></label>' : '') +
       '<button class="lnh-chip" data-go="playlists">' + I.list + 'Playlist</button>' +
-      '<button class="lnh-chip" data-go="offline">' + I.phone + 'Musik HP</button>' +
+      (apk ? '<button class="lnh-chip" data-go="offline">' + I.phone + 'Musik HP</button>' : '') +
       '</div>';
   }
   function heroCard(t, i, key) {
