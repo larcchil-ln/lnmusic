@@ -3,69 +3,61 @@
   var $ = function (id) { return document.getElementById(id); };
   var hidden = function (id) { var e = $(id); return !e || e.classList.contains('hidden'); };
 
-  // ---- Pindah tab halus + penanda tab aktif ----
+  // ---- Navigasi bawah ala Spotify: gaya ada di ln-spotnav.css; di sini hanya perilaku ----
   var navStyle = document.createElement('style');
   navStyle.textContent =
-    '.mnav{position:relative;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:color .2s,background .2s,transform .12s}' +
-    '.mnav svg{transition:transform .2s cubic-bezier(.2,0,0,1),background .2s}' +
-    '.mnav.on svg{transform:translateY(-1px) scale(1.06)}' +
-    '.mnav:active{transform:scale(.94)}' +
-    '.mnav:active svg{transform:scale(.92)}' +
-    '#ln-ind{position:absolute;top:0;left:0;height:3px;width:30px;border-radius:0 0 6px 6px;background:linear-gradient(90deg,#f43f5e,#8b5cf6);box-shadow:0 2px 14px rgba(244,63,94,.75);transition:transform .26s cubic-bezier(.2,0,0,1);opacity:0;pointer-events:none;will-change:transform}' +
     '.nav-btn{touch-action:manipulation;transition:background .18s,color .18s,box-shadow .18s,transform .12s}' +
     '.nav-btn:active{transform:scale(.98)}' +
     '.nav-btn.text-rose-400{box-shadow:inset 3px 0 0 #f43f5e}' +
-    'button,[onclick],a{touch-action:manipulation}' +
-    // Tab baru cukup memudar halus (tanpa geser): jauh lebih ringan daripada menganimasikan seluruh halaman
-    '@keyframes lnTabIn{from{opacity:0}to{opacity:1}}' +
-    '.ln-tab-in{animation:lnTabIn .16s ease-out}' +
-    // Blur di bar yang menempel (nav bawah/header) dihitung ulang setiap frame gulir; di HP bikin berat & tersendat
-    'html #ln-mnav{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:rgba(14,14,18,.97)!important;transform:translateZ(0)}' +
-    '@media (max-width:1023px){html header.glass{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:rgba(9,9,11,.96)!important}}' +
-    '@media (prefers-reduced-motion:reduce){.ln-tab-in{animation:none}#ln-ind,.mnav svg{transition:none}}';
+    'button,[onclick],a{touch-action:manipulation}';
   document.head.appendChild(navStyle);
 
-  var indEl = null, centers = null;
-  // Posisi tengah tiap tombol diukur SEKALI (saat load/resize), bukan di setiap ketukan,
-  // supaya ketukan tidak memicu hitung ulang tata letak seluruh halaman.
-  function measure() {
-    var nav = $('ln-mnav'); if (!nav) return;
-    var nr = nav.getBoundingClientRect();
-    if (!nr.width) { centers = null; return; } // nav bawah disembunyikan di layar lebar
-    centers = {};
-    nav.querySelectorAll('.mnav').forEach(function (b) {
-      var br = b.getBoundingClientRect();
-      centers[b.id] = Math.round(br.left - nr.left + br.width / 2 - 15);
-    });
-  }
-  function moveInd() {
-    var cur = null; try { cur = curTab; } catch (e) {}
-    var id = 'mob-nav-' + (cur || 'online');
-    if (!centers) measure();
+  // Umpan balik INSTAN: tab yang ditekan langsung jadi aktif saat jari menyentuh (tanpa menunggu pindah tab)
+  var MNAV_OFF = 'mnav flex flex-col items-center gap-1 text-[10px] text-zinc-400 font-medium';
+  document.addEventListener('pointerdown', function (e) {
+    var b = e.target && e.target.closest ? e.target.closest('#ln-mnav .mnav') : null;
+    if (!b || e.button > 0) return;
     var nav = $('ln-mnav');
-    if (!nav || !centers || centers[id] == null) return;
-    if (!indEl || !indEl.isConnected) { indEl = document.createElement('div'); indEl.id = 'ln-ind'; nav.appendChild(indEl); }
-    indEl.style.opacity = '1';
-    indEl.style.transform = 'translateX(' + centers[id] + 'px)';
-  }
-  window.addEventListener('resize', function () { centers = null; moveInd(); });
-  window.addEventListener('orientationchange', function () { centers = null; setTimeout(moveInd, 200); });
-  window.addEventListener('load', function () { setTimeout(function () { centers = null; moveInd(); }, 200); });
-  setTimeout(moveInd, 400);
+    nav.querySelectorAll('.mnav').forEach(function (x) {
+      var on = x === b, c = on ? 'mnav on flex flex-col items-center gap-1 text-[10px] font-semibold' : MNAV_OFF;
+      if (x.className !== c) x.className = c;
+    });
+  }, { passive: true, capture: true });
 
-  // Tab Hub sudah dihapus: panggilan lama diarahkan ke Beranda
+  // Ketuk tab yang sedang aktif = gulir mulus ke atas (seperti Spotify), bukan memuat ulang tab
+  var navEl = $('ln-mnav');
+  if (navEl) navEl.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest ? e.target.closest('.mnav') : null; if (!b) return;
+    var id = b.id.replace('mob-nav-', ''), cur = null; try { cur = curTab; } catch (x) {}
+    if (id !== cur || id === 'videocall') return;
+    e.preventDefault(); e.stopPropagation();
+    try { navigator.vibrate && navigator.vibrate(6); } catch (x) {}
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (x) { window.scrollTo(0, 0); }
+  }, true);
+
+  // Tab Hub sudah dihapus: panggilan lama diarahkan ke Beranda.
+  // Tiap tab mengingat posisi gulirnya (kembali ke tab = lanjut di tempat terakhir).
+  var scrollMem = {};
   if (typeof window.switchTab === 'function') {
     var origSwitchTab = window.switchTab;
     window.switchTab = function (t) {
       if (t === 'hub') t = 'online';
       var prev = null; try { prev = curTab; } catch (e) {}
+      if (prev && prev !== 'videocall') scrollMem[prev] = window.pageYOffset || 0;
       var res = origSwitchTab.call(this, t);
       if (t !== prev) {
         var el = $('tab-' + t);
-        if (el && t !== 'videocall') el.classList.add('ln-tab-in');
+        if (el && t !== 'videocall') {
+          el.classList.remove('ln-tab-in'); void el.offsetWidth; el.classList.add('ln-tab-in');
+          setTimeout(function () { el.classList.remove('ln-tab-in'); }, 200);
+        }
         try { navigator.vibrate && navigator.vibrate(8); } catch (e) {}
+        var y = scrollMem[t];
+        if (y != null && t !== 'videocall') {
+          // dijalankan setelah rAF bawaan switchTab (yang meloncat ke atas tab)
+          requestAnimationFrame(function () { try { window.scrollTo({ top: y, behavior: 'instant' }); } catch (e) { window.scrollTo(0, y); } });
+        }
       }
-      moveInd();
       return res;
     };
   }

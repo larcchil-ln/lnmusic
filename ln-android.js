@@ -162,7 +162,7 @@
 
   // efek sentuh (ripple) khas Material
   document.addEventListener('pointerdown', function (e) {
-    var el = e.target && e.target.closest ? e.target.closest('.mnav,.lnh-row,.lnh-btn,.lnh-chip,.lnh-rcard,.yt-row') : null;
+    var el = e.target && e.target.closest ? e.target.closest('.lnh-row,.lnh-btn,.lnh-chip,.lnh-rcard,.yt-row') : null;
     if (!el) return;
     var r = el.getBoundingClientRect(), d = Math.max(r.width, r.height) * 2, s = document.createElement('span');
     s.className = 'lna-rip';
