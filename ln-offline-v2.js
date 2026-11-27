@@ -22,7 +22,8 @@
     play: I('<path d="M8 5.5v13a1 1 0 0 0 1.5.9l10.5-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5z"/>', 1), pause: I('<rect x="6" y="5" width="4.2" height="14" rx="1.2"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.2"/>', 1),
     prev: I('<path d="M6 5h2v14H6zM19 5.7v12.6a1 1 0 0 1-1.6.8L8.5 13a1.2 1.2 0 0 1 0-2l8.9-6.1A1 1 0 0 1 19 5.7z"/>', 1), next: I('<path d="M16 5h2v14h-2zM5 5.7v12.6a1 1 0 0 0 1.6.8L15.5 13a1.2 1.2 0 0 0 0-2L6.6 4.9A1 1 0 0 0 5 5.7z"/>', 1),
     shuffle: I('<path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>'), repeat: I('<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>'),
-    eq: I('<path d="M5 20V10M12 20V4M19 20v-7"/>')
+    eq: I('<path d="M5 20V10M12 20V4M19 20v-7"/>'),
+    image: I('<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.8"/><path d="M21 15l-5-5L5 21"/>')
   };
   function load(k, d) { try { return JSON.parse(localStorage.getItem('lnv2_' + k)) || d; } catch (e) { return d; } }
   function save(k, v) { try { localStorage.setItem('lnv2_' + k, JSON.stringify(v)); } catch (e) {} }
@@ -41,12 +42,72 @@
   var cur = function () { for (var i = 0; i < lib.length; i++) if (String(lib[i].id) === String(st.id)) return lib[i]; return null; };
 
   var artCache = {}, artWait = {}, artQ = [], artBusy = 0, artObs = null, byId = {}, npId = null, miniId = null;
-  function artKey(s) { return s.album ? 'a:' + s.album : 'i:' + s.id; }
+  var GEN = /^(unknown|<unknown>|download|downloads|music|musik|0|sdcard|internal|album tidak dikenal|youtube|whatsapp|telegram|audio|media)$/i;
+  function artKey(s) { return s.album && !GEN.test(String(s.album).trim()) ? 'a:' + s.album : 'i:' + s.id; }
   function paintArt(el, url) { if (!url || !el) return; el.style.background = 'center/cover no-repeat url("' + url + '")'; el.classList.add('has'); }
-  function fetchArt(s, cb) { var m = P(); if (!m || !m.getArtwork) return cb(''); try { m.getArtwork({ id: s.id }).then(function (r) { cb((r && r.dataUrl) || ''); }).catch(function () { cb(''); }); } catch (e) { cb(''); } }
+  function fetchArt(s, cb) {
+    var m = P(), next = function () { webArt(s, false, cb); };
+    if (!m || !m.getArtwork) return next();
+    try { m.getArtwork({ id: s.id }).then(function (r) { var u = r && r.dataUrl; if (u) cb(u); else next(); }).catch(next); } catch (e) { next(); }
+  }
+  // ---- Cover online (iTunes Search) untuk lagu tanpa cover tertanam ----
+  var webArtMap = load('artweb', {}), webQ = [], webBusy = false, webMiss = {}, jid = 0, artOn = true;
+  try { artOn = localStorage.getItem('lnv2_artonline') !== '0'; } catch (e) {}
+  function nrm(t) { return String(t == null ? '' : t).toLowerCase().replace(/&/g, ' ').replace(/[^a-z0-9\u00c0-\uffff]+/g, ' ').trim(); }
+  function cleanT(t) {
+    return String(t == null ? '' : t).replace(/\.(mp3|m4a|flac|wav|ogg|aac|opus)$/i, '').replace(/[\(\[][^\)\]]*[\)\]]/g, ' ')
+      .replace(/\b(official|music video|lyric video|lyrics?|audio|hd|hq)\b.*$/i, ' ').replace(/\b(ft|feat)\b\.?.*$/i, ' ').replace(/_/g, ' ')
+      .replace(/^\s*\d{1,3}\s*[-.)]\s+/, '').replace(/\s+/g, ' ').trim();
+  }
+  function knownArtist(a) { a = String(a || '').trim(); return a && !/^(<?unknown>?|artis tidak dikenal)$/i.test(a) ? a : ''; }
+  function itunes(term, cb) {
+    var url = 'https://itunes.apple.com/search?media=music&entity=song&limit=8&term=' + encodeURIComponent(term), fin = false, to = 0;
+    var end = function (d) { if (fin) return; fin = true; clearTimeout(to); cb(d); };
+    to = setTimeout(function () { end(null); }, 9000);
+    function jsonp() {
+      if (fin) return; var n = '__lnit' + (++jid), sc = D.createElement('script');
+      function clean() { try { delete window[n]; } catch (e) { window[n] = 0; } if (sc.parentNode) sc.parentNode.removeChild(sc); }
+      window[n] = function (d) { clean(); end(d); }; sc.onerror = function () { clean(); end(null); };
+      sc.src = url + '&callback=' + n; D.head.appendChild(sc);
+    }
+    try { fetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { if (j) end(j); else jsonp(); }).catch(jsonp); } catch (e) { jsonp(); }
+  }
+  function lookup(s, cb) {
+    var art = knownArtist(s.artist), title = cleanT(s.title), term = ((art ? cleanT(art) + ' ' : '') + title).trim().slice(0, 120);
+    if (!term) return cb('');
+    var q = nrm(title + ' ' + (art ? cleanT(art) : '')).split(' ').filter(Boolean), qs = {}; q.forEach(function (w) { qs[w] = 1; });
+    itunes(term, function (j) {
+      var rs = (j && j.results) || [];
+      for (var i = 0; i < rs.length; i++) {
+        var r = rs[i]; if (!r || !r.artworkUrl100) continue;
+        var tt = nrm(cleanT(r.trackName)).split(' ').filter(Boolean); if (!tt.length) continue;
+        var hit = tt.filter(function (w) { return qs[w]; }).length / tt.length;
+        var ah = nrm(r.artistName).split(' ').filter(Boolean).some(function (w) { return qs[w]; });
+        if (hit >= 0.8 && (ah || !art)) return cb(r.artworkUrl100.replace(/\/\d+x\d+(bb)?\.(jpg|png)/, '/600x600bb.$2'));
+      }
+      cb('');
+    });
+  }
+  function saveWeb() { var k = Object.keys(webArtMap); if (k.length > 500) k.slice(0, 100).forEach(function (x) { delete webArtMap[x]; }); save('artweb', webArtMap); }
+  function webPump() {
+    if (webBusy || !webQ.length) return; webBusy = true; var j = webQ.shift();
+    lookup(j.s, function (u) {
+      if (u) { webArtMap[j.k] = u; saveWeb(); } else webMiss[j.k] = 1;
+      try { j.cb(u || ''); } catch (e) {}
+      setTimeout(function () { webBusy = false; webPump(); }, 450);
+    });
+  }
+  function webArt(s, force, cb) {
+    var k = sig(s);
+    if (force) { delete webMiss[k]; delete webArtMap[k]; }
+    else { if (!artOn || navigator.onLine === false) return cb(''); if (webArtMap[k]) return cb(webArtMap[k]); if (webMiss[k]) return cb(''); }
+    webQ.push({ s: s, k: k, cb: cb }); webPump();
+  }
   function thumb(u, cb) {
-    var im = new Image(); im.onload = function () { try { var c = D.createElement('canvas'); c.width = c.height = 112; var m = Math.min(im.width, im.height); c.getContext('2d').drawImage(im, (im.width - m) / 2, (im.height - m) / 2, m, m, 0, 0, 112, 112); cb(c.toDataURL('image/jpeg', .82)); } catch (e) { cb(''); } };
-    im.onerror = function () { cb(''); }; im.src = u;
+    var web = /^https?:/i.test(u), im = new Image(); if (web) im.crossOrigin = 'anonymous';
+    im.onload = function () { try { var c = D.createElement('canvas'); c.width = c.height = 112; var m = Math.min(im.width, im.height); c.getContext('2d').drawImage(im, (im.width - m) / 2, (im.height - m) / 2, m, m, 0, 0, 112, 112); cb(c.toDataURL('image/jpeg', .82)); } catch (e) { cb(web ? u : ''); } };
+    im.onerror = function () { if (web) { var j = new Image(); j.onload = function () { cb(u); }; j.onerror = function () { cb(''); }; j.src = u; } else cb(''); };
+    im.src = u;
   }
   function artDone(k, t) { artBusy--; artCache[k] = t; (artWait[k] || []).forEach(function (el) { if (el.isConnected) paintArt(el, t); }); delete artWait[k]; artPump(); }
   function artPump() { while (artBusy < 2 && artQ.length) { artBusy++; (function (j) { fetchArt(j.s, function (u) { if (!u) return artDone(j.k, ''); thumb(u, function (t) { artDone(j.k, t); }); }); })(artQ.shift()); } }
@@ -88,7 +149,7 @@
       '.v2-bar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.1)}.v2-bar u{display:block;height:100%;width:0;background:var(--v)}',
       '#ln-v2-np{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 10px) 22px calc(env(safe-area-inset-bottom) + 18px);background:radial-gradient(120% 60% at 50% 0%,var(--np) 0%,#0a0713 60%);transform:translateY(100%);transition:transform .32s cubic-bezier(.2,0,0,1);visibility:hidden}',
       '#ln-v2-np.on{transform:none;visibility:visible}.np-top{display:flex;align-items:center;justify-content:space-between;color:#cfc8ea;font-size:12px;font-weight:800;letter-spacing:.16em}',
-      '.np-cover{flex:1;min-height:0;display:grid;place-items:center;padding:18px 0}.np-cover i{width:min(100%,360px);aspect-ratio:1;border-radius:28px;display:grid;place-items:center;color:rgba(255,255,255,.8);box-shadow:0 20px 60px rgba(109,40,217,.35)}.np-cover svg{width:34%;height:34%}',
+      '.np-cover{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:14px 0;overflow:hidden}.np-cover i{height:100%;max-height:360px;max-width:100%;aspect-ratio:1;border-radius:28px;display:grid;place-items:center;color:rgba(255,255,255,.8);box-shadow:0 20px 60px rgba(109,40,217,.35)}.np-cover svg{width:34%;height:34%}@supports (width:1cqw){.np-cover{container-type:size}.np-cover i{width:min(100cqw,100cqh,360px);height:auto;max-height:none;max-width:none}}',
       '.np-meta{display:flex;align-items:center;gap:10px}.np-meta .s{flex:1;min-width:0}.np-meta h2{margin:0;font-size:22px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.np-meta p{margin:4px 0 0;color:#a9a3c0;font-size:14.5px}',
       '#ln-v2 .np-fav.on{color:var(--acc)}#ln-v2 .np-fav.on svg{fill:currentColor}',
       '.np-seek{margin-top:18px}.np-seek input{width:100%;accent-color:var(--v);height:4px}.np-t{display:flex;justify-content:space-between;font-size:12px;color:#9a96ab;margin-top:4px}',
@@ -187,6 +248,7 @@
     sheet('<h3>Pengaturan</h3><small>LNMusic Offline</small>' +
       '<button class="v2-opt" data-act="theme"><span style="color:var(--acc)">' + ic.disc + '</span><span class="s">Tema</span><em>' + THEMES[theme][0] + '</em></button>' +
       '<button class="v2-opt" data-act="quality"><span style="color:var(--acc)">' + ic.note + '</span><span class="s">Kualitas Audio</span><em>' + QUAL[qual][0] + '</em></button>' +
+      '<button class="v2-opt" data-act="artweb"><span style="color:var(--acc)">' + ic.image + '</span><span class="s">Cover Online</span><em>' + (artOn ? 'Aktif' : 'Nonaktif') + '</em></button>' +
       '<button class="v2-opt" data-act="eq"><span style="color:var(--acc)">' + ic.eq + '</span><span class="s">Equalizer</span><em>' + (fxS.on ? 'Aktif' : 'Nonaktif') + '</em></button>' +
       '<button class="v2-opt" data-act="timer"><span style="color:var(--acc)">' + ic.moon + '</span><span class="s">Timer Tidur</span><em>' + (timerEnd ? 'Aktif' : 'Nonaktif') + '</em></button>' +
       '<button class="v2-opt" data-act="scan"><span style="color:var(--acc)">' + ic.scan + '</span><span class="s">Pindai ulang musik</span><em>' + lib.length + ' lagu</em></button>');
@@ -314,6 +376,16 @@
     else if (a === 'quality') sheet(optList('Kualitas Audio', 'Berlaku untuk lagu YouTube (video/audio streaming)', QUAL, qual, 'qpick'));
     else if (a === 'tpick') { theme = el.dataset.k; save('theme', theme); applyTheme(); settingsSheet(); }
     else if (a === 'qpick') { qual = el.dataset.k; save('q', qual); applyQuality(); settingsSheet(); toast('Kualitas: ' + QUAL[qual][0]); }
+    else if (a === 'artweb') { artOn = !artOn; try { localStorage.setItem('lnv2_artonline', artOn ? '1' : '0'); } catch (e) {} if (artOn) { Object.keys(artCache).forEach(function (k) { if (!artCache[k]) delete artCache[k]; }); webMiss = {}; } settingsSheet(); toast('Cover online ' + (artOn ? 'aktif' : 'nonaktif')); render(); }
+    else if (a === 'npcover') {
+      var c0 = cur(); if (!c0) return;
+      if (navigator.onLine === false) return toast('Tidak ada koneksi internet');
+      toast('Mencari cover online…');
+      webArt(c0, true, function (u) {
+        if (!u) return toast('Cover tidak ditemukan');
+        thumb(u, function (t) { var ci = npEl().querySelector('.np-cover i'); if (ci && String(npId) === String(c0.id)) paintArt(ci, u); artCache[artKey(c0)] = t || u; toast('Cover ditambahkan'); render(); });
+      });
+    }
     else if (a === 'scrim') closeSheet();
   }
 
@@ -322,7 +394,7 @@
     var r = D.createElement('div'); r.id = 'ln-v2';
     r.innerHTML = '<div id="ln-v2-body"></div>' +
       '<div id="ln-v2-mini" class="v2-mini"><div class="v2-mini-main" data-act="np"><span class="v2-art" id="ln-v2-mart">' + ic.note + '</span><span class="v2-ri"><b id="ln-v2-mt"></b><small id="ln-v2-ma"></small></span></div><button data-act="prev" aria-label="Sebelumnya">' + ic.prev + '</button><button id="ln-v2-mp" data-act="mplay" aria-label="Putar/jeda"></button><button data-act="next" aria-label="Berikutnya">' + ic.next + '</button><i class="v2-bar"><u id="ln-v2-mb"></u></i></div>' +
-      '<div id="ln-v2-np"><div class="np-top"><button class="v2-ib" data-act="npx" aria-label="Tutup">' + ic.down + '</button><span>SEDANG DIPUTAR</span><span style="width:40px"></span></div><div class="np-cover"><i>' + ic.note + '</i></div><div class="np-lyr" id="np-lyr"></div>' +
+      '<div id="ln-v2-np"><div class="np-top"><button class="v2-ib" data-act="npx" aria-label="Tutup">' + ic.down + '</button><span>SEDANG DIPUTAR</span><button class="v2-ib" data-act="npcover" aria-label="Cari cover online" title="Cari cover online">' + ic.image + '</button></div><div class="np-cover"><i>' + ic.note + '</i></div><div class="np-lyr" id="np-lyr"></div>' +
       '<div class="np-meta"><span class="s"><h2 id="np-t"></h2><p id="np-a"></p></span><button class="v2-ib np-fav" id="np-fav" data-act="nfav" aria-label="Favorit">' + ic.heart + '</button></div>' +
       '<div class="np-seek"><input id="np-seek" type="range" min="0" max="1" value="0"><div class="np-t"><span id="np-p">0:00</span><span id="np-d">0:00</span></div></div>' +
       '<div class="np-ctl"><button id="np-sh" data-act="shuffle" aria-label="Acak">' + ic.shuffle + '</button><button data-act="prev" aria-label="Sebelumnya">' + ic.prev + '</button><button class="big" id="np-pp" data-act="toggle" aria-label="Putar/jeda"></button><button data-act="next" aria-label="Berikutnya">' + ic.next + '</button><button id="np-rp" data-act="repeat" aria-label="Ulangi">' + ic.repeat + '</button></div>' +
