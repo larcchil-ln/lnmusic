@@ -166,6 +166,9 @@
       '.np-lyr{flex:1;min-height:0;overflow:auto;padding:22px 4px;text-align:center;-webkit-mask-image:linear-gradient(transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(transparent,#000 10%,#000 90%,transparent)}',
       '.np-lyr p{margin:0 0 18px;font-size:21px;line-height:1.35;font-weight:800;color:rgba(255,255,255,.34);transition:color .25s,transform .25s}.np-lyr p.on{color:#fff;transform:scale(1.04)}.np-lyr p.n{font-size:14px;font-weight:600;color:#9a96ab;margin-top:40px}.np-lyr p.pl{font-size:16px;font-weight:600;color:rgba(255,255,255,.8)}',
       '#ln-v2-np.lyr .np-cover{display:none}#ln-v2-np:not(.lyr) .np-lyr{display:none}.np-bot button.on{color:var(--acc)}',
+      // Layar penuh (Sedang Diputar / Equalizer / lembar pilihan) menutup bar navigasi: <main> punya z-index sendiri sehingga bar bawah
+      // tadinya menimpa baris Timer-Lirik-Equalizer-Berikutnya.
+      'html.ln-v2-full #ln-mnav,html.ln-v2-full #ln-mini,html.ln-v2-full .ln-offline-player{display:none!important}',
       '.v2-sheet{position:fixed;inset:0;z-index:80;display:none}.v2-sheet.on{display:block}.v2-scrim{position:absolute;inset:0;background:rgba(0,0,0,.6)}',
       '.v2-panel{position:absolute;left:0;right:0;bottom:0;max-height:78%;overflow:auto;background:#17132a;border-radius:26px 26px 0 0;padding:20px 18px calc(env(safe-area-inset-bottom) + 18px);box-shadow:0 -10px 40px rgba(0,0,0,.5)}',
       '.v2-panel h3{margin:0 0 2px;font-size:18px;font-weight:800}.v2-panel>small{display:block;color:#9a96ab;margin-bottom:10px}',
@@ -401,6 +404,12 @@
       '<div class="np-bot"><button data-act="timer">' + ic.moon + 'Timer</button><button id="np-ly" data-act="lyr">' + ic.note + 'Lirik</button><button data-act="eq">' + ic.eq + 'Equalizer</button><button data-act="queue">' + ic.queue + 'Berikutnya</button></div></div><div id="ln-v2-eq"></div>' +
       '<div id="ln-v2-sheet" class="v2-sheet"><div class="v2-scrim" data-act="scrim"></div><div class="v2-panel"></div></div>';
     tab.appendChild(r); r.addEventListener('click', onClick); applyTheme(); applyQuality(); var eqe = $('ln-v2-eq'); eqe.addEventListener('click', eqClick); eqe.addEventListener('input', eqInput);
+    (function () {
+      var ids = ['ln-v2-np', 'ln-v2-eq', 'ln-v2-sheet'];
+      function sync() { var on = ids.some(function (id) { var e = $(id); return e && e.classList.contains('on'); }); document.documentElement.classList.toggle('ln-v2-full', on); }
+      ids.forEach(function (id) { var e = $(id); if (e && window.MutationObserver) new MutationObserver(sync).observe(e, { attributes: true, attributeFilter: ['class'] }); });
+      sync();
+    })();
     var sk = $('np-seek'); sk.addEventListener('input', function () { dragging = true; $('np-p').textContent = fmt(sk.value); });
     sk.addEventListener('change', function () { dragging = false; var m = P(); if (m) m.seek({ ms: +sk.value || 0 }); });
     render(); if (window.lnLocal) { try { setLib(lnLocal.items()); } catch (e) {} }

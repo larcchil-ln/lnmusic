@@ -1772,6 +1772,17 @@
       { id: 'pl-nana-1', name: 'Favorit', tracks: [] }
     ];
     let selectedPlaylistId = playlists[0]?.id || null;
+    // Playlist disimpan permanen di perangkat (localStorage) supaya tidak hilang saat aplikasi/web ditutup
+    const PL_KEY = 'lnmusic_playlists_v1';
+    function persistPlaylistsLocal(list) {
+      const put = d => localStorage.setItem(PL_KEY, JSON.stringify(d));
+      try { put(list); }
+      catch (e) { try { put(list.map(pl => ({ ...pl, tracks: pl.tracks.map(t => (t.thumb && /^data:/.test(t.thumb)) ? { ...t, thumb: '' } : t) }))); } catch (e2) {} }
+    }
+    try {
+      const saved = JSON.parse(localStorage.getItem(PL_KEY) || 'null');
+      if (Array.isArray(saved) && saved.length && saved.every(p => p && p.id && Array.isArray(p.tracks))) { playlists = saved; selectedPlaylistId = playlists[0].id; }
+    } catch (e) {}
     let trackToAdd = null;
     let searchMode = 'music';
 
@@ -2428,22 +2439,40 @@
         throw e;
       } finally { clearTimeout(t); }
     }
-    async function getIceServers() {
-      if (iceCache && Date.now() < iceCache.exp) return iceCache.list;
-      // FIX LOGIN: ambil TURN di latar, tapi masuk room jangan menunggu lebih dari 6 detik (pakai STUN cadangan dulu).
-      const full = (async () => {
+    // ICE: simpan di localStorage (6 jam) + ambil lebih awal di latar, jadi masuk room tidak menunggu TURN.
+    const ICE_LS = 'ln_ice_v2';
+    function iceFromStorage() {
+      try {
+        const o = JSON.parse(localStorage.getItem(ICE_LS) || 'null');
+        if (o && Array.isArray(o.list) && o.list.length && o.exp > Date.now()) return o;
+      } catch (e) {}
+      return null;
+    }
+    let icePromise = null;
+    function refreshIce() {
+      if (icePromise) return icePromise;
+      icePromise = (async () => {
         let list = BASE_ICE.slice(), ok = false;
         for (let i = 0; i < 2 && !ok; i++) {
           try { const j = await fetchTurn(); list = j.concat(BASE_ICE); ok = true; iceInfo = { src: 'cloudflare', msg: j.length + ' entri' }; }
-          catch (e) { iceInfo = { src: 'cadangan', msg: e.message || String(e) }; console.warn('Gagal ambil TURN', e); }
+          catch (e) { iceInfo = { src: 'cadangan', msg: e.message || String(e) }; console.warn('Gagal ambil TURN', e); if (i === 0) await new Promise(r => setTimeout(r, 500)); }
         }
-        // kegagalan tidak disimpan lama supaya dicoba lagi di sesi berikutnya
-        iceCache = { list, exp: Date.now() + (ok ? 20 * 60e3 : 30e3) };
+        // kegagalan tidak disimpan lama supaya cepat dicoba lagi
+        iceCache = { list, exp: Date.now() + (ok ? 6 * 3600e3 : 20e3) };
+        if (ok) { try { localStorage.setItem(ICE_LS, JSON.stringify(iceCache)); } catch (e) {} }
         return list;
-      })();
-      const got = await Promise.race([full, new Promise(r => setTimeout(() => r(null), 6000))]);
+      })().finally(() => { icePromise = null; });
+      return icePromise;
+    }
+    async function getIceServers() {
+      if (iceCache && Date.now() < iceCache.exp) return iceCache.list;
+      const st = iceFromStorage();
+      if (st) { iceCache = st; return st.list; }
+      // Belum ada cache: tunggu maksimal 3 detik, sisanya lanjut di latar (pakai STUN cadangan dulu).
+      const got = await Promise.race([refreshIce(), new Promise(r => setTimeout(() => r(null), 3000))]);
       return got || BASE_ICE.slice();
     }
+    setTimeout(() => { try { const st = iceFromStorage(); if (st) iceCache = st; else refreshIce().catch(() => {}); } catch (e) {} }, 600);
 
     async function newPeer(id) {
       const opts = { debug: 1, config: { iceServers: await getIceServers(), iceCandidatePoolSize: 4 } };
@@ -2451,8 +2480,11 @@
     }
 
     let connectLoopTimer = null, pendingConn = null, pendingAt = 0;
+    let graceLeave = {}, lnGuestKick = () => {}, lnRestartN = 0, guestIdSalt = '';
+    const LN_GRACE_MS = 8000; // jeda sebelum "X keluar" diumumkan: kalau balik cepat, tidak ada pengumuman
     function teardownPeer() {
-      clearInterval(connectLoopTimer); clearInterval(hbTimer); pendingConn = null; pendingAt = 0;
+      clearInterval(connectLoopTimer); clearInterval(hbTimer); pendingConn = null; pendingAt = 0; lnGuestKick = () => {};
+      Object.values(graceLeave).forEach(g => clearTimeout(g.t)); graceLeave = {};
       const p = peer;
       const oldConns = connections.slice();
       peer = null; connections = [];
@@ -2472,12 +2504,17 @@
     }
 
     function keepSignalingAlive(p) {
-      p.on('disconnected', () => {
-        const t = setInterval(() => {
-          if (peer !== p || p.destroyed || !p.disconnected) return clearInterval(t);
-          try { p.reconnect(); } catch (e) {}
-        }, 3000);
-      });
+      // Server sinyal PeerJS publik sering putus-nyambung. Koneksi data antar peserta tidak ikut putus,
+      // jadi cukup sambungkan ulang sinyalnya dengan cepat (tanpa membongkar room).
+      let t = null, n = 0;
+      const loop = () => {
+        clearTimeout(t);
+        if (peer !== p || p.destroyed || !p.disconnected) { n = 0; return; }
+        try { p.reconnect(); } catch (e) {}
+        n++; t = setTimeout(loop, Math.min(800 + n * 700, 5000));
+      };
+      p.on('disconnected', () => { n = 0; clearTimeout(t); t = setTimeout(loop, 250); });
+      p.on('open', () => { n = 0; clearTimeout(t); });
     }
 
     // =========================================================================
@@ -2534,7 +2571,7 @@
       const [c, st, pr, pl] = got;
       if (c !== undefined) DBX.ready = true;
       if (pr) { myProfile = cleanProfile(pr); if (myProfile.name) myDisplayName = myProfile.name; }
-      if (Array.isArray(pl) && pl.length) { playlists = pl; selectedPlaylistId = playlists[0].id; try { renderPlaylists(); } catch (e) {} }
+      if (Array.isArray(pl) && pl.length) { playlists = pl; selectedPlaylistId = playlists[0].id; persistPlaylistsLocal(pl); try { renderPlaylists(); } catch (e) {} }
       if (st) { DBX.mem.state = st; restoreRoomState(); }
       if (Array.isArray(c)) mergeChat(c);
     }
@@ -2898,7 +2935,7 @@
         myDisplayName = u === 'guest' ? cleanName(guestName) : USERS[u].name;
         currentRoomCode = ROOM_LABEL;
       }
-      usePeerFallback = false; tookOver = false; pendingSelf = null; voiceLocked = false; mutedByAdmin = false;
+      usePeerFallback = false; guestIdSalt = ''; lnRestartN = 0; tookOver = false; pendingSelf = null; voiceLocked = false; mutedByAdmin = false;
       roomOwnerUid = (u === 'custom' && customRoom && customRoom.ownerUid) || '';
       loadRoster();
       profiles = {}; myProfile = { name: '', bio: '', avatar: '' };
@@ -2912,7 +2949,8 @@
         setRoomPill('Menghubungkan ke room...', false);
       } catch (e) {}
       // FIX LOGIN: jangan biarkan database yang lambat menahan masuk room (maks 1,2 detik; sisanya lanjut di latar)
-      await Promise.race([dbHydrate(), new Promise(r => setTimeout(r, 1200))]);
+      try { getIceServers().catch(() => {}); } catch (e) {} // hangatkan ICE paralel dengan database
+      await Promise.race([dbHydrate(), new Promise(r => setTimeout(r, 700))]);
       if (session !== u) return; // sudah logout selama memuat
       clearInterval(stateTimer); stateTimer = setInterval(saveRoomState, 4000);
       startSession();
@@ -2958,9 +2996,11 @@
 
     // ID peer tamu dibuat tetap (per perangkat) supaya saat keluar-masuk room, host mengenali orang yang sama
     function guestPeerId() {
-      if (usePeerFallback) return null;
-      if (session === 'custom' && customRoom) return 'lnmusic-g-' + customRoom.code.toLowerCase() + '-' + LN_UID;
-      if (session === 'guest') return 'lnmusic-gu-' + LN_UID;
+      // Kalau ID tetap masih "nyangkut" di server sinyal (sesi lama), langsung pakai ID bersufiks acak.
+      // Identitas tetap dikenali host lewat uid, jadi kursi & peran tidak hilang.
+      const sx = guestIdSalt ? '-' + guestIdSalt : '';
+      if (session === 'custom' && customRoom) return 'lnmusic-g-' + customRoom.code.toLowerCase() + '-' + LN_UID + sx;
+      if (session === 'guest') return 'lnmusic-gu-' + LN_UID + sx;
       return null;
     }
 
@@ -3231,12 +3271,44 @@
         connections.slice().forEach(c => {
           if (!c.open) return;
           try { c.send({ type: 'PING' }); } catch (e) {}
-          if (c._last && now - c._last > 40000 && !document.hidden) { try { c.close(); } catch (e) {} }
+          // Peserta yang sedang di latar belakang (timer HP melambat) diberi batas lebih longgar.
+          const limit = c._bg ? 150000 : (document.hidden ? 90000 : 35000);
+          if (c._last && now - c._last > limit) { try { c.close(); } catch (e) {} }
         });
-      }, 6000);
+      }, 5000);
     }
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) { const n = Date.now(); connections.forEach(c => { c._last = n; }); } });
-    window.addEventListener('online', () => { try { if (peer && !peer.destroyed && peer.disconnected) peer.reconnect(); } catch (e) {} });
+    function lnTellBg() { connections.forEach(c => { if (c.open) { try { c.send({ type: 'BG' }); } catch (e) {} } }); }
+    function lnRevive() {
+      if (!session) return;
+      const now = Date.now();
+      connections.forEach(c => { c._last = now; });
+      try { if (peer && !peer.destroyed && peer.disconnected) peer.reconnect(); } catch (e) {}
+      connections.slice().forEach(c => {
+        if (!c.open) return;
+        try { c.send({ type: 'FG' }); c.send({ type: 'PING' }); } catch (e) {}
+        try { const st = c.peerConnection && c.peerConnection.iceConnectionState; if (st === 'failed' || st === 'closed') c.close(); } catch (e) {}
+      });
+      try { lnGuestKick(200); } catch (e) {}
+    }
+    document.addEventListener('visibilitychange', () => { if (document.hidden) lnTellBg(); else lnRevive(); });
+    window.addEventListener('ln-fg', lnRevive);
+    window.addEventListener('ln-bg', lnTellBg);
+    window.addEventListener('online', lnRevive);
+    // Pantau status ICE: putus beneran -> tutup cepat supaya sambung ulang otomatis, bukan menunggu 40 detik.
+    function lnWatchIce(conn) {
+      try {
+        const pc = conn.peerConnection;
+        if (!pc || pc._lnMon) return;
+        pc._lnMon = true;
+        let dt = null;
+        pc.addEventListener('iceconnectionstatechange', () => {
+          const st = pc.iceConnectionState;
+          clearTimeout(dt);
+          if (st === 'failed') dt = setTimeout(() => { try { conn.close(); } catch (e) {} }, 1500);
+          else if (st === 'disconnected') dt = setTimeout(() => { if (pc.iceConnectionState === 'disconnected') { try { conn.close(); } catch (e) {} } }, 20000);
+        });
+      } catch (e) {}
+    }
 
     async function startSession(attempt = 0) {
       if (!session) return;
@@ -3253,9 +3325,12 @@
       isRoomConnected = true;
       activateRoomUI(currentRoomCode);
       startHeartbeat();
+      // Jaga-jaga kalau sinyal macet saat pertama menyambung: ulangi, jangan biarkan menggantung
+      setTimeout(() => { if (session && peer === p && !p._lnWasOpen && !p.destroyed) startSession(attempt); }, 12000);
 
       p.on('open', () => {
         if (peer !== p) return;
+        p._lnWasOpen = true; lnRestartN = 0;
         if (isHost) {
           if (p.id) {
             const prev = pendingSelf; pendingSelf = null;
@@ -3283,17 +3358,35 @@
         if (peer !== p) return;
         console.warn('PeerJS error:', err);
         if (err.type === 'unavailable-id') {
-          // Host room: ID room masih dipegang sesi lama / admin lain -> setelah beberapa kali coba, gabung sebagai peserta
-          if (session === 'custom' && customRoom && customRoom.role === 'host' && attempt >= (tookOver ? 1 : 5)) return demoteToGuest();
-          // Tamu: ID tetap masih dipegang sesi lama -> pakai ID acak, identitas tetap dijaga lewat uid
-          if (!isHost && (session === 'custom' || session === 'guest') && attempt >= 4 && !usePeerFallback) { usePeerFallback = true; return startSession(0); }
-          if (attempt < 10) { setTimeout(() => { if (session) startSession(attempt + 1); }, 3000); }
+          // Setelah room berjalan, ID tetap milik kita: loop sambung ulang sinyal yang mengurus.
+          if (p._lnWasOpen) return;
+          if (session === 'custom' && customRoom && customRoom.role === 'host') {
+            // Host room: ID room masih dipegang sesi lama / admin lain -> coba lagi cepat, lalu gabung sebagai peserta
+            if (attempt >= (tookOver ? 1 : 8)) return demoteToGuest();
+            return void setTimeout(() => { if (session) startSession(attempt + 1); }, 1800);
+          }
+          if (!isHost && (session === 'custom' || session === 'guest')) {
+            // Tamu: ID lama masih nyangkut di server -> langsung pakai ID baru, tidak perlu menunggu dilepas
+            guestIdSalt = Math.random().toString(36).slice(2, 6);
+            return void setTimeout(() => { if (session) startSession(0); }, 150);
+          }
+          if (attempt < 10) { setTimeout(() => { if (session) startSession(attempt + 1); }, 2000); }
           else showToast('ID Room atau akun ini sedang aktif di perangkat lain.');
           return;
         }
-        if (err.type === 'peer-unavailable') return;
-        if (['network', 'server-error', 'socket-error', 'socket-closed', 'webrtc'].includes(err.type)) {
-          setTimeout(() => { if (session && peer === p) startSession(0); }, 5000);
+        if (err.type === 'peer-unavailable') {
+          // Host belum online / belum terdaftar: coba lagi cepat, jangan menunggu putaran berikutnya
+          if (pendingConn && !pendingConn.open) { try { pendingConn.close(); } catch (e) {} pendingConn = null; }
+          lnGuestKick(900);
+          return;
+        }
+        if (err.type === 'webrtc') return; // satu koneksi gagal bukan alasan membongkar seluruh room
+        if (['network', 'server-error', 'socket-error', 'socket-closed'].includes(err.type)) {
+          if (p.destroyed) {
+            // Baru di sini sesi dibangun ulang (dengan jeda bertahap supaya tidak membanjiri server)
+            const d = Math.min(1500 * Math.pow(2, lnRestartN++), 12000);
+            setTimeout(() => { if (session && peer === p) startSession(0); }, d);
+          } else if (p.disconnected) { try { p.reconnect(); } catch (e) {} }
         }
       });
     }
@@ -3303,8 +3396,9 @@
       const targets = (session === 'custom' && customRoom)
         ? [customRoom.peerId]
         : (session === 'nana' ? [USERS.nuki.peerId] : [USERS.nuki.peerId, USERS.nana.peerId]);
-      let idx = 0, downSince = 0;
-      const wait = 7000 + Math.random() * 4000; // jeda acak supaya admin tidak berebut mengambil alih bersamaan
+      let idx = 0, downSince = 0, kickT = null;
+      // Admin baru mengambil alih kalau host benar-benar hilang cukup lama (bukan sekadar kedip jaringan)
+      const wait = 15000 + Math.random() * 6000;
 
       const tick = () => {
         if (peer !== p || p.destroyed || !session) return clearInterval(connectLoopTimer);
@@ -3312,7 +3406,7 @@
         if (!downSince) downSince = Date.now();
         if (session === 'custom' && customRoom && customRoom.role !== 'host' && !p.disconnected && Date.now() - downSince > wait && iCanTakeOver()) return becomeHost();
         if (p.disconnected) { try { p.reconnect(); } catch (e) {} return; }
-        if (pendingConn && !pendingConn.open && Date.now() - pendingAt < 6000) return;
+        if (pendingConn && !pendingConn.open && Date.now() - pendingAt < 9000) return;
         try { pendingConn && pendingConn.close(); } catch (e) {}
         const targetId = targets[idx % targets.length];
         idx++;
@@ -3320,13 +3414,18 @@
         pendingAt = Date.now();
         setupPeerConnection(pendingConn);
       };
+      lnGuestKick = (ms) => { clearTimeout(kickT); kickT = setTimeout(tick, ms); };
       tick();
-      connectLoopTimer = setInterval(tick, 3000);
+      connectLoopTimer = setInterval(tick, 2000);
     }
 
     function setupPeerConnection(conn) {
       conn.on('open', () => {
         conn._wasOpen = true; conn._last = Date.now();
+        if (pendingConn === conn) pendingConn = null;
+        // Orang yang sama balik dalam masa tunggu: batalkan pengumuman "keluar" & jangan umumkan "bergabung" lagi
+        const gl = graceLeave[conn.peer];
+        if (gl) { clearTimeout(gl.t); delete graceLeave[conn.peer]; conn._quiet = true; }
         connections.filter(c => c !== conn && c.peer === conn.peer).forEach(c => { c._replaced = true; try { c.close(); } catch (e) {} });
         connections = connections.filter(c => !c._replaced);
         connections.push(conn);
@@ -3341,20 +3440,38 @@
         if (isHost && isPlaying && currentTrack && currentTrack.type === 'youtube') {
           try { conn.send({ type: 'SYNC_TRACK', track: netTrack(currentTrack), time: curTime(), playing: true, at: trackAt, list: netList(), idx: currentIndex }); } catch (e) { console.warn('LN sync join gagal:', e); }
         }
+        lnWatchIce(conn);
+      });
+      // Sebelum tersambung: kalau jalur ICE gagal, jangan menunggu timeout, langsung coba lagi
+      conn.on('iceStateChanged', (st) => {
+        if (conn._wasOpen || conn._replaced) return;
+        if (st === 'failed' || st === 'closed') {
+          try { conn.close(); } catch (e) {}
+          if (pendingConn === conn) { pendingConn = null; lnGuestKick(500); }
+        }
       });
       conn.on('data', (data) => { conn._last = Date.now(); handleIncomingSyncData(data, conn); });
       conn.on('close', () => {
-        if (conn._replaced || !conn._wasOpen) return;
+        if (conn._replaced) return;
+        if (!conn._wasOpen) { if (pendingConn === conn) { pendingConn = null; lnGuestKick(600); } return; }
         connections = connections.filter(c => c !== conn);
         if (conn._kicked) { dropVoice(conn.peer); return; }
-        const who = (members[conn.peer] && members[conn.peer].name) || partnerName();
-        if (canManageRoom()) {
-          updateRoster(); // simpan peran/kursi/izin supaya kembali utuh saat orang ini masuk lagi
-          delete members[conn.peer]; broadcastMembers();
-          connections.forEach(c => c.open && c.send({ type: 'NOTICE', text: `${who} keluar dari room.` }));
-        } else { renderSeats(); } // tamu: daftar peserta dipertahankan selagi menyambung ulang ke host
-        dropVoice(conn.peer);
-        if (session) { appendSystemChat(`${who} keluar dari room.`); updatePartnerStatus(); }
+        const pid = conn.peer;
+        const who = (members[pid] && members[pid].name) || partnerName();
+        dropVoice(pid);
+        updatePartnerStatus();
+        // Tunda pengumuman & penghapusan dari daftar peserta: kedip jaringan singkat tidak terasa "keluar-masuk"
+        if (graceLeave[pid]) clearTimeout(graceLeave[pid].t);
+        graceLeave[pid] = { t: setTimeout(() => {
+          delete graceLeave[pid];
+          if (!session || connections.some(c => c.open && c.peer === pid)) return;
+          if (canManageRoom()) {
+            updateRoster(); // simpan peran/kursi/izin supaya kembali utuh saat orang ini masuk lagi
+            delete members[pid]; broadcastMembers();
+            connections.forEach(c => c.open && c.send({ type: 'NOTICE', text: `${who} keluar dari room.` }));
+          } else { renderSeats(); } // tamu: daftar peserta dipertahankan selagi menyambung ulang ke host
+          appendSystemChat(`${who} keluar dari room.`); updatePartnerStatus();
+        }, LN_GRACE_MS) };
       });
       conn.on('error', (err) => console.warn('Conn error:', err));
     }
@@ -3362,6 +3479,7 @@
     function handleIncomingSyncData(data, senderConn) {
       if (!data || typeof data !== 'object') return;
       if (data.type === 'PING') return;
+      if (data.type === 'BG' || data.type === 'FG') { if (senderConn) senderConn._bg = data.type === 'BG'; return; }
       if (data.type === 'SYNC_TRACK' || data.type === 'SYNC_STATE') lnSyncLog('IN', data.type + ' ' + (data.action || '') + ' ' + (data.vid || (data.track && data.track.id) || ''));
       const fromGuest = isHost && senderConn && (session === 'custom' || !isAdminPeer(senderConn.peer));
       if (fromGuest) {
@@ -3401,6 +3519,7 @@
 
       if (data.type === 'HELLO') {
         let nm = cleanName(data.name);
+        const quiet = !!(senderConn && senderConn._quiet); if (senderConn) senderConn._quiet = false;
         const prof = cleanProfile(data.profile);
         if (canManageRoom() && senderConn) {
           if (!isAdminPeer(senderConn.peer) && /^(nuki|nana)$/i.test(nm)) nm += ' (tamu)';
@@ -3414,12 +3533,11 @@
           connections.forEach(c => {
             if (c === senderConn || !c.open) return;
             c.send({ type: 'PROFILE', id: senderConn.peer, profile: prof });
-            c.send({ type: 'NOTICE', text: `✨ ${nm} bergabung ke room!` });
+            if (!quiet) c.send({ type: 'NOTICE', text: `✨ ${nm} bergabung ke room!` });
           });
           Object.entries(profiles).forEach(([id, pr]) => { if (id !== senderConn.peer && senderConn.open) senderConn.send({ type: 'PROFILE', id, profile: pr }); });
         } else if (senderConn) { profiles[senderConn.peer] = prof; }
-        appendSystemChat(`✨ ${nm} bergabung ke room!`);
-        showToast(`${nm} bergabung!`);
+        if (!quiet) { appendSystemChat(`✨ ${nm} bergabung ke room!`); showToast(`${nm} bergabung!`); }
         renderSeats();
       } else if (data.type === 'SYNC_TRACK' || data.type === 'SYNC_STATE') {
         applyIncomingRoomSync(data);
@@ -3829,7 +3947,7 @@
       document.getElementById('sidebar-room-dot').classList.add('hidden');
       setRoomPill('Belum terhubung ke Room', false);
       document.getElementById('fs-context-label').textContent = 'feel your flow';
-      roomOwnerUid = ''; roster = {}; voiceLocked = false; mutedByAdmin = false; tookOver = false; pendingSelf = null; usePeerFallback = false;
+      roomOwnerUid = ''; roster = {}; voiceLocked = false; mutedByAdmin = false; tookOver = false; pendingSelf = null; usePeerFallback = false; guestIdSalt = '';
       clearInterval(hbTimer); closeRoomRename();
       try { updateAdminUI(); renderLastRoom(); } catch (e) {}
       showToast(wasCustom ? 'Keluar dari room' : 'Keluar dari akun');
@@ -4968,7 +5086,7 @@
       } catch (e) { set('sig', false, e.message); }
       try { const j = await fetchTurn(); const n = j.filter(x => String(x.urls).includes('turn')).length; cred = true; set('cred', true, j.length + ' entri, ' + n + ' di antaranya TURN'); }
       catch (e) { set('cred', false, (e.message || 'Gagal')); }
-      iceCache = null;
+      iceCache = null; try { localStorage.removeItem(ICE_LS); } catch (e) {}
       try {
         const list = await getIceServers(), pc = new RTCPeerConnection({ iceServers: list, iceTransportPolicy: 'relay' });
         let n = 0; pc.createDataChannel('x');
@@ -5845,6 +5963,7 @@
         ...pl,
         tracks: pl.tracks.map(({ blob, ...rest }) => rest)
       }));
+      persistPlaylistsLocal(clean);
       if (dbPrivate()) DBX.set('playlists', clean, 600);
       renderPlaylists();
     }
@@ -6037,16 +6156,18 @@
     function switchTab(tab) {
       if (tab === 'videocall' && curTab !== 'videocall') vcPrev = curTab;
       curTab = tab;
+      const DESK_ON = 'nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/20 transition';
+      const DESK_OFF = 'nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition';
       ['online', 'offline', 'playlists', 'together', 'game', 'videocall'].forEach(t => {
         document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
         const deskBtn = document.getElementById('nav-' + t);
         const mobBtn = document.getElementById('mob-nav-' + t);
-        if (deskBtn) {
-          deskBtn.className = t === tab
-            ? 'nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/20 transition'
-            : 'nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition';
+        // Tulis className hanya kalau berubah: menghindari hitung ulang gaya yang tidak perlu di setiap ketukan
+        if (deskBtn) { const c = t === tab ? DESK_ON : DESK_OFF; if (deskBtn.className !== c) deskBtn.className = c; }
+        if (mobBtn) {
+          const c = 'mnav flex flex-col items-center gap-1 text-[10px] ' + (t === tab ? 'on text-rose-300 font-semibold' : 'text-zinc-400 font-medium');
+          if (mobBtn.className !== c) mobBtn.className = c;
         }
-        if (mobBtn) mobBtn.className = 'mnav flex flex-col items-center gap-1 text-[10px] ' + (t === tab ? 'on text-rose-300 font-semibold' : 'text-zinc-400 font-medium');
       });
       const hero = document.getElementById('hero');
       if (hero) hero.classList.toggle('hidden', tab !== 'online' || !!window.__userNav);
@@ -6054,8 +6175,13 @@
       requestAnimationFrame(() => {
         const el = document.getElementById('tab-' + tab);
         if (!el || tab === 'videocall') return;
-        const y = el.getBoundingClientRect().top + window.scrollY - (innerWidth < 768 ? 76 : 92);
-        window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+        // Header atas hilang di desktop lebar (non-APK), jadi offsetnya lebih rapat
+        const wide = innerWidth >= 1024 && !document.documentElement.classList.contains('ln-android');
+        const off = innerWidth < 768 ? 76 : (wide ? 24 : 92);
+        const y = Math.max(0, el.getBoundingClientRect().top + window.scrollY - off);
+        // Loncat langsung (bukan animasi gulir): isi tab berganti seketika, jadi gulir pun harus seketika
+        if (Math.abs(y - window.scrollY) < 2) return;
+        try { window.scrollTo({ top: y, behavior: 'instant' }); } catch (e) { window.scrollTo(0, y); }
       });
     }
 

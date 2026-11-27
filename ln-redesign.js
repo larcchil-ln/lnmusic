@@ -264,14 +264,7 @@
       window.switchTab = function () {
         var r = o.apply(this, arguments);
         mark();
-        // Desktop lebar tidak punya header atas lagi: rapatkan posisi scroll
-        requestAnimationFrame(function () {
-          requestAnimationFrame(function () {
-            var t = cur(), el = $('tab-' + t);
-            if (!el || t === 'videocall' || innerWidth < 1024) return;
-            window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - 24), behavior: 'smooth' });
-          });
-        });
+        // (posisi gulir desktop kini ditangani langsung oleh switchTab, sekali jalan, tanpa loncatan kedua)
         return r;
       };
       window.switchTab.__lr = true;

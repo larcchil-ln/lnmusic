@@ -6,34 +6,51 @@
   // ---- Pindah tab halus + penanda tab aktif ----
   var navStyle = document.createElement('style');
   navStyle.textContent =
-    '.mnav{position:relative;-webkit-tap-highlight-color:transparent;transition:color .25s}' +
-    '.mnav svg{transition:transform .35s cubic-bezier(.34,1.56,.64,1),background .25s}' +
-    '.mnav.on svg{transform:translateY(-2px) scale(1.12)}' +
-    '.mnav:active svg{transform:scale(.88)}' +
-    '#ln-ind{position:absolute;top:0;left:0;height:3px;width:30px;border-radius:0 0 6px 6px;background:linear-gradient(90deg,#f43f5e,#8b5cf6);box-shadow:0 2px 14px rgba(244,63,94,.75);transition:transform .38s cubic-bezier(.22,1,.36,1);opacity:0;pointer-events:none}' +
-    '.nav-btn{transition:background .25s,color .25s,box-shadow .25s}' +
+    '.mnav{position:relative;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:color .2s,background .2s,transform .12s}' +
+    '.mnav svg{transition:transform .2s cubic-bezier(.2,0,0,1),background .2s}' +
+    '.mnav.on svg{transform:translateY(-1px) scale(1.06)}' +
+    '.mnav:active{transform:scale(.94)}' +
+    '.mnav:active svg{transform:scale(.92)}' +
+    '#ln-ind{position:absolute;top:0;left:0;height:3px;width:30px;border-radius:0 0 6px 6px;background:linear-gradient(90deg,#f43f5e,#8b5cf6);box-shadow:0 2px 14px rgba(244,63,94,.75);transition:transform .26s cubic-bezier(.2,0,0,1);opacity:0;pointer-events:none;will-change:transform}' +
+    '.nav-btn{touch-action:manipulation;transition:background .18s,color .18s,box-shadow .18s,transform .12s}' +
+    '.nav-btn:active{transform:scale(.98)}' +
     '.nav-btn.text-rose-400{box-shadow:inset 3px 0 0 #f43f5e}' +
-    '@keyframes lnTabIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}' +
-    '.ln-tab-in{animation:lnTabIn .38s cubic-bezier(.22,1,.36,1)}' +
+    'button,[onclick],a{touch-action:manipulation}' +
+    // Tab baru cukup memudar halus (tanpa geser): jauh lebih ringan daripada menganimasikan seluruh halaman
+    '@keyframes lnTabIn{from{opacity:0}to{opacity:1}}' +
+    '.ln-tab-in{animation:lnTabIn .16s ease-out}' +
+    // Blur di bar yang menempel (nav bawah/header) dihitung ulang setiap frame gulir; di HP bikin berat & tersendat
+    'html #ln-mnav{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:rgba(14,14,18,.97)!important;transform:translateZ(0)}' +
+    '@media (max-width:1023px){html header.glass{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;background:rgba(9,9,11,.96)!important}}' +
     '@media (prefers-reduced-motion:reduce){.ln-tab-in{animation:none}#ln-ind,.mnav svg{transition:none}}';
   document.head.appendChild(navStyle);
 
-  var indEl = null;
+  var indEl = null, centers = null;
+  // Posisi tengah tiap tombol diukur SEKALI (saat load/resize), bukan di setiap ketukan,
+  // supaya ketukan tidak memicu hitung ulang tata letak seluruh halaman.
+  function measure() {
+    var nav = $('ln-mnav'); if (!nav) return;
+    var nr = nav.getBoundingClientRect();
+    if (!nr.width) { centers = null; return; } // nav bawah disembunyikan di layar lebar
+    centers = {};
+    nav.querySelectorAll('.mnav').forEach(function (b) {
+      var br = b.getBoundingClientRect();
+      centers[b.id] = Math.round(br.left - nr.left + br.width / 2 - 15);
+    });
+  }
   function moveInd() {
     var cur = null; try { cur = curTab; } catch (e) {}
-    var btn = $('mob-nav-' + (cur || 'online'));
-    if (!btn) return;
-    var nav = btn.parentElement, nr = nav.getBoundingClientRect();
-    if (!nr.width) return; // nav bawah disembunyikan di layar lebar
-    if (!indEl || !indEl.isConnected) {
-      indEl = document.createElement('div'); indEl.id = 'ln-ind'; nav.appendChild(indEl);
-    }
-    var br = btn.getBoundingClientRect();
+    var id = 'mob-nav-' + (cur || 'online');
+    if (!centers) measure();
+    var nav = $('ln-mnav');
+    if (!nav || !centers || centers[id] == null) return;
+    if (!indEl || !indEl.isConnected) { indEl = document.createElement('div'); indEl.id = 'ln-ind'; nav.appendChild(indEl); }
     indEl.style.opacity = '1';
-    indEl.style.transform = 'translateX(' + Math.round(br.left - nr.left + br.width / 2 - 15) + 'px)';
+    indEl.style.transform = 'translateX(' + centers[id] + 'px)';
   }
-  window.addEventListener('resize', moveInd);
-  window.addEventListener('load', function () { setTimeout(moveInd, 200); });
+  window.addEventListener('resize', function () { centers = null; moveInd(); });
+  window.addEventListener('orientationchange', function () { centers = null; setTimeout(moveInd, 200); });
+  window.addEventListener('load', function () { setTimeout(function () { centers = null; moveInd(); }, 200); });
   setTimeout(moveInd, 400);
 
   // Tab Hub sudah dihapus: panggilan lama diarahkan ke Beranda
@@ -45,7 +62,7 @@
       var res = origSwitchTab.call(this, t);
       if (t !== prev) {
         var el = $('tab-' + t);
-        if (el && t !== 'videocall') { el.classList.remove('ln-tab-in'); void el.offsetWidth; el.classList.add('ln-tab-in'); }
+        if (el && t !== 'videocall') el.classList.add('ln-tab-in');
         try { navigator.vibrate && navigator.vibrate(8); } catch (e) {}
       }
       moveInd();
