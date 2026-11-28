@@ -2,6 +2,7 @@
 const { r, rp, ip, okAdmin, body } = require('./_r');
 const t = (x, n = 80) => String(x == null ? '' : x).slice(0, n);
 module.exports = async (q, s) => {
+  if (require('./_cors').cors(q, s)) return;
   s.setHeader('Cache-Control', 'no-store');
   if (q.method !== 'POST') return s.status(405).end();
   const b = body(q), vid = t(b.vid, 40).replace(/[^\w]/g, '');

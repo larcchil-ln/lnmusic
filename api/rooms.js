@@ -7,6 +7,7 @@ const { guard } = require('./_guard');
 const TTL = 60;
 const clean = (x, n) => String(x || '').replace(/[<>&"'`\r\n]/g, '').trim().slice(0, n);
 module.exports = async (q, s) => {
+  if (require('./_cors').cors(q, s)) return;
   s.setHeader('Cache-Control', 'no-store');
   if (await guard(q, s)) return;
   const bad = (c, m) => s.status(c).json({ error: m });

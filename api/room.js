@@ -8,6 +8,7 @@ const same = (a, b) => { const x = Buffer.from(a), y = Buffer.from(b); return x.
 const CH = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const newCode = () => 'LN-' + Array.from(crypto.randomBytes(6), b => CH[b % CH.length]).join('');
 module.exports = async (q, s) => {
+  if (require('./_cors').cors(q, s)) return;
   s.setHeader('Cache-Control', 'no-store');
   if (q.method !== 'POST') return s.status(405).end();
   if (await guard(q, s)) return;
