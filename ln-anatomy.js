@@ -5,7 +5,7 @@
   const root = document.getElementById('tab-anatomy'); if (!root) return;
   // Bisa dimatikan lewat dashboard admin (tab Kontrol). Kalau server tak terjangkau, fitur tetap jalan (fail-open).
   try {
-    const r = await fetch('/api/config', { cache: 'no-store' });
+    const r = await fetch((function (p) { try { return typeof lnApiUrl === 'function' ? lnApiUrl(p) : p; } catch (e) { return p; } })('/api/config'), { cache: 'no-store' });
     const j = await r.json();
     if (j && j.anatomyOff) {
       root.remove();

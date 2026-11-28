@@ -32,7 +32,7 @@
   }
   async function ping() {
     try {
-      var r = await fetch('/api/track', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json', 'x-admin-token': adm() }, body: JSON.stringify(Object.assign({ vid: vid, page: location.pathname }, info(), state())) });
+      var r = await fetch((function (p) { try { return typeof lnApiUrl === 'function' ? lnApiUrl(p) : p; } catch (e) { return p; } })('/api/track'), { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json', 'x-admin-token': adm() }, body: JSON.stringify(Object.assign({ vid: vid, page: location.pathname }, info(), state())) });
       if (r.ok) apply(await r.json());
     } catch (e) {}
   }

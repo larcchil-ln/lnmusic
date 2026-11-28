@@ -6,7 +6,7 @@
   window.mergeChat = function () {};
 
   async function post(b) {
-    var r = await fetch('/api/room', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) });
+    var r = await fetch((function (p) { try { return typeof lnApiUrl === 'function' ? lnApiUrl(p) : p; } catch (e) { return p; } })('/api/room'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) });
     var j = {}; try { j = await r.json(); } catch (e) {}
     if (!r.ok) throw new Error(j.error === 'locked' ? (j.msg || 'Website sedang ditutup sementara.') : (j.error || 'Server tidak bisa dihubungi'));
     return j;

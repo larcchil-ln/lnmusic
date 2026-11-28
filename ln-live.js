@@ -356,12 +356,60 @@
     };
   }
 
+  // ---------- 5) Foto profil tampil di tombol Profil (header / sidebar) ----------
+  var AVK = 'lnmusic_my_avatar';
+  function curAvatar() {
+    var live = '';
+    try { if (session) live = (myProfile && myProfile.avatar) || ''; } catch (e) {}
+    if (live) { try { localStorage.setItem(AVK, live); } catch (e) {} return live; }
+    try { return localStorage.getItem(AVK) || ''; } catch (e) { return ''; }
+  }
+  function applyAvatar() {
+    var a = curAvatar();
+    var list = document.querySelectorAll('#ln-appbar button[onclick^="openMyProfile"], #ln-top button[onclick^="openMyProfile"], .lr-sb[data-pf]');
+    Array.prototype.forEach.call(list, function (b) {
+      var img = b.querySelector('img.ln-av'), ic = b.querySelector('svg, i'), bar = !!b.closest('#ln-appbar');
+      if (!a) {
+        if (img) img.remove();
+        if (ic) ic.style.display = '';
+        if (bar) { b.style.width = b.style.height = b.style.padding = b.style.overflow = ''; delete b.dataset.lnAv; }
+        return;
+      }
+      if (!img) {
+        img = document.createElement('img'); img.className = 'ln-av'; img.alt = ''; img.draggable = false;
+        b.insertBefore(img, b.firstChild);
+      }
+      if (img.getAttribute('src') !== a) img.src = a;
+      if (ic) ic.style.display = 'none';
+      var z = 20;
+      if (bar) {
+        if (!b.dataset.lnAv) { b.dataset.lnAv = String(Math.max(36, Math.min(48, Math.max(b.offsetWidth, b.offsetHeight) || 40))); }
+        z = +b.dataset.lnAv;
+        b.style.width = z + 'px'; b.style.height = z + 'px'; b.style.padding = '0'; b.style.overflow = 'hidden';
+      }
+      img.style.cssText = 'display:block;width:' + z + 'px;height:' + z + 'px;border-radius:50%;object-fit:cover;flex-shrink:0;' + (bar ? '' : 'margin-right:2px');
+      img.style.setProperty('height', z + 'px', 'important');
+    });
+  }
+  // setiap profil disimpan / dimuat / dikirim -> perbarui foto di header
+  ['saveMyProfile', 'loadMyProfile', 'sendMyProfile'].forEach(function (n) {
+    var o = window[n];
+    if (typeof o !== 'function') return;
+    window[n] = function () {
+      var r = o.apply(this, arguments);
+      if (n === 'saveMyProfile') { try { localStorage.setItem(AVK, (myProfile && myProfile.avatar) || ''); } catch (e) {} }
+      try { applyAvatar(); } catch (e) {}
+      return r;
+    };
+  });
+
   // pantau perubahan tampilan (masuk/keluar room, buka tab Bareng)
   function onChange() { if (!roomActive() && isMin()) setMin(false); syncRoomState(); syncLive(); ensureButtons(); updateBubble(); if (setupVisible()) refresh(); }
   function init() {
     mount(); syncRoomState(); updateToggle(); ensureButtons(); updateBubble();
-    setInterval(function () { ensureButtons(); updateBubble(); }, 3000);
+    setInterval(function () { ensureButtons(); updateBubble(); applyAvatar(); }, 3000);
     setTimeout(ensureButtons, 1200);
+    applyAvatar(); setTimeout(applyAvatar, 1500);
     window.addEventListener('resize', function () { applyPos(); });
     var mo = new MutationObserver(onChange);
     ['room-active-area', 'room-setup-area', 'tab-together'].forEach(function (id) {
