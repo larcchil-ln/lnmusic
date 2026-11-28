@@ -271,6 +271,11 @@ async function covers(q, s) {
 }
 
 module.exports = async (q, s) => {
+  // Batas paket Hobby Vercel = 12 fungsi. /api/config dan /api/resolve digabung ke sini lewat rewrite di vercel.json
+  // (file aslinya jadi api/_config.js dan api/_resolve.js; awalan _ = bukan fungsi). Alamat lama tetap berfungsi.
+  const fn = q.query && q.query._fn;
+  if (fn === 'config') return require('./_config')(q, s);
+  if (fn === 'resolve') return require('./_resolve')(q, s);
   if (cors(q, s)) return;
   s.setHeader('Cache-Control', 'no-store');
   if (q.method === 'POST') return covers(q, s);
