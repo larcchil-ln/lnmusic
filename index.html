@@ -3616,6 +3616,8 @@
         applyForceMute(!!data.on, data.by, !!data.quiet);
       } else if (data.type === 'GAME') {
         if (window.lnGameRecv) window.lnGameRecv(data, senderConn);
+      } else if (data.type === 'DRAW') {
+        if (window.lnDrawRecv) window.lnDrawRecv(data, senderConn);
       } else if (data.type === 'LYR_OFFSET') {
         lyrApplyRemote(data.id, +data.offset);
       } else if (data.type === 'MEMBERS') {
@@ -6455,6 +6457,7 @@
   <script src="./ln-apk.js"></script>
   <script src="./ln-playlist-io.js"></script>
   <script src="./ln-game.js"></script>
+  <script src="./ln-draw.js"></script>
   <script src="./ln-desktop.js"></script>
   <script src="./ln-trending.js"></script>
   <script src="./ln-playlist-plus.js"></script>

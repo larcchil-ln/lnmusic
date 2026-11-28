@@ -153,6 +153,7 @@
   function trap() { try { history.pushState({ ln: 1 }, ''); } catch (e) {} }
   function toast(m) { try { showToast(m); } catch (e) {} }
   function closeTop() {
+    try { if (window.lnDrawBack && window.lnDrawBack()) return true; } catch (e) {}
     try { if (window.lnMixBack && window.lnMixBack()) return true; } catch (e) {}
     try { if (window.lnOfflineUI && window.lnOfflineUI.back && window.lnOfflineUI.back()) return true; } catch (e) {}
     if ($('ln-qd') && $('ln-qd').classList.contains('open')) { try { lnQueueClose(); } catch (e) { $('ln-qd').classList.remove('open'); } return true; }
