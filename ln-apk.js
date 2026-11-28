@@ -1,4 +1,4 @@
-/* LNMusic: tombol "Unduh APK Android" di header (HP/tablet: bar atas, desktop: sidebar kiri).
+/* LNMusic: tombol "Unduh APK Android" di header (HP/tablet: bar atas, desktop: sidebar kiri) dan di Pengaturan LNMusic.
    - Tidak tampil di dalam aplikasi Android (APK), dan tidak tampil di iPhone/iPad (tidak bisa pasang APK).
    - Tombol hanya muncul kalau file APK memang ada di server.
    Cara pakai: taruh hasil build APK di root repo web dengan nama persis "lnmusic.apk"
@@ -14,7 +14,7 @@
 
   var DL = '<svg xmlns="http://www.w3.org/2000/svg" width="__S__" height="__S__" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>';
   var tip = 'Unduh aplikasi Android (APK)';
-  var btnTop = null, btnSide = null;
+  var btnTop = null, btnSide = null, btnAbout = null;
 
   function mk(css, html) {
     var a = document.createElement('a');
@@ -38,6 +38,12 @@
       var size = Math.max(36, Math.min(48, (ref && ref.offsetHeight) || 40));
       btnTop = mk('width:' + size + 'px;height:' + size + 'px;border-radius:50%', DL.replace(/__S__/g, '19'));
       bar.insertBefore(btnTop, bar.firstChild);
+    }
+    // Pengaturan LNMusic: di kartu info, sisi kanan
+    var slot = document.getElementById('ln-about-dl');
+    if (slot && (!btnAbout || !btnAbout.isConnected)) {
+      btnAbout = mk('width:42px;height:42px;border-radius:50%', DL.replace(/__S__/g, '20'));
+      slot.appendChild(btnAbout);
     }
     // Desktop: di sidebar, tepat di bawah kotak kutipan
     var side = document.getElementById('ln-top');

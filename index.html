@@ -13,6 +13,7 @@
   <link id="app-touch-icon" rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
 
   <!-- Dependencies -->
+  <style>html.ln-android #ln-about{display:none!important}</style>
   <script>(function(){try{document.documentElement.classList.add('ln-ui');var C=window.Capacitor,u=navigator.userAgent||'';var n=!!(C&&((C.isNativePlatform&&C.isNativePlatform())||(C.getPlatform&&C.getPlatform()!=='web')));if(n||(/Android/.test(u)&&/; wv\)/.test(u)))document.documentElement.classList.add('ln-android')}catch(e){}})()</script>
   <script src="./ln-orient.js"></script>
   <link rel="stylesheet" href="./ln-android.css" />
@@ -1643,12 +1644,13 @@
         <h3 class="text-lg font-bold">Pengaturan LNMusic</h3>
         <button onclick="closeModals()" class="text-zinc-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
-      <div class="flex items-center gap-3 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20">
+      <div id="ln-about" class="flex items-center gap-3 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20">
         <img data-ln-logo data-ln-wide alt="LNMusic" class="h-8 w-auto object-contain shrink-0" />
-        <div class="text-xs text-rose-200 leading-relaxed">
+        <div class="text-xs text-rose-200 leading-relaxed min-w-0">
           <strong>LNMusic</strong><br/>
-          Mendukung Spotify-style Full Player, Media Session Lock Screen, Offline MP3, dan Real-Time Watch/Listen Together.
+          Created by Oel
         </div>
+        <div id="ln-about-dl" class="ml-auto shrink-0"></div>
       </div>
       <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-2">
         <div class="text-xs font-semibold text-white">Pasang di layar utama</div>
