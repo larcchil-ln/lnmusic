@@ -903,8 +903,8 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button onclick="switchTab('together')" class="px-2.5 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-[11px] font-semibold text-rose-300 flex items-center gap-1">
-          <i data-lucide="users" class="w-3.5 h-3.5"></i> Bareng
+        <button onclick="switchTab('together')" class="p-2 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 flex items-center" title="Bareng" aria-label="Bareng">
+          <i data-lucide="users" class="w-4 h-4"></i>
         </button>
         <button onclick="openMyProfile()" class="p-2 rounded-xl bg-white/5 text-zinc-300" title="Profil Saya">
           <i data-lucide="user" class="w-4 h-4"></i>
@@ -1083,7 +1083,7 @@
           <div id="ln-together-head" class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-5">
             <div>
               <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 mb-2">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Real-Time Sync Peer-to-Peer
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> KONEKSI REALTIME
               </span>
               <h3 class="text-xl font-extrabold">Dengerin Musik &amp; Nonton Film Bareng</h3>
               <p class="text-xs text-zinc-400 mt-1">Play, pause, skip, dan posisi detik lagu/film otomatis sinkron secara real-time</p>
@@ -5099,7 +5099,7 @@
       } catch (e) { set('relay', false, e.message || 'Gagal menguji'); }
       box.querySelector('#ln-diag-sum').textContent = !sig ? 'Masalah ada di server sinyal PeerJS, bukan TURN. Teman tidak bisa menemukan room sama sekali.'
         : !relay ? 'Server sinyal normal tapi TURN bermasalah. Teman di jaringan seluler atau Wi-Fi ketat tidak akan bisa tersambung.'
-        : 'Semua normal di perangkat ini. Kalau teman masih gagal, minta mereka muat ulang dan jalankan tes ini juga di perangkat mereka.';
+        : 'Sinyal aman, bisa ngobrol, dan bisa video call, enjoy ya 🥳';
     }
 
     // Video Call Multi-User hingga 6 peserta (memakai koneksi PeerJS room yang sama dengan voice)

@@ -51,7 +51,7 @@
     box.style.cssText = 'position:fixed;inset:0;z-index:99991;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,sans-serif';
     var card = document.createElement('div');
     card.style.cssText = 'background:#14141c;border:1px solid #ffffff1f;border-radius:18px;padding:16px;max-width:380px;width:100%;color:#fafafa';
-    var h = document.createElement('div'); h.style.cssText = 'font-weight:800;font-size:16px;margin-bottom:2px'; h.textContent = '✨ Daftar Room Pribadi';
+    var h = document.createElement('div'); h.style.cssText = 'font-weight:800;font-size:16px;margin-bottom:2px'; h.textContent = 'Daftar Room Pribadi';
     var p = document.createElement('div'); p.style.cssText = 'font-size:12px;color:#a1a1aa;margin-bottom:12px'; p.textContent = 'Buat akun, dapat 1 room tetap dengan kode sendiri. Teman bisa gabung lewat kode itu.';
     var fu = field('Username (huruf kecil/angka)', 'text', 20), fp = field('Password (min. 6 karakter)', 'password', 72);
     var fn = field('Nama tampilan', 'text', 20), ft = field('Judul room (opsional)', 'text', 30);
@@ -76,7 +76,7 @@
   var lf = $('login-user') && $('login-user').closest('form');
   if (lf && !$('ln-reg-btn')) {
     var b = document.createElement('button');
-    b.id = 'ln-reg-btn'; b.type = 'button'; b.textContent = '✨ Daftar room pribadi baru';
+    b.id = 'ln-reg-btn'; b.type = 'button'; b.textContent = 'Daftar room pribadi baru';
     b.style.cssText = 'width:100%;margin-top:8px;padding:10px;border-radius:12px;border:1px solid #ffffff1f;background:transparent;color:#d4d4d8;font-size:12px;font-weight:700;cursor:pointer';
     b.onclick = openReg;
     lf.insertAdjacentElement('afterend', b);
