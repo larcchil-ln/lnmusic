@@ -11,7 +11,14 @@
   st.textContent = 'body.ln-in-room:not(.ln-room-min) #ln-together-head{display:none!important}' +
     'body.ln-in-room:not(.ln-room-min) #tab-together > .glass{padding-top:1rem}' +
     'body.ln-room-min #room-active-area{display:none!important}' +
-    'body.ln-room-min #room-setup-area.hidden{display:grid!important}';
+    'body.ln-room-min #room-setup-area.hidden{display:grid!important}' +
+    /* header room: Undang Teman melebar, tombol bulat di sampingnya; kalau sempit otomatis turun ke baris kedua */
+    'html #room-active-area > div:first-child > .lr-actions{display:flex!important;flex-wrap:wrap!important;align-items:center;justify-content:flex-start;gap:10px;width:100%}' +
+    'html #room-active-area > div:first-child > .lr-actions > button:first-child{flex:1 1 170px!important;min-width:0;grid-column:auto!important}' +
+    'html #room-active-area .ln-pill{flex:0 0 auto!important;width:44px!important;height:44px;padding:0!important;border-radius:999px!important;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;font-size:.85rem!important;font-weight:700!important;color:#e4e4ee!important;background:rgba(255,255,255,.07)!important;border:1px solid rgba(255,255,255,.12)!important;cursor:pointer;transition:background .15s,transform .1s}' +
+    'html #room-active-area .ln-pill:hover{background:rgba(255,255,255,.13)!important}' +
+    'html #room-active-area .ln-pill:active{transform:scale(.96)}' +
+    'html #room-active-area .ln-pill.ln-pill-on{border-color:rgba(34,211,106,.4)!important;background:rgba(34,211,106,.12)!important;color:#86efac!important}';
   document.head.appendChild(st);
 
   function syncRoomState() {
@@ -73,24 +80,53 @@
   }
 
   // tombol host: tampilkan / sembunyikan room dari daftar
-  var tbtn = null;
+  var IC = {
+    pip: '<path d="M21 9V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10c0 1.1.9 2 2 2h4"/><rect width="10" height="7" x="12" y="13" rx="2"/>',
+    eye: '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>',
+    eyeoff: '<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/>',
+    refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+    music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+    headphones: '<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/>'
+  };
+  function svg(name, size, w) {
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + (size || 20) + '" height="' + (size || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.9) + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0">' + IC[name] + '</svg>';
+  }
+  var tbtn = null, t0 = Date.now();
+  // Wadah tombol header. Tampilan baru (ln-redesign) memindahkan semua tombol selain "Undang" ke menu titik tiga saat dimulai,
+  // jadi tombol kita baru dipasang SETELAH itu, di luar menu (sebelum tombol titik tiga).
+  function acts() {
+    var area = $('room-active-area'); if (!area) return null;
+    var bar = area.querySelector(':scope > div:first-child > div:last-child');
+    if (!bar) return null;
+    if (area.dataset.lr !== '1' && Date.now() - t0 < 6000) return null;
+    return bar;
+  }
+  function place(btn, bar) {
+    var more = bar.querySelector('.lr-more-wrap');
+    if (more && more.parentNode === bar) bar.insertBefore(btn, more);
+    else { var lv = $('btn-leave-room'); if (lv && lv.parentNode === bar) bar.insertBefore(btn, lv); else bar.appendChild(btn); }
+  }
   function updateToggle() {
     var h = hosting();
-    if (!tbtn) {
-      var bar = document.querySelector('#room-active-area > div:first-child > div:last-child');
+    if (!tbtn || !tbtn.parentNode) {
+      var bar = acts();
       if (!bar) return;
       tbtn = document.createElement('button');
       tbtn.type = 'button';
-      tbtn.className = 'px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-semibold text-white flex items-center justify-center gap-1.5';
+      tbtn.className = 'ln-pill';
       tbtn.onclick = function () {
         try { localStorage.setItem(OFFK, listedOff() ? '0' : '1'); } catch (e) {}
         beat();
       };
-      bar.insertBefore(tbtn, bar.children[1] || null);
+      place(tbtn, bar);
     }
     tbtn.style.display = h ? '' : 'none';
-    tbtn.textContent = listedOff() ? '🙈 Room disembunyikan' : '🟢 Tampil di Room Aktif';
-    tbtn.title = listedOff() ? 'Ketuk untuk tampilkan room di daftar Room Aktif' : 'Ketuk untuk sembunyikan room dari daftar Room Aktif';
+    var off = listedOff();
+    var key = off ? 'off' : 'on';
+    if (tbtn.dataset.s !== key) { tbtn.dataset.s = key; tbtn.innerHTML = svg(off ? 'eyeoff' : 'eye', 20); }
+    tbtn.classList.toggle('ln-pill-on', !off);
+    var tip = off ? 'Room disembunyikan dari daftar Room Aktif. Ketuk untuk menampilkan.' : 'Room tampil di daftar Room Aktif. Ketuk untuk menyembunyikan.';
+    tbtn.title = tip; tbtn.setAttribute('aria-label', tip);
   }
 
   // ---------- 3) Daftar Room Aktif di halaman masuk ----------
@@ -103,9 +139,11 @@
     box = el('div', 'grid-column:1/-1;background:rgba(255,255,255,.03);border:1px solid #ffffff1a;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px');
     box.id = 'ln-live';
     var head = el('div', 'display:flex;align-items:center;justify-content:space-between;gap:8px');
-    var ht = el('div', 'font-weight:800;font-size:15px;color:#fff', '🟢 Room Aktif');
-    var rf = el('button', 'padding:6px 12px;border-radius:999px;border:1px solid #ffffff1f;background:transparent;color:#d4d4d8;font-size:12px;font-weight:700;cursor:pointer', '↻ Segarkan');
-    rf.type = 'button'; rf.onclick = refresh;
+    var ht = el('div', 'display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;color:#fff');
+    ht.appendChild(el('span', 'width:9px;height:9px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.25);flex-shrink:0'));
+    ht.appendChild(document.createTextNode('Room Aktif'));
+    var rf = el('button', 'width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid #ffffff1f;background:rgba(255,255,255,.06);color:#d4d4d8;cursor:pointer;padding:0');
+    rf.type = 'button'; rf.onclick = refresh; rf.innerHTML = svg('refresh', 16, 2); rf.title = 'Segarkan daftar'; rf.setAttribute('aria-label', 'Segarkan daftar');
     head.appendChild(ht); head.appendChild(rf);
     ban = el('div', 'display:none;align-items:center;gap:8px;padding:10px 12px;border-radius:14px;background:rgba(225,29,72,.14);border:1px solid rgba(225,29,72,.35)');
     banTxt = el('div', 'flex:1;min-width:0;font-size:12.5px;color:#fecdd3;font-weight:600');
@@ -134,7 +172,12 @@
       var info = el('div', 'min-width:0;flex:1');
       info.appendChild(el('div', 'font-size:14px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis', rm.title || rm.code));
       info.appendChild(el('div', 'font-size:11.5px;color:#a1a1aa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis', 'Host: ' + (rm.host || '-') + ' • ' + (rm.count || 1) + ' orang'));
-      if (rm.playing) info.appendChild(el('div', 'font-size:11.5px;color:#fda4af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis', '🎵 ' + rm.playing));
+      if (rm.playing) {
+        var pl = el('div', 'display:flex;align-items:center;gap:5px;font-size:11.5px;color:#86efac;min-width:0');
+        var pi = el('span', 'display:inline-flex;flex-shrink:0'); pi.innerHTML = svg('music', 12, 2);
+        pl.appendChild(pi); pl.appendChild(el('span', 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis', rm.playing));
+        info.appendChild(pl);
+      }
       var here = false; try { here = roomActive() && customRoom && customRoom.code === rm.code; } catch (e) {}
       var go = el('button', 'padding:9px 16px;border:0;border-radius:12px;background:' + (here ? '#3f3f46' : '#e11d48') + ';color:#fff;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0', here ? 'Kembali' : (rm.code === mine ? 'Masuk lagi' : 'Masuk'));
       go.type = 'button';
@@ -204,16 +247,19 @@
     var n = $('active-room-code'); return (n && n.textContent) || 'Room';
   }
   function ensureButtons() {
-    if (mbtn && document.body.contains(mbtn)) return;
-    var bar = document.querySelector('#room-active-area > div:first-child > div:last-child');
+    updateToggle();
+    if (mbtn && mbtn.parentNode) return;
+    var bar = acts();
     if (!bar) return;
     mbtn = document.createElement('button');
     mbtn.type = 'button';
-    mbtn.className = 'px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-semibold text-white flex items-center justify-center gap-1.5';
-    mbtn.textContent = '⬇️ Minimize';
-    mbtn.title = 'Kecilkan room, musik & voice tetap jalan. Ketuk bubble untuk kembali.';
+    mbtn.className = 'ln-pill';
+    mbtn.innerHTML = svg('pip', 20);
+    mbtn.title = 'Minimize room (musik & voice tetap jalan). Ketuk bubble untuk kembali.';
+    mbtn.setAttribute('aria-label', 'Minimize room');
     mbtn.onclick = function () { setMin(true); };
-    bar.insertBefore(mbtn, $('btn-leave-room') || null);
+    place(mbtn, bar);
+    if (tbtn && tbtn.parentNode === bar) bar.insertBefore(mbtn, tbtn);
   }
 
   // bubble melayang (bisa digeser, menempel ke tepi layar)
@@ -230,7 +276,9 @@
     if (bub) return;
     bub = el('div', 'position:fixed;z-index:45;display:none;align-items:center;gap:8px;padding:9px 15px 9px 11px;border-radius:999px;background:linear-gradient(135deg,#e11d48,#7c3aed);color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.55);font:700 12.5px system-ui,sans-serif;max-width:210px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab');
     bub.id = 'ln-room-bubble';
-    bub.appendChild(el('span', 'width:9px;height:9px;border-radius:50%;background:#4ade80;flex-shrink:0;box-shadow:0 0 0 3px rgba(74,222,128,.3)'));
+    var bi = el('span', 'display:inline-flex;position:relative;flex-shrink:0'); bi.innerHTML = svg('headphones', 18, 2);
+    bi.appendChild(el('span', 'position:absolute;right:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:#4ade80;border:1.5px solid #7c3aed'));
+    bub.appendChild(bi);
     bubLbl = el('span', 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px');
     bub.appendChild(bubLbl);
     document.body.appendChild(bub);
@@ -265,7 +313,7 @@
   }
   function updateBubble() {
     var show = roomActive() && (isMin() || tabHidden());
-    if (show) { mkBubble(); bubLbl.textContent = '🎧 ' + roomTitle(); bub.style.display = 'flex'; applyPos(); }
+    if (show) { mkBubble(); bubLbl.textContent = roomTitle(); bub.style.display = 'flex'; applyPos(); }
     else if (bub) bub.style.display = 'none';
     if (roomActive()) { try { snap = { cr: customRoom }; } catch (e) {} }
     if (ban) {
@@ -301,7 +349,8 @@
   function onChange() { if (!roomActive() && isMin()) setMin(false); syncRoomState(); ensureButtons(); updateBubble(); if (setupVisible()) refresh(); }
   function init() {
     mount(); syncRoomState(); updateToggle(); ensureButtons(); updateBubble();
-    setInterval(updateBubble, 3000);
+    setInterval(function () { ensureButtons(); updateBubble(); }, 3000);
+    setTimeout(ensureButtons, 1200);
     window.addEventListener('resize', function () { applyPos(); });
     var mo = new MutationObserver(onChange);
     ['room-active-area', 'room-setup-area', 'tab-together'].forEach(function (id) {
