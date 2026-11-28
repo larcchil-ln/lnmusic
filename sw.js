@@ -5,7 +5,7 @@
  * - TIDAK menyentuh: /api/*, YouTube, signaling PeerJS, LRCLIB, atau request non-GET.
  * Naikkan VERSION setiap kali daftar SHELL berubah.
  */
-const VERSION = 'v24-roomfull-oled';
+const VERSION = 'v20-mixes';
 const SHELL_CACHE = 'lnmusic-shell-' + VERSION;
 const CDN_CACHE = 'lnmusic-cdn-' + VERSION;
 const SHELL = [
@@ -24,8 +24,6 @@ const SHELL = [
   '/ln-orient.js',
   '/icons/splash-logo.png',
   '/ln-redesign.js',
-  '/ln-roomfull.css',
-  '/ln-roomfull.js',
   '/ln-minilyrics.js',
   '/ln-android.css',
   '/ln-android.js',
