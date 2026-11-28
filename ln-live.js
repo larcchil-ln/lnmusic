@@ -11,7 +11,10 @@
   st.textContent = 'body.ln-in-room:not(.ln-room-min) #ln-together-head{display:none!important}' +
     'body.ln-in-room:not(.ln-room-min) #tab-together > .glass{padding-top:1rem}' +
     'body.ln-room-min #room-active-area{display:none!important}' +
-    'body.ln-room-min #room-setup-area.hidden{display:grid!important}' +
+    'body.ln-room-min #room-setup-area.hidden{display:block!important}' +
+    'body.ln-room-min #room-setup-area.hidden > #lr-start{display:flex!important}' +
+    '#ln-live{width:100%;box-sizing:border-box;margin:0 auto 16px}' +
+    '@media(min-width:768px){#ln-live{max-width:460px}}' +
     /* header room: Undang Teman melebar, tombol bulat di sampingnya; kalau sempit otomatis turun ke baris kedua */
     'html #room-active-area > div:first-child > .lr-actions{display:flex!important;flex-wrap:wrap!important;align-items:center;justify-content:flex-start;gap:10px;width:100%}' +
     'html #room-active-area > div:first-child > .lr-actions > button:first-child{flex:1 1 170px!important;min-width:0;grid-column:auto!important}' +
@@ -136,7 +139,7 @@
   function mount() {
     var area = $('room-setup-area');
     if (!area || $('ln-live')) return;
-    box = el('div', 'grid-column:1/-1;background:rgba(255,255,255,.03);border:1px solid #ffffff1a;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px');
+    box = el('div', 'background:rgba(255,255,255,.04);border:1px solid rgba(34,211,106,.22);border-radius:22px;padding:16px;display:none;flex-direction:column;gap:10px');
     box.id = 'ln-live';
     var head = el('div', 'display:flex;align-items:center;justify-content:space-between;gap:8px');
     var ht = el('div', 'display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;color:#fff');
@@ -145,20 +148,21 @@
     var rf = el('button', 'width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid #ffffff1f;background:rgba(255,255,255,.06);color:#d4d4d8;cursor:pointer;padding:0');
     rf.type = 'button'; rf.onclick = refresh; rf.innerHTML = svg('refresh', 16, 2); rf.title = 'Segarkan daftar'; rf.setAttribute('aria-label', 'Segarkan daftar');
     head.appendChild(ht); head.appendChild(rf);
-    ban = el('div', 'display:none;align-items:center;gap:8px;padding:10px 12px;border-radius:14px;background:rgba(225,29,72,.14);border:1px solid rgba(225,29,72,.35)');
-    banTxt = el('div', 'flex:1;min-width:0;font-size:12.5px;color:#fecdd3;font-weight:600');
-    var banBtn = el('button', 'padding:8px 14px;border:0;border-radius:12px;background:#e11d48;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;flex-shrink:0', 'Kembali ke room');
+    ban = el('div', 'display:none;align-items:center;gap:8px;padding:10px 12px;border-radius:14px;background:rgba(34,211,106,.12);border:1px solid rgba(34,211,106,.35)');
+    banTxt = el('div', 'flex:1;min-width:0;font-size:12.5px;color:#bbf7d0;font-weight:600');
+    var banBtn = el('button', 'padding:8px 14px;border:0;border-radius:12px;background:#22d36a;color:#04210f;font-size:12.5px;font-weight:700;cursor:pointer;flex-shrink:0', 'Kembali ke room');
     banBtn.type = 'button'; banBtn.onclick = goBack;
     ban.appendChild(banTxt); ban.appendChild(banBtn);
     var sub = el('div', 'font-size:12px;color:#a1a1aa;margin-top:-6px', 'Room publik yang sedang berjalan. Isi namamu lalu ketuk Masuk.');
     nameIn = el('input', 'width:100%;box-sizing:border-box;background:#09090b;border:1px solid #ffffff1a;border-radius:12px;padding:10px 13px;font-size:13px;color:#fff;outline:none');
     nameIn.type = 'text'; nameIn.maxLength = 20; nameIn.placeholder = 'Nama kamu'; nameIn.autocomplete = 'nickname';
-    try { var lr = lastRoomInfo(); if (lr && lr.name) nameIn.value = lr.name; } catch (e) {}
+    try { var lr = lastRoomInfo(); if (lr && lr.name) nameIn.value = lr.name; var ln = $('lr-name'); if (ln && ln.value) nameIn.value = ln.value; } catch (e) {}
     msgEl = el('div', 'color:#fda4af;font-size:12px;min-height:0');
     listEl = el('div', 'display:flex;flex-direction:column;gap:8px');
     [head, ban, sub, nameIn, msgEl, listEl].forEach(function (x) { box.appendChild(x); });
-    area.insertBefore(box, area.firstChild);
+    area.parentNode.insertBefore(box, area);
     render(null);
+    syncLive();
   }
 
   function render(rooms) {
@@ -179,7 +183,7 @@
         info.appendChild(pl);
       }
       var here = false; try { here = roomActive() && customRoom && customRoom.code === rm.code; } catch (e) {}
-      var go = el('button', 'padding:9px 16px;border:0;border-radius:12px;background:' + (here ? '#3f3f46' : '#e11d48') + ';color:#fff;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0', here ? 'Kembali' : (rm.code === mine ? 'Masuk lagi' : 'Masuk'));
+      var go = el('button', 'padding:9px 16px;border:0;border-radius:12px;background:' + (here ? '#3f3f46' : '#22d36a') + ';color:' + (here ? '#fff' : '#04210f') + ';font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0', here ? 'Kembali' : (rm.code === mine ? 'Masuk lagi' : 'Masuk'));
       go.type = 'button';
       go.onclick = function () { if (here) goBack(); else join(rm, rm.code === mine); };
       row.appendChild(info); row.appendChild(go);
@@ -197,7 +201,8 @@
     if (roomActive() && !confirm('Pindah ke "' + (rm.title || rm.code) + '"? Kamu akan keluar dari room yang sekarang.')) return;
     if (own && typeof rejoinLastRoom === 'function') { rejoinLastRoom(); return; }
     var name = '';
-    try { name = cleanName((nameIn.value || '').trim()); } catch (e) { name = (nameIn.value || '').trim(); }
+    var raw = (nameIn.value || '').trim(); if (!raw) { var ln2 = $('lr-name'); raw = ln2 ? (ln2.value || '').trim() : ''; }
+    try { name = cleanName(raw); } catch (e) { name = raw; }
     if (name.length < 2) { msgEl.textContent = 'Isi nama kamu dulu (minimal 2 huruf).'; nameIn.focus(); return; }
     msgEl.textContent = '';
     customRoom = { role: 'guest', origRole: 'guest', code: rm.code, peerId: 'lnmusic-croom-' + rm.code.toLowerCase(), title: rm.title || ('Room ' + rm.code), ownerUid: '' };
@@ -208,6 +213,12 @@
     enterRoom('custom', name);
   }
 
+  function syncLive() {
+    if (!box) return;
+    var a = $('room-setup-area'), t = $('tab-together');
+    var on = !!(a && t && !t.classList.contains('hidden') && (!a.classList.contains('hidden') || isMin()));
+    box.style.display = on ? 'flex' : 'none';
+  }
   function setupVisible() {
     var a = $('room-setup-area'), t = $('tab-together');
     return !!(a && (!a.classList.contains('hidden') || isMin()) && t && !t.classList.contains('hidden') && !document.hidden);
@@ -274,10 +285,10 @@
   }
   function mkBubble() {
     if (bub) return;
-    bub = el('div', 'position:fixed;z-index:45;display:none;align-items:center;gap:8px;padding:9px 15px 9px 11px;border-radius:999px;background:linear-gradient(135deg,#e11d48,#7c3aed);color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.55);font:700 12.5px system-ui,sans-serif;max-width:210px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab');
+    bub = el('div', 'position:fixed;z-index:45;display:none;align-items:center;gap:8px;padding:9px 15px 9px 11px;border-radius:999px;background:linear-gradient(135deg,#22d36a,#16a34a);color:#04210f;box-shadow:0 8px 24px rgba(0,0,0,.55);font:700 12.5px system-ui,sans-serif;max-width:210px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab');
     bub.id = 'ln-room-bubble';
     var bi = el('span', 'display:inline-flex;position:relative;flex-shrink:0'); bi.innerHTML = svg('headphones', 18, 2);
-    bi.appendChild(el('span', 'position:absolute;right:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:#4ade80;border:1.5px solid #7c3aed'));
+    bi.appendChild(el('span', 'position:absolute;right:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:#4ade80;border:1.5px solid #16a34a'));
     bub.appendChild(bi);
     bubLbl = el('span', 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px');
     bub.appendChild(bubLbl);
@@ -346,7 +357,7 @@
   }
 
   // pantau perubahan tampilan (masuk/keluar room, buka tab Bareng)
-  function onChange() { if (!roomActive() && isMin()) setMin(false); syncRoomState(); ensureButtons(); updateBubble(); if (setupVisible()) refresh(); }
+  function onChange() { if (!roomActive() && isMin()) setMin(false); syncRoomState(); syncLive(); ensureButtons(); updateBubble(); if (setupVisible()) refresh(); }
   function init() {
     mount(); syncRoomState(); updateToggle(); ensureButtons(); updateBubble();
     setInterval(function () { ensureButtons(); updateBubble(); }, 3000);
