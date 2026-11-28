@@ -5,7 +5,7 @@
  * - TIDAK menyentuh: /api/*, YouTube, signaling PeerJS, LRCLIB, atau request non-GET.
  * Naikkan VERSION setiap kali daftar SHELL berubah.
  */
-const VERSION = 'v22-minimize';
+const VERSION = 'v23-apk';
 const SHELL_CACHE = 'lnmusic-shell-' + VERSION;
 const CDN_CACHE = 'lnmusic-cdn-' + VERSION;
 const SHELL = [
@@ -22,6 +22,7 @@ const SHELL = [
   '/ln-spotnav.css',
   '/ln-mixes.js',
   '/ln-live.js',
+  '/ln-apk.js',
   '/ln-orient.js',
   '/icons/splash-logo.png',
   '/ln-redesign.js',
@@ -69,6 +70,8 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  // File APK besar: langsung ke jaringan, jangan di-cache / jangan ikut logika navigasi
+  if (/\.apk$/i.test(url.pathname)) return;
 
   // Navigasi (buka halaman): network-first, cadangan dari cache.
   if (req.mode === 'navigate') {
