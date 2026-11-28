@@ -3,8 +3,11 @@
 //  - Spotify                 : membaca halaman embed publik (tanpa login). Hanya sampai ~100 lagu pertama; lagu dicarikan versi YouTube-nya saat diputar.
 //  - Apple Music             : membaca data di halaman publik playlist/album. Lagu dicarikan versi YouTube-nya saat diputar.
 // Spotify & Apple Music bukan API resmi (format halaman bisa berubah), jadi kalau gagal klien menyarankan impor lewat file CSV.
+// YouTube: kalau YouTube Data API gagal (key belum diatur / kuota habis), otomatis dicoba lewat halaman publik playlist (tanpa kuota).
+// POST /api/import  {items:[{t:judul,a:artis},...]} (maks 30) -> { covers:[url|''...] }  : cover album untuk lagu hasil impor CSV/Spotify/Apple
+//   (Deezer, lalu iTunes; tanpa API key). Ada di file ini supaya jumlah fungsi Vercel tidak bertambah.
 // Keamanan: yang di-fetch hanya URL yang kita susun sendiri dari ID hasil validasi di host tetap, bukan URL mentah dari pengguna.
-const { r, ip } = require('./_r');
+const { r, ip, body } = require('./_r');
 const { guard } = require('./_guard');
 const { cors } = require('./_cors');
 
@@ -13,10 +16,10 @@ const MAX = 500;
 const decode = (s) => String(s || '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&#x27;/g, "'");
 const clip = (s, n) => decode(s).replace(/[\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
 
-async function get(url, accept) {
-  const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 9000);
+async function get(url, accept, extra, ms, manual) {
+  const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), ms || 9000);
   try {
-    const res = await fetch(url, { signal: ctrl.signal, headers: { 'user-agent': UA, 'accept': accept || '*/*', 'accept-language': 'en-US,en;q=0.8' } });
+    const res = await fetch(url, { signal: ctrl.signal, redirect: manual ? 'manual' : 'follow', headers: Object.assign({ 'user-agent': UA, 'accept': accept || '*/*', 'accept-language': 'en-US,en;q=0.8' }, extra || {}) });
     return res;
   } finally { clearTimeout(t); }
 }
@@ -61,20 +64,57 @@ async function youtube(listId) {
 }
 
 // ---------- util: telusuri JSON bersarang ----------
-function walk(o, fn, depth = 0) {
-  if (!o || typeof o !== 'object' || depth > 14) return;
+function walk(o, fn, depth = 0, max = 14) {
+  if (!o || typeof o !== 'object' || depth > max) return;
   fn(o);
-  if (Array.isArray(o)) { for (const x of o) walk(x, fn, depth + 1); }
-  else { for (const k of Object.keys(o)) walk(o[k], fn, depth + 1); }
+  if (Array.isArray(o)) { for (const x of o) walk(x, fn, depth + 1, max); }
+  else { for (const k of Object.keys(o)) walk(o[k], fn, depth + 1, max); }
 }
 const scriptJson = (html, re) => { const m = html.match(re); if (!m) return null; try { return JSON.parse(m[1]); } catch (e) { return null; } };
+
+// Cadangan tanpa kuota: baca halaman publik playlist (maks ~100 lagu pertama)
+async function youtubeScrape(listId) {
+  const res = await get(`https://www.youtube.com/playlist?list=${listId}&hl=en`, 'text/html', { cookie: 'CONSENT=YES+1; SOCS=CAI' });
+  if (!res.ok) throw Object.assign(new Error('Playlist tidak ditemukan atau bersifat privat'), { code: 404 });
+  const html = await res.text();
+  const data = scriptJson(html, /var ytInitialData = (\{[\s\S]*?\});\s*<\/script>/);
+  if (!data) throw Object.assign(new Error('Halaman playlist YouTube tidak bisa dibaca'), { code: 502 });
+  const txt = (x) => (x && (x.simpleText || (x.runs && x.runs.map(a => a.text).join('')))) || '';
+  let name = '';
+  try { name = clip(data.metadata.playlistMetadataRenderer.title, 60); } catch (e) {}
+  const tracks = [], seen = new Set();
+  walk(data, (o) => {
+    const v = o.playlistVideoRenderer;
+    if (!v || !v.videoId || seen.has(v.videoId) || tracks.length >= MAX) return;
+    const title = clip(txt(v.title), 160);
+    if (!title || /^\[?(Private video|Deleted video)\]?$/i.test(title) || v.isPlayable === false) return;
+    seen.add(v.videoId);
+    const th = v.thumbnail && v.thumbnail.thumbnails;
+    tracks.push({
+      id: v.videoId, title,
+      artist: clip(txt(v.shortBylineText).replace(/ - Topic$/, '') || 'YouTube', 80),
+      thumb: `https://i.ytimg.com/vi/${v.videoId}/hqdefault.jpg`
+    });
+  }, 0, 30);
+  if (!tracks.length) throw Object.assign(new Error('Daftar lagu playlist tidak ditemukan (mungkin privat)'), { code: 404 });
+  return { name: name || 'Playlist YouTube', tracks };
+}
+
+async function youtubeAny(listId) {
+  if (/^(RD|UL|RDMM)/.test(listId)) throw Object.assign(new Error('Mix / Radio YouTube dibuat otomatis dan tidak bisa diimpor. Pakai link playlist biasa (list=PL…).'), { code: 400 });
+  try { return await youtube(listId); }
+  catch (e) {
+    if (e.code === 404 || e.code === 400) throw e;
+    try { return await youtubeScrape(listId); } catch (e2) { throw e.code === 429 || e.code === 500 ? e : e2; }
+  }
+}
 
 // ---------- Spotify ----------
 async function spotify(kind, id) {
   const res = await get(`https://open.spotify.com/embed/${kind}/${id}`, 'text/html');
   if (!res.ok) throw Object.assign(new Error('Spotify tidak bisa dibuka (playlist privat atau diblokir)'), { code: 404 });
   const html = await res.text();
-  const data = scriptJson(html, /<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+  const data = scriptJson(html, /<script[^>]*id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
   if (!data) throw Object.assign(new Error('Format halaman Spotify tidak dikenali'), { code: 502 });
   let name = '', tracks = [];
   walk(data, (o) => {
@@ -85,6 +125,25 @@ async function spotify(kind, id) {
   });
   if (!tracks.length) throw Object.assign(new Error('Daftar lagu Spotify tidak ditemukan di halaman'), { code: 502 });
   return { name: name || 'Playlist Spotify', tracks };
+}
+
+
+// Link pendek Spotify (spotify.link / spotify.app.link): ikuti pengalihan, tapi hanya ke host Spotify
+async function spotifyExpand(raw) {
+  const okHost = (h) => h === 'spotify.link' || h === 'spotify.app.link' || h === 'open.spotify.com' || h.endsWith('.spotify.com');
+  const pick = (u) => { const m = String(u).match(/open\.spotify\.com\/(?:intl-[a-z]{2,3}(?:-[A-Za-z]{2,4})?\/)?(playlist|album)\/([A-Za-z0-9]{10,30})/); return m ? { kind: m[1], id: m[2] } : null; };
+  let cur = raw;
+  for (let i = 0; i < 5; i++) {
+    let u; try { u = new URL(cur); } catch (e) { return null; }
+    if (u.protocol !== 'https:' || !okHost(u.hostname.toLowerCase())) return null;
+    const hit = pick(cur); if (hit) return hit;
+    const res = await get(cur, 'text/html', null, 7000, true);
+    const loc = res.headers.get('location');
+    if (loc) { cur = new URL(loc, cur).toString(); continue; }
+    const html = await res.text();
+    return pick(html.replace(/\\u002F/g, '/').replace(/\\\//g, '/'));
+  }
+  return null;
 }
 
 // ---------- Apple Music ----------
@@ -132,10 +191,11 @@ function detect(raw) {
     const l = u.searchParams.get('list');
     return l && /^[\w-]{10,60}$/.test(l) ? { src: 'youtube', list: l } : { src: 'youtube', list: '' };
   }
-  if (h === 'open.spotify.com' || h === 'spotify.link') {
+  if (h === 'open.spotify.com' || h === 'play.spotify.com' || h === 'embed.spotify.com') {
     const m = u.pathname.match(/\/(playlist|album)\/([A-Za-z0-9]{10,30})/);
     return m ? { src: 'spotify', kind: m[1], id: m[2] } : { src: 'spotify', id: '' };
   }
+  if (h === 'spotify.link' || h === 'spotify.app.link') return { src: 'spotify', short: u.toString(), id: '' };
   if (h === 'music.apple.com') {
     const m = u.pathname.match(/^\/([a-z]{2})\/(playlist|album)\/([^/]+)\/([\w.-]+)/i);
     if (m && /^[\w%.\-]+$/.test(m[3]) && /^(pl\.[\w-]+|\d+)$/.test(m[4])) return { src: 'apple', cc: m[1].toLowerCase(), kind: m[2].toLowerCase(), slug: m[3], id: m[4] };
@@ -144,9 +204,76 @@ function detect(raw) {
   return { src: '' };
 }
 
+
+// ---------- Cover lagu (Deezer -> iTunes), tanpa API key ----------
+const COVERS = new Map();
+const nz = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+const baseTitle = (x) => clip(x, 160).replace(/\s*[\(\[][^)\]]*[\)\]]/g, '').replace(/\s+-\s+(remaster|remastered|live|version|radio|single|mono|stereo|from|original|acoustic)\b.*$/i, '').replace(/\s+(feat|ft)\.?\s.*$/i, '').trim();
+const baseArtist = (x) => clip(x, 100).split(/\s*(?:,|;|&|\sfeat\.?\s|\sft\.?\s|\sx\s)\s*/i)[0].trim();
+const related = (a, b) => { a = nz(a); b = nz(b); return !!a && !!b && (a.includes(b) || b.includes(a) || a.split(' ').some(w => w.length > 3 && b.split(' ').includes(w))); };
+
+async function deezerCover(t, a) {
+  const tries = a ? [`artist:"${a}" track:"${t}"`, `${a} ${t}`] : [t];
+  for (const q of tries) {
+    const res = await get('https://api.deezer.com/search?limit=4&q=' + encodeURIComponent(q), 'application/json', null, 4500);
+    if (!res.ok) continue;
+    const j = await res.json().catch(() => null);
+    for (const it of (j && j.data) || []) {
+      const img = it && it.album && (it.album.cover_big || it.album.cover_medium);
+      if (!img || !/^https:\/\/[\w.-]*dzcdn\.net\//.test(img) || /\/images\/cover\/\/|\/cover\/0{20,}/.test(img)) continue;
+      if (!related(it.title, t) || (a && !related(it.artist && it.artist.name, a))) continue;
+      return img;
+    }
+  }
+  return '';
+}
+async function itunesCover(t, a) {
+  const res = await get('https://itunes.apple.com/search?media=music&entity=song&limit=4&term=' + encodeURIComponent((a + ' ' + t).trim()), 'application/json', null, 4500);
+  if (!res.ok) return '';
+  const j = await res.json().catch(() => null);
+  for (const it of (j && j.results) || []) {
+    const img = it && it.artworkUrl100;
+    if (!img || !/^https:\/\/[\w.-]*mzstatic\.com\//.test(img)) continue;
+    if (!related(it.trackName, t) || (a && !related(it.artistName, a))) continue;
+    return img.replace(/\/\d+x\d+(bb)?\.(jpg|png|webp)$/i, '/500x500bb.jpg');
+  }
+  return '';
+}
+async function coverFor(title, artist) {
+  const t = baseTitle(title) || clip(title, 100), a = baseArtist(artist);
+  if (!t) return '';
+  const key = nz(a + ' ' + t);
+  if (COVERS.has(key)) return COVERS.get(key);
+  let url = '';
+  try { url = await deezerCover(t, a); } catch (e) {}
+  if (!url) { try { url = await itunesCover(t, a); } catch (e) {} }
+  if (url) { if (COVERS.size > 4000) COVERS.clear(); COVERS.set(key, url); }
+  return url;
+}
+async function covers(q, s) {
+  if (await guard(q, s)) return;
+  try {
+    const rk = 'lncov:' + ip(q), n = await r('INCR', rk); if (n === 1) await r('EXPIRE', rk, 60);
+    if (n > 40) return s.status(429).json({ error: 'Terlalu sering, coba lagi sebentar' });
+  } catch (e) {}
+  const items = Array.isArray(body(q).items) ? body(q).items.slice(0, 30) : [];
+  if (!items.length) return s.status(400).json({ error: 'items kosong' });
+  const out = new Array(items.length).fill(''), deadline = Date.now() + 8000;
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length && Date.now() < deadline) {
+      const i = next++, it = items[i] || {};
+      try { out[i] = await coverFor(it.t, it.a); } catch (e) {}
+    }
+  };
+  await Promise.all(Array.from({ length: 6 }, worker));
+  return s.status(200).json({ covers: out });
+}
+
 module.exports = async (q, s) => {
   if (cors(q, s)) return;
   s.setHeader('Cache-Control', 'no-store');
+  if (q.method === 'POST') return covers(q, s);
   if (q.method !== 'GET') return s.status(405).json({ error: 'Metode tidak didukung' });
   if (await guard(q, s)) return;
   const fail = (c, m) => s.status(c).json({ error: m });
@@ -160,9 +287,10 @@ module.exports = async (q, s) => {
     let out;
     if (d.src === 'youtube') {
       if (!d.list) return fail(400, 'Ini link video, bukan playlist (harus ada bagian list=…)');
-      out = await youtube(d.list);
+      out = await youtubeAny(d.list);
     } else if (d.src === 'spotify') {
-      if (!d.id) return fail(400, 'Link Spotify harus berupa playlist atau album');
+      if (d.short) { const x = await spotifyExpand(d.short); if (x) { d.kind = x.kind; d.id = x.id; } }
+      if (!d.id) return fail(400, 'Link Spotify harus berupa playlist atau album (bukan lagu / artis)');
       out = await spotify(d.kind, d.id);
     } else {
       if (!d.id) return fail(400, 'Link Apple Music harus berupa playlist atau album');
@@ -174,4 +302,4 @@ module.exports = async (q, s) => {
     return fail(e.code || 502, e.name === 'AbortError' ? 'Server tujuan tidak merespons' : (e.message || 'Gagal mengambil playlist'));
   }
 };
-module.exports._test = { detect };
+module.exports._test = { detect, baseTitle, baseArtist, related };
