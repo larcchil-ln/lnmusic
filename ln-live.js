@@ -1,7 +1,8 @@
 /* LNMusic live: (1) sembunyikan kartu header "Dengerin Musik & Nonton Film Bareng" saat sudah di dalam room,
    (2) daftar "Room Aktif" di halaman masuk room, bisa langsung gabung. Room Kita (Nuki & Nana) tidak ikut tampil. */
 (function () {
-  var API = '/api/rooms';
+  var API_PATH = '/api/rooms';
+  function api() { try { return typeof lnApiUrl === 'function' ? lnApiUrl(API_PATH) : API_PATH; } catch (e) { return API_PATH; } }
   var $ = function (id) { return document.getElementById(id); };
   var OFFK = 'lnmusic_live_off';
 
@@ -33,8 +34,8 @@
   function listedOff() { try { return localStorage.getItem(OFFK) === '1'; } catch (e) { return false; } }
   function send(b, beacon) {
     var s = JSON.stringify(b);
-    if (beacon && navigator.sendBeacon) { try { return navigator.sendBeacon(API, new Blob([s], { type: 'application/json' })); } catch (e) {} }
-    return fetch(API, { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: s }).catch(function () {});
+    if (beacon && navigator.sendBeacon) { try { return navigator.sendBeacon(api(), new Blob([s], { type: 'application/json' })); } catch (e) {} }
+    return fetch(api(), { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: s }).catch(function () {});
   }
   function endLive(code, beacon) {
     code = code || lastCode; if (!code) return;
@@ -134,6 +135,12 @@
     });
   }
 
+  function renderErr() {
+    if (!listEl) return;
+    listEl.textContent = '';
+    listEl.appendChild(el('div', 'font-size:12px;color:#fda4af;padding:6px 2px', 'Daftar room aktif tidak bisa dimuat. Cek koneksi, atau pastikan server (api/rooms.js) sudah ikut di-deploy. Ketuk Segarkan untuk coba lagi.'));
+  }
+
   function join(rm, own) {
     if (own && typeof rejoinLastRoom === 'function') { rejoinLastRoom(); return; }
     var name = '';
@@ -155,10 +162,10 @@
   function refresh() {
     if (busy) return; busy = true;
     mount();
-    fetch(API, { cache: 'no-store' })
-      .then(function (r) { return r.ok ? r.json() : { rooms: [] }; })
+    fetch(api(), { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
       .then(function (j) { render((j && j.rooms) || []); })
-      .catch(function () { render([]); })
+      .catch(function () { renderErr(); })
       .then(function () { busy = false; });
   }
 
