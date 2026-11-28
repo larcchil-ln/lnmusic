@@ -102,41 +102,96 @@
   }
   function livePl(id) { try { return playlists.filter(function (p) { return p.id === id; })[0] || null; } catch (e) { return null; } }
 
-  async function run(plId, todo) {
+  async function run(plId, todo, key, full) {
     var done = 0;
     for (var i = 0; i < todo.length; i += BATCH) {
       var batch = todo.slice(i, i + BATCH);
-      status = plId === selectedPlaylistId ? 'mencari cover ' + Math.min(i, todo.length) + '/' + todo.length : ''; apply();
+      status = full && plId === selectedPlaylistId ? 'mencari cover ' + Math.min(i, todo.length) + '/' + todo.length : ''; apply();
       var res = await post(batch);
       if (!res) { batch.forEach(function (t) { tried[ckey(t)] = 1; }); break; }          // server tak terjangkau: berhenti, coba lagi nanti
       batch.forEach(function (t, j) {
         var u = res[j], k = ckey(t);
         if (/^https:\/\//.test(u || '')) { cov[k] = u; t.thumb = u; done++; } else tried[k] = 1;
       });
-      saveCov(); paint(livePl(plId));
+      saveCov(); paint(livePl(plId)); decorate();
     }
-    // salin ke playlist yang sedang aktif (objek lagu bisa sudah berganti kalau data dimuat ulang dari server), lalu simpan
+    // salin ke playlist yang aktif (objek lagu bisa sudah berganti kalau data dimuat ulang dari server), lalu simpan
     var pl = livePl(plId);
     if (pl) pl.tracks.forEach(function (t) { if (needs(t) && cov[ckey(t)]) t.thumb = cov[ckey(t)]; });
-    status = ''; busy[plId] = false;
+    status = ''; busy[key] = false;
     if (done) persist();
-    paint(pl); apply();
+    paint(pl); decorate(); apply();
   }
 
-  function fillCovers(pl) {
-    if (!pl || busy[pl.id]) return;
+  function fillCovers(pl, limit) {
+    var key = pl && pl.id + (limit ? ':h' : '');
+    if (!pl || busy[key]) return;
     var todo = [], changed = false;
-    pl.tracks.forEach(function (t) {
+    pl.tracks.forEach(function (t, idx) {
       if (!needs(t)) return;
       if (!t.lazy && /^[\w-]{11}$/.test(t.id || '')) { t.thumb = 'https://i.ytimg.com/vi/' + t.id + '/hqdefault.jpg'; changed = true; return; }
       var k = ckey(t);
       if (cov[k]) { t.thumb = cov[k]; changed = true; return; }
-      if (!tried[k] && t.title) todo.push(t);
+      if (!tried[k] && t.title && (!limit || idx < limit)) todo.push(t);
     });
-    if (changed) { paint(pl); persist(); }
+    if (changed) { paint(pl); persist(); decorate(); }
     if (!todo.length) return;
-    busy[pl.id] = true;
-    run(pl.id, todo).catch(function () { busy[pl.id] = false; status = ''; try { apply(); } catch (e) {} });
+    busy[key] = true;
+    run(pl.id, todo, key, !limit).catch(function () { busy[key] = false; status = ''; try { apply(); } catch (e) {} });
+  }
+
+  // ---------- cover mix, header, tombol acak ----------
+  var ICO_NOTE = '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
+  var ICO_SHUF = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22"/><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2"/><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"/></svg>';
+  function attr(u) { return String(u).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+  function uniqCovers(pl, n) {
+    var out = [], seen = {};
+    (pl.tracks || []).forEach(function (t) { if (out.length < n && t && /^https?:\/\//.test(t.thumb || '') && !seen[t.thumb]) { seen[t.thumb] = 1; out.push(t.thumb); } });
+    return out;
+  }
+  function mixInfo(pl) {
+    var c = uniqCovers(pl, 4), im = function (u) { return '<img src="' + attr(u) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility=\'hidden\'">'; };
+    if (!c.length) return { kind: 'empty', html: ICO_NOTE, first: '' };
+    if (c.length === 1) return { kind: 'one', html: im(c[0]), first: c[0] };
+    var h = ''; for (var i = 0; i < 4; i++) h += im(c[i % c.length]);
+    return { kind: 'four', html: h, first: c[0] };
+  }
+  function setMix(el, base, info) {
+    var sig = info.kind + '|' + info.html;
+    if (el.getAttribute('data-sig') === sig) return;
+    el.className = base + ' pg-mix ' + info.kind; el.innerHTML = info.html; el.setAttribute('data-sig', sig);
+  }
+  function shuffleCur() {
+    var pl = cur();
+    if (!pl || !pl.tracks.length) { try { showToast('Playlist masih kosong'); } catch (e) {} return; }
+    var a = pl.tracks.slice();
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), x = a[i]; a[i] = a[j]; a[j] = x; }
+    try { playTrackFromList(a, 0, true); } catch (e) {}
+  }
+  function decorate() {
+    try {
+      var cards = document.querySelectorAll('#playlists-container .pg-card');
+      for (var i = 0; i < cards.length; i++) {
+        var pl = playlists[i], cv = cards[i].querySelector('.pg-cover');
+        if (pl && cv) setMix(cv, 'pg-cover', mixInfo(pl));
+      }
+      var head = document.querySelector('#playlist-detail-box .pg-detail-h'), pc = cur();
+      if (!head || !pc) return;
+      var hc = head.querySelector('.pg-hero-cover');
+      if (!hc) { hc = document.createElement('div'); hc.className = 'pg-hero-cover'; head.insertBefore(hc, head.firstChild); }
+      var info = mixInfo(pc);
+      setMix(hc, 'pg-hero-cover', info);
+      if (info.first) head.style.setProperty('--hero', 'url("' + info.first.replace(/"/g, '%22') + '")'); else head.style.removeProperty('--hero');
+      var tt = head.querySelector('.pg-detail-t'), meta = head.querySelector('.pg-detail-meta');
+      if (tt && !meta) { meta = document.createElement('span'); meta.className = 'pg-detail-meta'; tt.appendChild(meta); }
+      if (meta) meta.textContent = pc.tracks.length + ' lagu';
+      var act = head.querySelector('.pg-detail-a');
+      if (act && !act.querySelector('#pl-shuffle')) {
+        var b = document.createElement('button'); b.type = 'button'; b.id = 'pl-shuffle'; b.className = 'pg-btn pg-btn-ghost pg-btn-sm';
+        b.innerHTML = ICO_SHUF + '<span>Acak</span>'; b.onclick = shuffleCur;
+        act.insertBefore(b, act.lastElementChild);
+      }
+    } catch (e) {}
   }
 
   // ---------- pasang ke renderPlaylists ----------
@@ -145,7 +200,9 @@
     var pl = cur();
     if (!pl || pl.id !== lastPl) { lastPl = pl ? pl.id : null; q = ''; if (inp) inp.value = ''; }
     apply();
+    decorate();
     fillCovers(pl);
+    try { playlists.forEach(function (p) { if (p !== pl) fillCovers(p, 4); }); } catch (e) {}   // cover mix playlist lain: cukup 4 lagu pertama
   }
   var orig = window.renderPlaylists;
   window.renderPlaylists = function () {

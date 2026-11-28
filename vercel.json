@@ -19,5 +19,15 @@
         }
       ]
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/config",
+      "destination": "/api/import?_fn=config"
+    },
+    {
+      "source": "/api/resolve",
+      "destination": "/api/import?_fn=resolve"
+    }
   ]
 }

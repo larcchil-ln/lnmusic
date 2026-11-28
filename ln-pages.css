@@ -109,6 +109,43 @@ html {
 .pg-noresult { margin-top: 6px; }
 @media (max-width: 520px) { .pg-search input { font-size: 16px; } }
 
+/* Pilihan Musik / Film & Video: yang aktif selalu hijau (dulu Film jadi ungu) + chip cepat film */
+#mode-music.bg-rose-600, #mode-video.bg-rose-600, #mode-video.bg-violet-600 { background: var(--pg-grad) !important; color: #04210f !important; }
+#tab-online .hover\:bg-violet-500\/20:hover { background: rgba(34, 211, 106, .18) !important; }
+#tab-online .hover\:text-violet-300:hover { color: #86efac !important; }
+
+/* Playlist: cover mix (2x2 dari lagu di dalamnya) */
+.pg-card .pg-cover { width: 62px; height: 62px; border-radius: 15px; }
+.pg-cover.pg-mix, .pg-hero-cover.pg-mix { overflow: hidden; padding: 0; background: #1d1d24; box-shadow: 0 12px 26px -14px rgba(0, 0, 0, .9); }
+.pg-mix.four { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 1px; }
+.pg-mix.one { display: block; }
+.pg-mix.empty { display: grid; place-items: center; background: var(--pg-grad); color: #04210f; }
+.pg-mix img { width: 100%; height: 100%; object-fit: cover; display: block; background: #1d1d24; }
+.pg-mix.empty svg { stroke: #04210f; }
+
+/* Playlist: header detail ala halaman playlist musik */
+.pg-detail { position: relative; overflow: hidden; }
+.pg-detail .pg-detail-h { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16px; padding-bottom: 16px; }
+.pg-detail .pg-detail-h > * { position: relative; z-index: 1; }
+.pg-detail .pg-detail-h::before {
+  content: ""; position: absolute; z-index: 0; inset: -18px -18px 0 -18px; pointer-events: none;
+  background: var(--hero, none) center / cover no-repeat; filter: blur(38px) saturate(1.35); opacity: .3; transform: scale(1.15);
+  -webkit-mask-image: linear-gradient(#000 35%, transparent); mask-image: linear-gradient(#000 35%, transparent);
+}
+.pg-hero-cover { width: 112px; height: 112px; border-radius: 20px; flex: none; }
+.pg-detail-t h4 { font-size: 1.6rem; line-height: 1.1; }
+.pg-detail-meta { display: block; margin-top: 8px; font-size: .8rem; font-weight: 600; color: var(--pg-muted); }
+.pg-detail .pg-detail-a { flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 520px) {
+  .pg-detail .pg-detail-h { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 14px; }
+  .pg-detail .pg-detail-a { grid-column: 1 / -1; justify-content: stretch; flex-wrap: nowrap; }
+  .pg-detail .pg-detail-a .pg-btn { flex: 1; padding: 0 12px; }
+  .pg-hero-cover { width: 92px; height: 92px; border-radius: 17px; }
+  .pg-detail-t h4 { font-size: 1.3rem; }
+}
+.pg-track-img { width: 48px; height: 48px; }
+.pg-track { padding: 7px 8px 7px 4px; }
+
 /* "Lagu Kita" (Koleksi lagu spesial) dihapus dari tab Playlist */
 #ln-lagu-kita { display: none !important; }
 
