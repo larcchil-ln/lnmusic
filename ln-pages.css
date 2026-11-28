@@ -93,6 +93,22 @@ html {
 .pg-empty svg { color: #3f3f46; }
 .pg-empty p { font-size: .82rem; line-height: 1.5; max-width: 320px; }
 
+/* Kolom cari di dalam playlist */
+.pg-search-wrap { margin: 0 0 10px; }
+.pg-search { display: flex; align-items: center; height: 46px; border-radius: 999px; background: var(--pg-panel2); border: 1px solid var(--pg-line2); transition: border-color .2s, background .2s; }
+.pg-search:focus-within { border-color: rgba(34, 211, 106, .55); background: rgba(255, 255, 255, .07); }
+.pg-search-ic { flex: none; width: 44px; display: inline-flex; align-items: center; justify-content: center; color: #71717a; }
+.pg-search:focus-within .pg-search-ic { color: #4ade80; }
+.pg-search input { flex: 1; min-width: 0; height: 100%; padding: 0; background: transparent !important; border: 0 !important; outline: 0 !important; box-shadow: none !important; color: #fff; font: inherit; font-size: .9rem; -webkit-appearance: none; appearance: none; }
+.pg-search input::-webkit-search-cancel-button, .pg-search input::-webkit-search-decoration { -webkit-appearance: none; display: none; }
+.pg-search input::placeholder { color: #71717a; }
+.pg-search-x { flex: none; width: 36px; height: 36px; margin-right: 5px; border: 0; border-radius: 50%; background: transparent; color: #a1a1ab; display: none; align-items: center; justify-content: center; cursor: pointer; }
+.pg-search-x:hover { color: #fff; background: rgba(255, 255, 255, .08); }
+.pg-search.has-q .pg-search-x { display: inline-flex; }
+.pg-search-n { margin: 8px 8px 0; font-size: .74rem; color: var(--pg-muted); }
+.pg-noresult { margin-top: 6px; }
+@media (max-width: 520px) { .pg-search input { font-size: 16px; } }
+
 /* "Lagu Kita" (Koleksi lagu spesial) dihapus dari tab Playlist */
 #ln-lagu-kita { display: none !important; }
 

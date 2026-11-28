@@ -20,10 +20,11 @@
   function hash(s) { var h = 5381; for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
 
   // ---------- bentuk lagu ----------
-  function lazyTrack(title, artist) {
+  function lazyTrack(title, artist, thumb) {
     title = str(title, 160); artist = str(artist, 100);
     if (!title) return null;
-    return { id: 'imp:' + hash((artist + '|' + title).toLowerCase()), title: title, artist: artist, thumb: '', type: 'youtube', isVideo: false, lazy: true };
+    var th = /^https?:\/\//i.test(thumb || '') ? String(thumb).trim().slice(0, 300) : '';
+    return { id: 'imp:' + hash((artist + '|' + title).toLowerCase()), title: title, artist: artist, thumb: th, type: 'youtube', isVideo: false, lazy: true };
   }
   function normTrack(t) {
     if (!t || (t.type && t.type !== 'youtube')) return null;
@@ -89,18 +90,20 @@
   }
   var TITLE_H = ['track name', 'track', 'title', 'song', 'song name', 'name', 'judul', 'nama lagu', 'lagu', 'trackname'];
   var ARTIST_H = ['artist name(s)', 'artist name', 'artist names', 'artists', 'artist', 'artistname', 'penyanyi', 'artis'];
+  var IMG_H = ['album image url', 'album image', 'image url', 'image', 'cover', 'cover url', 'cover image', 'artwork', 'artwork url', 'thumbnail', 'thumbnail url', 'thumb', 'album art', 'album cover', 'gambar'];
   function fromCSV(text) {
     var rows = parseCSV(text);
     if (rows.length < 2) return null;
     var head = rows[0].map(function (h) { return h.trim().toLowerCase().replace(/^\ufeff/, ''); });
-    var ti = -1, ai = -1;
+    var ti = -1, ai = -1, ii = -1;
     TITLE_H.some(function (k) { var i = head.indexOf(k); if (i >= 0) { ti = i; return true; } });
     ARTIST_H.some(function (k) { var i = head.indexOf(k); if (i >= 0) { ai = i; return true; } });
+    IMG_H.some(function (k) { var i = head.indexOf(k); if (i >= 0) { ii = i; return true; } });
     if (ti < 0) return null;
     var out = [];
     rows.slice(1).forEach(function (r) {
       var a = ai >= 0 ? String(r[ai] || '').replace(/\s*;\s*/g, ', ') : '';
-      var t = lazyTrack(r[ti], a); if (t) out.push(t);
+      var t = lazyTrack(r[ti], a, ii >= 0 ? r[ii] : ''); if (t) out.push(t);
     });
     return out;
   }
@@ -156,13 +159,42 @@
     return { added: added, made: made };
   }
 
+  // Ambil link pertama dari teks yang ditempel (mis. pesan bagikan Spotify: "Dengar playlist ini https://open.spotify.com/...").
+  var LINK_HOSTS = /^(?:[\w-]+\.)*(?:youtube\.com|youtu\.be|spotify\.com|spotify\.link|spotify\.app\.link|apple\.com)$/i;
+  function findLink(raw) {
+    var all = String(raw || '').match(/https?:\/\/[^\s<>"'\u201c\u201d]+/gi) || [];
+    var found = [];
+    all.forEach(function (u) {
+      u = u.replace(/[)\].,;!?]+$/, '');
+      try { if (LINK_HOSTS.test(new URL(u).hostname)) found.push(u); } catch (e) {}
+    });
+    if (found.length !== 1) return '';                                   // 0 atau banyak link: bukan "satu link playlist"
+    var lines = String(raw).split(/\r?\n/).filter(function (l) { return l.trim(); });
+    return lines.length <= 4 ? found[0] : '';                            // teks panjang = daftar lagu, bukan link
+  }
+  function fetchJSON(url, ms) {
+    var ctrl = typeof AbortController === 'function' ? new AbortController() : null, tm = ctrl ? setTimeout(function () { ctrl.abort(); }, ms) : 0;
+    return fetch(url, { cache: 'no-store', signal: ctrl ? ctrl.signal : undefined }).then(function (res) {
+      return res.text().then(function (txt) {
+        var j = null; try { j = JSON.parse(txt); } catch (e) {}
+        return { res: res, j: j };
+      });
+    }).then(function (x) { clearTimeout(tm); return x; }, function (e) { clearTimeout(tm); throw e; });
+  }
   async function importLink(url) {
-    var res;
-    try { res = await fetch(api('/api/import?url=' + encodeURIComponent(url)), { cache: 'no-store' }); }
-    catch (e) { throw new Error('Tidak bisa menghubungi server. Cek koneksi internet, atau pastikan server sudah diperbarui (api/import.js).'); }
-    var j = null; try { j = await res.json(); } catch (e) {}
-    if (!res.ok || !j || !j.tracks) throw new Error((j && j.error) || ('Server menjawab ' + res.status));
-    var tracks = j.tracks.map(function (t) { return t.id ? normTrack({ id: t.id, title: t.title, artist: t.artist, thumb: t.thumb }) : lazyTrack(t.title, t.artist); }).filter(Boolean);
+    var out = null, lastErr = null;
+    for (var attempt = 0; attempt < 2 && !out; attempt++) {
+      try { out = await fetchJSON(api('/api/import?url=' + encodeURIComponent(url)), 28000); }
+      catch (e) { lastErr = e; if (attempt === 0) await new Promise(function (r) { setTimeout(r, 900); }); }
+    }
+    if (!out) throw new Error(lastErr && lastErr.name === 'AbortError' ? 'Server terlalu lama menjawab. Coba lagi, atau impor lewat file CSV.' : 'Tidak bisa menghubungi server. Cek koneksi internet, lalu coba lagi.');
+    var res = out.res, j = out.j;
+    if (!j) {
+      if (res.status === 404) throw new Error('Fitur impor link belum aktif di server (api/import.js belum ter-deploy). Sementara pakai file CSV.');
+      throw new Error('Server menjawab ' + res.status + ' dengan format tak terduga. Coba lagi sebentar lagi.');
+    }
+    if (!res.ok || !j.tracks) throw new Error(j.error || j.msg || ('Server menjawab ' + res.status));
+    var tracks = j.tracks.map(function (t) { return t.id ? normTrack({ id: t.id, title: t.title, artist: t.artist, thumb: t.thumb }) : lazyTrack(t.title, t.artist, t.thumb); }).filter(Boolean);
     if (!tracks.length) throw new Error('Playlist ini kosong');
     return { name: j.name, tracks: tracks, source: j.source };
   }
@@ -189,11 +221,13 @@
         if (!r) throw new Error('Format JSON ini belum dikenali. Pakai cadangan LNMusic, ekspor resmi Spotify, atau CSV.');
         lists = r.lists;
         if (r.kind === 'spotify') note = ' Lagu dari Spotify dicarikan versi YouTube-nya saat diputar.';
-      } else if (/^https?:\/\/\S+$/i.test(raw)) {
+      } else if (findLink(raw)) {
         setMsg('Mengambil playlist dari link…');
-        var lk = await importLink(raw);
+        var lk = await importLink(findLink(raw));
         lists = [{ name: custom || lk.name, tracks: lk.tracks }];
         if (lk.source !== 'youtube') note = ' Lagu dicarikan versi YouTube-nya saat diputar.';
+      } else if (/^https?:\/\/\S+$/i.test(raw)) {
+        throw new Error('Link ini belum didukung. Pakai link playlist YouTube, YouTube Music, Spotify, atau Apple Music.');
       } else {
         var tr = fromCSV(raw) || fromLines(raw);
         if (!tr.length) throw new Error('Tidak ada lagu yang terbaca. Pakai format "Artis - Judul" per baris, atau file CSV dengan kolom judul dan artis.');
@@ -253,7 +287,7 @@
 
     // --- panel impor
     panelImp = el('div', 'display:flex;flex-direction:column;gap:10px');
-    panelImp.appendChild(el('div', 'font-size:12.5px;color:#a1a1aa;line-height:1.5', 'Tempel link playlist YouTube, YouTube Music, Spotify, atau Apple Music. Bisa juga isi file CSV, atau daftar lagu “Artis - Judul” per baris. Cadangan dari LNMusic juga bisa dipulihkan di sini.'));
+    panelImp.appendChild(el('div', 'font-size:12.5px;color:#a1a1aa;line-height:1.5', 'Tempel link playlist YouTube, YouTube Music, Spotify, atau Apple Music (pesan “bagikan” yang ada linknya juga bisa). Bisa juga isi file CSV, atau daftar lagu “Artis - Judul” per baris. Cover lagu dicari otomatis. Cadangan dari LNMusic juga bisa dipulihkan di sini.'));
     ta = el('textarea', 'width:100%;box-sizing:border-box;min-height:104px;resize:vertical;background:#09090b;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:11px 13px;font-size:13px;color:#fff;outline:none;font-family:inherit');
     ta.placeholder = 'https://open.spotify.com/playlist/…\natau tempel isi CSV / daftar lagu di sini';
     nameIn = el('input', 'width:100%;box-sizing:border-box;background:#09090b;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px 13px;font-size:13px;color:#fff;outline:none');
@@ -321,5 +355,5 @@
   function init() { if (!mountBtn()) setTimeout(init, 800); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 
-  window.lnPlaylistIO._test = { parseCSV: parseCSV, fromCSV: fromCSV, fromLines: fromLines, fromJSON: fromJSON, buildBackup: buildBackup, lazyTrack: lazyTrack, normTrack: normTrack };
+  window.lnPlaylistIO._test = { findLink: findLink, parseCSV: parseCSV, fromCSV: fromCSV, fromLines: fromLines, fromJSON: fromJSON, buildBackup: buildBackup, lazyTrack: lazyTrack, normTrack: normTrack };
 })();

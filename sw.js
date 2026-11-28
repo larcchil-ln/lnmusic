@@ -5,7 +5,7 @@
  * - TIDAK menyentuh: /api/*, YouTube, signaling PeerJS, LRCLIB, atau request non-GET.
  * Naikkan VERSION setiap kali daftar SHELL berubah.
  */
-const VERSION = 'v25-plio';
+const VERSION = 'v26-plplus';
 const SHELL_CACHE = 'lnmusic-shell-' + VERSION;
 const CDN_CACHE = 'lnmusic-cdn-' + VERSION;
 const SHELL = [
@@ -24,6 +24,7 @@ const SHELL = [
   '/ln-live.js',
   '/ln-apk.js',
   '/ln-playlist-io.js',
+  '/ln-playlist-plus.js',
   '/ln-orient.js',
   '/icons/splash-logo.png',
   '/ln-redesign.js',
