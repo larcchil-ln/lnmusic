@@ -164,6 +164,7 @@
     if (!hidden('modal-settings') || !hidden('modal-create-playlist') || !hidden('modal-add-to-playlist')) { try { closeModals(); } catch (e) {} return true; }
     var fs = $('fullscreen-player');
     if (fs && !fs.classList.contains('translate-y-full')) { try { closeFullscreenPlayer(); } catch (e) {} return true; }
+    try { if (window.lnRoomBack && window.lnRoomBack()) return true; } catch (e) {}
     return false;
   }
   // Riwayat tab: Back kembali ke tab yang terakhir dibuka, sampai Beranda

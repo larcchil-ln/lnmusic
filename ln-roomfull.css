@@ -1,0 +1,189 @@
+/* LNMusic: room tampil eksklusif layar penuh (ala party room aplikasi dating).
+   Berlaku saat #room-active-area tidak .hidden. Tanpa kartu judul tab, tanpa sidebar/nav bawah. */
+html.lrf-on, html.lrf-on body { overflow: hidden !important; }
+
+html body #room-active-area:not(.hidden) {
+  --lrf-top: env(safe-area-inset-top, 0px);
+  --lrf-bot: env(safe-area-inset-bottom, 0px);
+  position: fixed !important; left: 0 !important; right: 0 !important; top: 0 !important;
+  height: 100dvh; max-height: 100dvh; width: 100%;
+  z-index: 45; margin: 0 !important; padding: 0 !important;
+  display: flex !important; flex-direction: column; gap: 0 !important;
+  background:
+    radial-gradient(120% 60% at 50% -10%, rgba(120, 70, 220, .42), transparent 62%),
+    radial-gradient(90% 50% at 100% 30%, rgba(34, 211, 106, .10), transparent 70%),
+    linear-gradient(180deg, #1b0f3a 0%, #120a2a 45%, #0b0716 100%);
+  color: #f4f4f8; overflow: hidden; isolation: isolate;
+}
+html body #room-active-area:not(.hidden) > * { margin-top: 0 !important; margin-bottom: 0 !important; }
+html body #room-active-area::before { display: none !important; }
+
+/* Desktop: kolom tengah selebar "layar HP" supaya tetap solid */
+@media (min-width: 900px) {
+  html body #room-active-area:not(.hidden) {
+    left: 50% !important; right: auto !important; width: min(560px, 100vw); transform: translateX(-50%);
+    border-left: 1px solid rgba(255, 255, 255, .08); border-right: 1px solid rgba(255, 255, 255, .08);
+    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .78);
+  }
+}
+
+/* ---------- Header: panah kembali, nama room, ID, jumlah, menu ---------- */
+html body #room-active-area:not(.hidden) > div:first-child {
+  flex: 0 0 auto; display: flex !important; flex-direction: row !important; align-items: center !important;
+  gap: 8px !important; padding: calc(10px + var(--lrf-top)) 12px 8px !important;
+  background: transparent !important; border: 0 !important; border-radius: 0 !important;
+  box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+}
+html body #room-active-area:not(.hidden) > div:first-child > div:first-child { flex: 1 1 auto; min-width: 0; }
+#room-active-area #active-room-type-label, #room-active-area #partner-status { display: none !important; }
+html body #room-active-area:not(.hidden) #active-room-code {
+  display: block; font-size: 1.12rem !important; font-weight: 800; letter-spacing: 0 !important; line-height: 1.2;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #fff;
+}
+html body #room-active-area:not(.hidden) #active-room-code + #active-room-id-badge,
+html body #room-active-area:not(.hidden) #active-room-id-badge {
+  padding: 0 !important; background: transparent !important; border: 0 !important;
+  font-size: .72rem !important; color: #b9b3d6 !important; letter-spacing: .02em !important;
+}
+html body #room-active-area:not(.hidden) #btn-rename-room {
+  padding: 2px 8px !important; font-size: .68rem !important; border-radius: 999px !important;
+}
+html body #room-active-area:not(.hidden) > div:first-child > div:first-child > div:last-child { gap: 6px !important; row-gap: 0 !important; }
+
+.lrf-back, .lrf-count {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; color: #fff;
+  background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .08);
+}
+.lrf-back { width: 40px; height: 40px; border-radius: 50%; background: transparent; border-color: transparent; }
+.lrf-back:active { background: rgba(255, 255, 255, .12); }
+.lrf-back svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.lrf-count { min-width: 40px; height: 36px; padding: 0 12px; border-radius: 999px; font-size: .85rem; font-weight: 700; }
+html body #room-active-area:not(.hidden) .lr-actions { gap: 8px; flex: 0 0 auto; }
+html body #room-active-area:not(.hidden) .lr-actions > button:first-child { height: 36px; padding: 0 14px !important; font-size: .8rem !important; }
+html body #room-active-area:not(.hidden) #lr-more { width: 36px; height: 36px; }
+html body #room-active-area:not(.hidden) .lr-menu { z-index: 60; }
+
+/* ---------- Strip lagu yang sedang diputar ---------- */
+#lrf-np {
+  flex: 0 0 auto; display: none; align-items: center; gap: 10px; margin: 2px 12px 6px; padding: 6px 8px 6px 6px;
+  border-radius: 14px; background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .07); cursor: pointer;
+}
+html #room-active-area:not(.hidden) #lrf-np { display: flex; }
+#lrf-np img { width: 38px; height: 38px; border-radius: 9px; object-fit: cover; background: #1a1a22; flex: 0 0 auto; }
+#lrf-np .t { flex: 1; min-width: 0; line-height: 1.25; }
+#lrf-np .t b { display: block; font-size: .85rem; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#lrf-np .t small { display: block; font-size: .72rem; color: #b9b3d6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#lrf-np button { width: 38px; height: 38px; border-radius: 50%; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; color: #04210f; background: linear-gradient(135deg, #4ade80, #22d36a); }
+#lrf-np button svg { width: 18px; height: 18px; fill: currentColor; stroke: none; }
+#lrf-np.paused .pa, #lrf-np:not(.paused) .pl { display: none; }
+
+/* ---------- Tab Chat / Lagu & Antrean (semua ukuran layar) ---------- */
+html body #room-active-area:not(.hidden) #lr-tabs { display: flex !important; flex: 0 0 auto; margin: 0 12px 8px; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255, 255, 255, .07); border: 0; }
+html body #room-active-area:not(.hidden) #lr-tabs button { height: 36px; font-size: .85rem; }
+
+/* ---------- Kursi (seat) ---------- */
+html body #room-active-area:not(.hidden) #tg-voice {
+  flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0 !important; margin: 0 !important;
+  background: transparent !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important;
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+}
+#room-active-area .tg-voice-head, #room-active-area .tg-sub, #room-active-area .tg-hint { display: none !important; }
+#room-active-area .tg-voice-body { flex: 1 1 auto; min-height: 0; display: flex !important; flex-direction: column; gap: 0 !important; }
+#room-active-area .tg-seats { flex: 0 0 auto; padding: 6px 14px 4px; gap: .5rem !important; }
+#room-active-area #voice-seats-main { gap: 14px 6px !important; }
+#room-active-area #voice-seats-main .seat .ring, #room-active-area #voice-seats-main .seat > div:first-child { width: 4.1rem !important; height: 4.1rem !important; }
+#room-active-area #voice-seats-main .seat .truncate { max-width: 88px; font-size: .78rem; color: #e9e6f7; }
+#room-active-area #voice-seats-main > button > div { width: 4.1rem !important; height: 4.1rem !important; background: rgba(255, 255, 255, .09); border: 0 !important; color: #d8d3f2; }
+#room-active-area .tg-mic { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+#room-active-area .tg-mic-btn {
+  height: 38px; padding: 0 18px; border-radius: 999px; font-size: .82rem; font-weight: 700;
+  color: #fff; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .1);
+}
+
+/* ---------- Chat ---------- */
+html body #room-active-area:not(.hidden) .tg-chat {
+  flex: 1 1 auto; min-height: 0 !important; max-height: none !important; margin: 0 !important; padding: 8px 12px calc(10px + var(--lrf-bot)) !important;
+  background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important; display: flex; flex-direction: column;
+}
+#room-active-area .tg-chat > div:first-child { padding-bottom: 6px !important; margin-bottom: 6px !important; border-bottom: 0 !important; }
+#room-active-area #room-chat-messages { flex: 1 1 auto; min-height: 0 !important; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+#room-active-area .tg-chat form { flex-wrap: nowrap !important; align-items: center; gap: 6px; }
+#room-active-area .tg-chat form #room-chat-input { order: 0 !important; flex: 1 1 auto !important; min-width: 0; }
+#room-active-area .tg-chat form button[type="submit"] { margin-left: 0; }
+#room-active-area input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):not([type=button]):not([type=submit]) {
+  color: #fff !important; -webkit-text-fill-color: #fff !important; caret-color: #4ade80; font-size: 16px !important;
+  background: rgba(255, 255, 255, .09) !important; border-color: rgba(255, 255, 255, .1) !important; opacity: 1 !important;
+}
+#room-active-area input::placeholder { color: #9e98bd !important; -webkit-text-fill-color: #9e98bd !important; opacity: 1 !important; }
+
+/* ---------- Pane Lagu & Antrean ---------- */
+#room-active-area .tg-section-title, #room-active-area #room-search-main, #room-active-area .tg-link { display: none !important; }
+html body #room-active-area.lr-pane-queue:not(.hidden) .tg-chat { display: none !important; }
+html body #room-active-area.lr-pane-queue:not(.hidden) #tg-voice { flex: 0 0 auto; }
+html body #room-active-area.lr-pane-queue:not(.hidden) .tg-mic { display: none; }
+html body #room-active-area.lr-pane-queue:not(.hidden) #voice-seats-main .seat .ring,
+html body #room-active-area.lr-pane-queue:not(.hidden) #voice-seats-main .seat > div:first-child,
+html body #room-active-area.lr-pane-queue:not(.hidden) #voice-seats-main > button > div { width: 3.1rem !important; height: 3.1rem !important; }
+html body #room-active-area.lr-pane-queue:not(.hidden) #room-search-main {
+  display: block !important; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 4px 12px 10px;
+}
+html body #room-active-area.lr-pane-queue:not(.hidden) .tg-section-title { display: none !important; }
+html body #room-active-area.lr-pane-queue:not(.hidden) .tg-link {
+  display: block !important; flex: 0 0 auto; margin: 0 12px calc(10px + var(--lrf-bot)) !important; padding: 10px 12px !important;
+  background: rgba(255, 255, 255, .06) !important; border: 0 !important; border-radius: 14px !important; backdrop-filter: none !important;
+}
+
+/* Saat keyboard terbuka: seat dirapatkan supaya kolom chat tetap luas */
+html.lrf-kbd #room-active-area .tg-mic, html.lrf-kbd #lrf-np { display: none !important; }
+html.lrf-kbd #room-active-area #voice-seats-main .seat .ring,
+html.lrf-kbd #room-active-area #voice-seats-main .seat > div:first-child,
+html.lrf-kbd #room-active-area #voice-seats-main > button > div { width: 2.6rem !important; height: 2.6rem !important; }
+html.lrf-kbd #room-active-area #voice-seats-main { gap: 6px 6px !important; }
+html.lrf-kbd #room-active-area #voice-seats-main .seat .truncate { display: none; }
+
+/* Dialog keluar room */
+#lrf-leave { position: fixed; inset: 0; z-index: 2147482000; display: none; align-items: flex-end; justify-content: center; background: rgba(0, 0, 0, .6); }
+#lrf-leave.on { display: flex; }
+#lrf-leave .box { width: 100%; max-width: 440px; box-sizing: border-box; padding: 22px 20px calc(20px + env(safe-area-inset-bottom, 0px)); border-radius: 26px 26px 0 0; background: #1d1830; border: 1px solid rgba(255, 255, 255, .08); color: #fff; font-family: inherit; }
+#lrf-leave h3 { font-size: 1.1rem; font-weight: 800; margin: 0 0 4px; }
+#lrf-leave p { font-size: .88rem; color: #b9b3d6; margin: 0 0 16px; line-height: 1.45; }
+#lrf-leave .row { display: flex; gap: 10px; }
+#lrf-leave button { flex: 1; height: 48px; border-radius: 999px; font-weight: 800; font-size: .95rem; }
+#lrf-leave .stay { background: linear-gradient(135deg, #4ade80, #22d36a); color: #04210f; }
+#lrf-leave .quit { background: rgba(255, 255, 255, .1); color: #fda4af; }
+
+/* Tersembunyi sementara saat membuka tab lain (Video Call) dari menu room */
+html body #room-active-area.lrf-away:not(.hidden) { display: none !important; }
+@media (prefers-reduced-motion: no-preference) {
+  html body #room-active-area:not(.hidden):not(.lrf-away) { animation: lrfIn .2s ease-out; }
+  @keyframes lrfIn { from { opacity: 0; } to { opacity: 1; } }
+}
+
+/* Kontainer aksi header: tetap satu baris (menang atas aturan grid lama di index.html) */
+html body #room-active-area:not(.hidden) > div:first-child > div:last-child {
+  display: flex !important; flex-wrap: nowrap !important; width: auto !important; grid-template-columns: none !important; flex: 0 0 auto;
+}
+html body #room-active-area:not(.hidden) > div:first-child > div:last-child > :first-child { grid-column: auto !important; }
+
+/* Tombol bulat di header tidak boleh terjepit padding bawaan aturan lama */
+html body #room-active-area:not(.hidden) .lrf-back,
+html body #room-active-area:not(.hidden) #lr-more { padding: 0 !important; width: 40px; height: 40px; min-width: 0; flex: 0 0 auto; }
+html body #room-active-area:not(.hidden) #lr-more { width: 36px; height: 36px; }
+html body #room-active-area:not(.hidden) .lrf-count { padding: 0 12px !important; width: auto; min-width: 36px; }
+
+/* Tab Chat / Lagu: gaya yang sama di semua ukuran layar */
+html body #room-active-area:not(.hidden) #lr-tabs button {
+  flex: 1; border-radius: 999px; font-weight: 700; color: #b9b3d6; background: transparent; padding: 0 10px;
+  transition: background .2s, color .2s;
+}
+html body #room-active-area:not(.hidden) #lr-tabs button[aria-selected="true"] { color: #04210f; background: linear-gradient(135deg, #4ade80, #22d36a); }
+
+/* HP sempit: tombol Undang jadi ikon bulat supaya judul room tetap lega */
+@media (max-width: 480px) {
+  html body #room-active-area:not(.hidden) .lr-actions > button:first-child {
+    font-size: 0 !important; width: 36px; height: 36px; padding: 0 !important; gap: 0 !important; justify-content: center;
+  }
+  html body #room-active-area:not(.hidden) .lr-actions > button:first-child svg { width: 18px; height: 18px; margin: 0; }
+  html body #room-active-area:not(.hidden) > div:first-child { gap: 6px !important; padding-left: 8px !important; padding-right: 10px !important; }
+}
